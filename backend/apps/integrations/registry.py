@@ -3,13 +3,16 @@ from __future__ import annotations
 from apps.integrations.adapters import BaseAdapter
 from apps.integrations.feature_flags import is_live
 from apps.integrations.providers.mock_adapter import MockAdapter
+from apps.integrations.providers.linkedin import LinkedInAdapter
+from apps.integrations.providers.x import XAdapter
+from apps.integrations.providers.instagram import InstagramAdapter
 
 # Registry maps network name -> live adapter class.
 # When a live adapter is not yet implemented the value is None.
 _LIVE_REGISTRY: dict[str, type[BaseAdapter] | None] = {
-    "linkedin": None,
-    "x": None,
-    "instagram": None,
+    "linkedin": LinkedInAdapter,
+    "x": XAdapter,
+    "instagram": InstagramAdapter,
 }
 
 
