@@ -4,6 +4,8 @@ from ninja.errors import HttpError
 
 from apps.accounts.api import router as accounts_router
 from apps.common.api import router as common_router
+from apps.design_bank.api import router as design_bank_router
+from apps.integrations.api import router as integrations_router
 from apps.meta.api import router as meta_router
 
 api = NinjaAPI(version="1", docs_url="/docs", openapi_url="/openapi.json")
@@ -11,6 +13,8 @@ api = NinjaAPI(version="1", docs_url="/docs", openapi_url="/openapi.json")
 api.add_router("/", common_router)
 api.add_router("/auth/", accounts_router)
 api.add_router("/meta/", meta_router)
+api.add_router("/design-bank/", design_bank_router)
+api.add_router("/integrations/", integrations_router)
 
 
 @api.exception_handler(Http404)

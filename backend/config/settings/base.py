@@ -20,6 +20,8 @@ INSTALLED_APPS = [
     "apps.approvals",
     "apps.publishing",
     "apps.meta",
+    "apps.design_bank",
+    "apps.integrations",
 ]
 
 MIDDLEWARE = [
