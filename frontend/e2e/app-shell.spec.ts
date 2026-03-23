@@ -1,8 +1,16 @@
 import { test, expect } from "@playwright/test";
 
+async function loginAsOwner(page: import("@playwright/test").Page) {
+  await page.goto("/login");
+  await page.getByTestId("login-email").fill("owner@example.com");
+  await page.getByTestId("login-password").fill("testpassword123");
+  await page.getByTestId("login-submit").click();
+  await expect(page).toHaveURL("/");
+}
+
 test.describe("App shell", () => {
   test("renders navigation and theme toggle", async ({ page }) => {
-    await page.goto("/");
+    await loginAsOwner(page);
     await expect(page.getByTestId("app-sidebar")).toBeVisible();
     await expect(page.getByTestId("nav-dashboard")).toBeVisible();
     await expect(page.getByTestId("nav-design-bank")).toBeVisible();
@@ -14,12 +22,12 @@ test.describe("App shell", () => {
     await expect(page.getByTestId("nav-settings")).toBeVisible();
     await expect(page.getByTestId("theme-toggle")).toBeVisible();
     await page.screenshot({
-      path: ".sisyphus/evidence/task-3-app-shell.png",
+      path: "../.sisyphus/evidence/task-3-app-shell.png",
     });
   });
 
   test("theme toggle switches mode", async ({ page }) => {
-    await page.goto("/");
+    await loginAsOwner(page);
     const html = page.locator("html");
     const before = await html.getAttribute("class");
     await page.getByTestId("theme-toggle").click();
@@ -28,11 +36,12 @@ test.describe("App shell", () => {
   });
 
   test("unknown route shows 404 inside app shell", async ({ page }) => {
+    await loginAsOwner(page);
     await page.goto("/this-route-does-not-exist");
     await expect(page.getByTestId("app-sidebar")).toBeVisible();
     await expect(page.locator("h1")).toContainText("404");
     await page.screenshot({
-      path: ".sisyphus/evidence/task-3-404.png",
+      path: "../.sisyphus/evidence/task-3-404.png",
     });
   });
 });

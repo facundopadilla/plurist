@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useTheme } from "../use-theme";
+import { useAuth } from "../../features/auth/use-auth";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
@@ -28,6 +29,10 @@ const navItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { theme, toggle } = useTheme();
+  const { role } = useAuth();
+
+  const canUseDesignBankActions = role === "owner" || role === "editor";
+  const canUsePublishingActions = role === "owner" || role === "publisher";
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -53,6 +58,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
+        <div className="px-3 pb-3 text-[11px] text-muted-foreground space-y-1">
+          <div data-testid="role-design-bank-actions">
+            Design Bank actions: {canUseDesignBankActions ? "enabled" : "read-only"}
+          </div>
+          <div data-testid="role-publish-actions">
+            Publish actions: {canUsePublishingActions ? "enabled" : "disabled"}
+          </div>
+        </div>
         <div className="p-3 border-t border-border">
           <button
             onClick={toggle}

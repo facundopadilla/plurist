@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppShell } from "./layout/app-shell";
 import { AuthShell } from "./layout/auth-shell";
+import { LoginPage } from "../features/auth/login-page";
+import { InviteAcceptPage } from "../features/auth/invite-accept-page";
+import { RequireAuth } from "../features/auth/require-auth";
 
 const Dashboard = () => (
   <div>
@@ -67,13 +70,6 @@ const NotFound = () => (
   </div>
 );
 
-const Login = () => (
-  <div data-testid="login-page">
-    <h1 className="text-xl font-semibold text-center">Login</h1>
-    <p className="text-muted-foreground mt-2 text-center">Coming soon.</p>
-  </div>
-);
-
 export function AppRouter() {
   return (
     <BrowserRouter>
@@ -82,80 +78,106 @@ export function AppRouter() {
           path="/login"
           element={
             <AuthShell>
-              <Login />
+              <LoginPage />
+            </AuthShell>
+          }
+        />
+        <Route
+          path="/invite/:token"
+          element={
+            <AuthShell>
+              <InviteAcceptPage />
             </AuthShell>
           }
         />
         <Route
           path="/"
           element={
-            <AppShell>
-              <Dashboard />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <Dashboard />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="/design-bank"
           element={
-            <AppShell>
-              <DesignBank />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <DesignBank />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="/posts"
           element={
-            <AppShell>
-              <Posts />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <Posts />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="/review"
           element={
-            <AppShell>
-              <Review />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <Review />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="/queue"
           element={
-            <AppShell>
-              <Queue />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <Queue />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="/calendar"
           element={
-            <AppShell>
-              <CalendarPage />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <CalendarPage />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="/analytics"
           element={
-            <AppShell>
-              <Analytics />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <Analytics />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="/settings/integrations"
           element={
-            <AppShell>
-              <SettingsIntegrations />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <SettingsIntegrations />
+              </AppShell>
+            </RequireAuth>
           }
         />
         <Route
           path="*"
           element={
-            <AppShell>
-              <NotFound />
-            </AppShell>
+            <RequireAuth>
+              <AppShell>
+                <NotFound />
+              </AppShell>
+            </RequireAuth>
           }
         />
       </Routes>
