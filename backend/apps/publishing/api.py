@@ -3,11 +3,12 @@
 from django.db import transaction
 from ninja import Router, Schema
 from ninja.errors import HttpError
-from ninja.security import django_auth
+from apps.accounts.session_auth import session_auth as django_auth
 
 from apps.accounts.auth import get_membership, require_publisher_capabilities
 from apps.posts.models import DraftPost
 from apps.publishing.models import PublishAttempt
+from apps.publishing.tasks import execute_publish
 
 router = Router(tags=["publishing"])
 
@@ -48,8 +49,6 @@ def _do_publish_now(
     (post, idempotency_key) pair, return those existing attempts without
     creating new ones or re-enqueueing.
     """
-    from apps.publishing.tasks import execute_publish
-
     # Idempotency check: if attempts already exist for this key, return them.
     if idempotency_key:
         existing = list(

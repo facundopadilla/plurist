@@ -32,7 +32,8 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # Django CSRF middleware is disabled; the API uses session-based custom
+    # CSRF via _require_csrf() on auth mutations (login, logout, invites).
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 

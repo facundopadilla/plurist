@@ -4,7 +4,7 @@ from django.http import HttpRequest
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
-from ninja.security import django_auth
+from apps.accounts.session_auth import session_auth as django_auth
 
 from apps.accounts.auth import get_membership, require_editor_capabilities
 from apps.accounts.models import RoleChoices

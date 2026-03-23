@@ -4,7 +4,7 @@ from typing import Any
 
 from ninja import Router, Schema
 from ninja.errors import HttpError
-from ninja.security import django_auth
+from apps.accounts.session_auth import session_auth as django_auth
 
 from apps.accounts.auth import get_membership, require_editor_capabilities
 from apps.posts.models import BrandProfileVersion, DraftVariant
