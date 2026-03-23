@@ -3,24 +3,32 @@ from ninja import NinjaAPI
 from ninja.errors import HttpError
 
 from apps.accounts.api import router as accounts_router
+from apps.analytics.api import router as analytics_router
 from apps.common.api import router as common_router
 from apps.design_bank.api import router as design_bank_router
 from apps.design_bank.brand_api import router as brand_profile_router
 from apps.integrations.api import router as integrations_router
 from apps.meta.api import router as meta_router
 from apps.generation.api import router as generation_router
+from apps.posts.api import router as posts_router
+from apps.publishing.api import router as publishing_router
 from apps.rendering.api import router as rendering_router
+from apps.scheduler.api import router as scheduler_router
 
 api = NinjaAPI(version="1", docs_url="/docs", openapi_url="/openapi.json")
 
 api.add_router("/", common_router)
 api.add_router("/auth/", accounts_router)
+api.add_router("/analytics/", analytics_router)
 api.add_router("/meta/", meta_router)
 api.add_router("/design-bank/", design_bank_router)
 api.add_router("/brand-profile/", brand_profile_router)
 api.add_router("/integrations/", integrations_router)
+api.add_router("/posts/", posts_router)
+api.add_router("/publishing/", publishing_router)
 api.add_router("/rendering/", rendering_router)
 api.add_router("/generation/", generation_router)
+api.add_router("/scheduler/", scheduler_router)
 
 
 @api.exception_handler(Http404)

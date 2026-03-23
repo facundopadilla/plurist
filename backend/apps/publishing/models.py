@@ -39,6 +39,7 @@ class PublishAttempt(models.Model):
         related_name="publish_attempts",
     )
     network = models.CharField(max_length=20)
+    idempotency_key = models.CharField(max_length=255, blank=True, db_index=True)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING
     )
