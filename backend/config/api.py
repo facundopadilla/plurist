@@ -8,6 +8,8 @@ from apps.design_bank.api import router as design_bank_router
 from apps.design_bank.brand_api import router as brand_profile_router
 from apps.integrations.api import router as integrations_router
 from apps.meta.api import router as meta_router
+from apps.generation.api import router as generation_router
+from apps.rendering.api import router as rendering_router
 
 api = NinjaAPI(version="1", docs_url="/docs", openapi_url="/openapi.json")
 
@@ -17,6 +19,8 @@ api.add_router("/meta/", meta_router)
 api.add_router("/design-bank/", design_bank_router)
 api.add_router("/brand-profile/", brand_profile_router)
 api.add_router("/integrations/", integrations_router)
+api.add_router("/rendering/", rendering_router)
+api.add_router("/generation/", generation_router)
 
 
 @api.exception_handler(Http404)

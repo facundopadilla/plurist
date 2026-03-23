@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     "apps.meta",
     "apps.design_bank",
     "apps.integrations",
+    "apps.rendering",
+    "apps.generation",
 ]
 
 MIDDLEWARE = [
