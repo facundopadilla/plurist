@@ -1,3 +1,10 @@
+import { Providers } from "./app/providers";
+import { Router } from "./app/router";
+
 export function App() {
-  return <h1>Socialclaw</h1>;
+  return (
+    <Providers>
+      <Router />
+    </Providers>
+  );
 }
