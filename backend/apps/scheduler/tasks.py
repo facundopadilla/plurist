@@ -42,14 +42,19 @@ def check_pending_schedules():
         entry.trigger()
         triggered_count += 1
 
-        # Enqueue the actual publish
+        # Create PublishAttempt rows and enqueue Celery tasks via the
+        # same helper used by the publish-now API endpoint.
         try:
-            from apps.publishing.tasks import execute_publish
+            from apps.publishing.api import _do_publish_now
 
-            entry.draft_post.start_publishing(actor=entry.created_by)
-            # Create PublishAttempt would be done by the publish flow
+            idempotency_key = f"schedule-{entry.pk}"
+            _do_publish_now(
+                post=entry.draft_post,
+                actor=entry.created_by,
+                idempotency_key=idempotency_key,
+            )
             logger.info(
-                "Schedule entry %s triggered for post %s on %s",
+                "Schedule entry %s triggered publish for post %s on %s",
                 entry.pk,
                 entry.draft_post_id,
                 entry.network,

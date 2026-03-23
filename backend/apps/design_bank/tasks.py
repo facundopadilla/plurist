@@ -73,14 +73,28 @@ def extract_from_url(self, source_id: int):
             source.url,
             timeout=DOWNLOAD_TIMEOUT,
             stream=True,
-            allow_redirects=True,
+            allow_redirects=False,
             headers={"User-Agent": "Socialclaw-DesignBank/1.0"},
         )
-        response.raise_for_status()
 
-        # Enforce redirect limit
-        if len(response.history) > MAX_REDIRECTS:
-            raise ValueError(f"Too many redirects ({len(response.history)})")
+        # Manually follow redirects with SSRF validation at each hop
+        redirect_count = 0
+        while response.is_redirect and redirect_count < MAX_REDIRECTS:
+            redirect_url = response.headers.get("Location", "")
+            validate_url(redirect_url)  # SSRF check on redirect target
+            response = requests.get(
+                redirect_url,
+                timeout=DOWNLOAD_TIMEOUT,
+                stream=True,
+                allow_redirects=False,
+                headers={"User-Agent": "Socialclaw-DesignBank/1.0"},
+            )
+            redirect_count += 1
+
+        if response.is_redirect:
+            raise ValueError(f"Too many redirects ({redirect_count})")
+
+        response.raise_for_status()
 
         # Enforce size limit
         content_length = int(response.headers.get("Content-Length", 0))

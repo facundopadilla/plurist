@@ -48,6 +48,15 @@ class PublishAttempt(models.Model):
     attempted_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["draft_post", "idempotency_key", "network"],
+                condition=~models.Q(idempotency_key=""),
+                name="unique_publish_attempt_idempotency",
+            ),
+        ]
+
 
 class ScheduledPublication(models.Model):
     class Status(models.TextChoices):
