@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     "apps.integrations",
     "apps.rendering",
     "apps.generation",
+    "apps.analytics",
+    "apps.scheduler",
 ]
 
 MIDDLEWARE = [
