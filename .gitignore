@@ -118,3 +118,6 @@ minio-data/
 
 # Postgres data (if local)
 postgres-data/
+
+# Temporary research repos (used by planning agents)
+tmp_repos/
