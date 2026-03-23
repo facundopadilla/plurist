@@ -4,17 +4,11 @@ import { AuthShell } from "./layout/auth-shell";
 import { LoginPage } from "../features/auth/login-page";
 import { InviteAcceptPage } from "../features/auth/invite-accept-page";
 import { RequireAuth } from "../features/auth/require-auth";
+import { DesignBankPage } from "../features/design-bank/design-bank-page";
 
 const Dashboard = () => (
   <div>
     <h1 className="text-2xl font-semibold">Dashboard</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
-  </div>
-);
-
-const DesignBank = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Design Bank</h1>
     <p className="text-muted-foreground mt-2">Coming soon.</p>
   </div>
 );
@@ -105,7 +99,7 @@ export function AppRouter() {
           element={
             <RequireAuth>
               <AppShell>
-                <DesignBank />
+                <DesignBankPage />
               </AppShell>
             </RequireAuth>
           }
