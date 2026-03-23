@@ -16,6 +16,10 @@ INSTALLED_APPS = [
     "apps.common",
     "apps.accounts",
     "apps.workspace",
+    "apps.posts",
+    "apps.approvals",
+    "apps.publishing",
+    "apps.meta",
 ]
 
 MIDDLEWARE = [
