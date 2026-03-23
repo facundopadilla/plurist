@@ -1,3 +1,5 @@
+# pyright: reportArgumentType=false, reportIncompatibleMethodOverride=false, reportIncompatibleVariableOverride=false
+
 import hashlib
 import secrets
 
@@ -94,3 +96,30 @@ class Invite(models.Model):
     @staticmethod
     def generate_token():
         return hashlib.sha256(secrets.token_bytes(32)).hexdigest()
+
+
+class OIDCProviderChoices(models.TextChoices):
+    GOOGLE = "google", "Google"
+
+
+class OIDCProvider(models.Model):
+    provider = models.CharField(max_length=30, choices=OIDCProviderChoices.choices)
+    subject_id = models.CharField(max_length=255)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="oidc_providers",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["provider", "subject_id"],
+                name="accounts_oidc_provider_subject_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["provider", "user"],
+                name="accounts_oidc_provider_user_unique",
+            ),
+        ]

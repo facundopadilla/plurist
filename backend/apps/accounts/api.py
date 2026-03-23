@@ -1,18 +1,33 @@
+# pyright: reportAttributeAccessIssue=false
+
 import secrets
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.db import transaction
+from django.http import HttpResponseRedirect
 from django.utils import timezone
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from ninja.security import django_auth
 
 from .auth import get_membership, require_owner
-from .models import Invite, Membership, RoleChoices, User, Workspace
+from .models import (
+    Invite,
+    Membership,
+    OIDCProvider,
+    OIDCProviderChoices,
+    RoleChoices,
+    User,
+    Workspace,
+)
+from .oidc import oauth
 
 router = Router(tags=["auth"])
+
+GOOGLE_OIDC_SESSION_STATE_KEY = "google_oidc_state"
+GOOGLE_OIDC_SESSION_VERIFIER_KEY = "google_oidc_code_verifier"
 
 
 class LoginIn(Schema):
@@ -75,6 +90,123 @@ def _require_csrf(request):
     )
     if not token or not header or token != header:
         raise HttpError(403, "CSRF Failed")
+
+
+def _google_email_domain(email: str) -> str:
+    parsed = email.rsplit("@", 1)
+    return parsed[1].lower() if len(parsed) == 2 else ""
+
+
+def _is_google_domain_allowed(email: str) -> bool:
+    if not settings.GOOGLE_ALLOWED_DOMAINS:
+        return True
+    return _google_email_domain(email) in settings.GOOGLE_ALLOWED_DOMAINS
+
+
+def _google_oidc_callback_uri(request) -> str:
+    return request.build_absolute_uri("/api/v1/auth/google/callback")
+
+
+def _google_login_redirect_response(request, user: User):
+    login(request, user)
+    return HttpResponseRedirect("/")
+
+
+@router.get("/google/start")
+def google_start(request):
+    state = secrets.token_urlsafe(24)
+    code_verifier = secrets.token_urlsafe(64)
+    request.session[GOOGLE_OIDC_SESSION_STATE_KEY] = state
+    request.session[GOOGLE_OIDC_SESSION_VERIFIER_KEY] = code_verifier
+    request.session.modified = True
+
+    return oauth.google.authorize_redirect(
+        request,
+        _google_oidc_callback_uri(request),
+        state=state,
+        code_verifier=code_verifier,
+        code_challenge_method="S256",
+    )
+
+
+@router.get("/google/callback")
+@transaction.atomic
+def google_callback(request):
+    incoming_state = request.GET.get("state", "")
+    expected_state = request.session.pop(GOOGLE_OIDC_SESSION_STATE_KEY, None)
+    code_verifier = request.session.pop(GOOGLE_OIDC_SESSION_VERIFIER_KEY, None)
+    request.session.modified = True
+
+    if not expected_state or not code_verifier or incoming_state != expected_state:
+        raise HttpError(400, "Invalid Google authentication state")
+
+    token = oauth.google.authorize_access_token(request, code_verifier=code_verifier)
+    userinfo = token.get("userinfo") or {}
+
+    subject_id = str(userinfo.get("sub", "")).strip()
+    email = str(userinfo.get("email", "")).strip().lower()
+    email_verified = userinfo.get("email_verified") is True
+    display_name = str(userinfo.get("name", "")).strip()
+
+    if not subject_id or not email:
+        raise HttpError(400, "Invalid Google user info")
+
+    existing_provider = OIDCProvider.objects.select_related("user").filter(
+        provider=OIDCProviderChoices.GOOGLE,
+        subject_id=subject_id,
+    ).first()
+    if existing_provider:
+        return _google_login_redirect_response(request, existing_provider.user)
+
+    if not _is_google_domain_allowed(email):
+        raise HttpError(403, "An invite is required to join this workspace")
+
+    existing_user = User.objects.filter(email=email).first()
+    if existing_user and email_verified:
+        user_provider, created = OIDCProvider.objects.get_or_create(
+            provider=OIDCProviderChoices.GOOGLE,
+            user=existing_user,
+            defaults={"subject_id": subject_id},
+        )
+        if not created and user_provider.subject_id != subject_id:
+            raise HttpError(403, "An invite is required to join this workspace")
+        return _google_login_redirect_response(request, existing_user)
+
+    valid_invite = (
+        Invite.objects.select_for_update()
+        .filter(
+            email=email,
+            accepted=False,
+            expires_at__gt=timezone.now(),
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+    if valid_invite:
+        if existing_user:
+            raise HttpError(403, "An invite is required to join this workspace")
+
+        user = User.objects.create_user(
+            email=email,
+            password=secrets.token_urlsafe(32),
+            name=display_name,
+        )
+        Membership.objects.create(
+            user=user,
+            workspace=valid_invite.workspace,
+            role=valid_invite.role,
+        )
+        OIDCProvider.objects.create(
+            provider=OIDCProviderChoices.GOOGLE,
+            subject_id=subject_id,
+            user=user,
+        )
+        valid_invite.accepted = True
+        valid_invite.save(update_fields=["accepted"])
+        return _google_login_redirect_response(request, user)
+
+    raise HttpError(403, "An invite is required to join this workspace")
 
 
 @router.post("/login")

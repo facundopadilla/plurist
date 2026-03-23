@@ -61,6 +61,13 @@ export function LoginPage() {
       >
         {isSubmitting ? "Signing in..." : "Sign in"}
       </button>
+      <a
+        href="/api/v1/auth/google/start"
+        data-testid="login-google"
+        className="block w-full rounded-md border border-input px-3 py-2 text-sm font-medium text-center"
+      >
+        Continue with Google
+      </a>
     </form>
   );
 }
