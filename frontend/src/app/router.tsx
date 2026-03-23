@@ -5,6 +5,7 @@ import { LoginPage } from "../features/auth/login-page";
 import { InviteAcceptPage } from "../features/auth/invite-accept-page";
 import { RequireAuth } from "../features/auth/require-auth";
 import { DesignBankPage } from "../features/design-bank/design-bank-page";
+import { ComposePage } from "../features/posts/compose-page";
 
 const Dashboard = () => (
   <div>
@@ -13,12 +14,6 @@ const Dashboard = () => (
   </div>
 );
 
-const Posts = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Posts</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
-  </div>
-);
 
 const Review = () => (
   <div>
@@ -109,7 +104,7 @@ export function AppRouter() {
           element={
             <RequireAuth>
               <AppShell>
-                <Posts />
+                <ComposePage />
               </AppShell>
             </RequireAuth>
           }
