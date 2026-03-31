@@ -14,25 +14,5 @@ module.exports = {
       "warn",
       { allowConstantExport: true },
     ],
-    // Ban @xyflow/react imports — canvas uses tldraw. See docs/licenses/tldraw-bsl-review.md.
-    "no-restricted-imports": [
-      "error",
-      {
-        paths: [
-          {
-            name: "@xyflow/react",
-            message:
-              "ReactFlow is deprecated in this project. Use tldraw instead. See canvas-v2-tldraw migration.",
-          },
-        ],
-        patterns: [
-          {
-            group: ["@xyflow/*"],
-            message:
-              "All @xyflow packages are deprecated. Use tldraw instead.",
-          },
-        ],
-      },
-    ],
   },
 };
