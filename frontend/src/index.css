@@ -1,43 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    --card-foreground: 222 47% 11%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 267 82% 67%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --ring: 217 91% 60%;
+    --radius: 0.875rem;
+
+    /* Status semantic tokens */
+    --status-success: 142 76% 36%;
+    --status-success-bg: 138 76% 97%;
+    --status-success-text: 143 64% 24%;
+    --status-success-border: 142 76% 36%;
+
+    --status-warning: 32 95% 44%;
+    --status-warning-bg: 33 100% 96%;
+    --status-warning-text: 26 90% 37%;
+    --status-warning-border: 32 95% 44%;
+
+    --status-danger: 0 72% 51%;
+    --status-danger-bg: 0 100% 97%;
+    --status-danger-text: 0 70% 35%;
+    --status-danger-border: 0 72% 51%;
+
+    --status-info: 217 91% 60%;
+    --status-info-bg: 214 95% 97%;
+    --status-info-text: 217 91% 60%;
+    --status-info-border: 217 91% 60%;
+
+    --status-neutral-bg: 210 40% 96%;
+    --status-neutral-text: 215 16% 47%;
+    --status-neutral-border: 214 32% 91%;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --ring: 0 0% 83.1%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 34% 11%;
+    --card-foreground: 210 40% 96%;
+    --border: 217 19% 20%;
+    --input: 217 19% 20%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 267 82% 67%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 223 29% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 223 29% 14%;
+    --accent-foreground: 210 40% 96%;
+    --ring: 217 91% 60%;
+
+    --status-success: 142 71% 45%;
+    --status-success-bg: 143 64% 10%;
+    --status-success-text: 142 71% 65%;
+    --status-success-border: 142 71% 30%;
+
+    --status-warning: 32 95% 44%;
+    --status-warning-bg: 26 90% 10%;
+    --status-warning-text: 32 95% 65%;
+    --status-warning-border: 32 95% 30%;
+
+    --status-danger: 0 72% 51%;
+    --status-danger-bg: 0 63% 10%;
+    --status-danger-text: 0 72% 65%;
+    --status-danger-border: 0 72% 30%;
+
+    --status-info: 217 91% 60%;
+    --status-info-bg: 217 91% 10%;
+    --status-info-text: 217 91% 70%;
+    --status-info-border: 217 91% 30%;
+
+    --status-neutral-bg: 223 29% 14%;
+    --status-neutral-text: 215 20% 65%;
+    --status-neutral-border: 217 19% 20%;
   }
 }
 
@@ -45,7 +96,127 @@
   * {
     @apply border-border;
   }
+
+  html {
+    font-feature-settings: "liga" 1, "kern" 1;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .paper-page {
+    @apply mx-auto flex w-full max-w-7xl flex-col gap-6;
+  }
+
+  .paper-page-header {
+    @apply border border-border bg-card px-5 py-5 sm:px-6;
+  }
+
+  .paper-kicker {
+    font-family: "Anonymous Pro", monospace;
+    @apply text-[11px] uppercase tracking-[0.22em] text-muted-foreground;
+  }
+
+  .paper-title {
+    @apply mt-3 text-[32px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground sm:text-[40px];
+  }
+
+  .paper-lead {
+    @apply mt-3 max-w-3xl text-[16px] leading-7 text-muted-foreground;
+  }
+
+  .paper-panel {
+    @apply rounded-[18px] border border-border bg-card shadow-sm;
+  }
+
+  .paper-panel-header {
+    @apply border-b border-border px-5 py-4 sm:px-6;
+  }
+
+  .paper-panel-body {
+    @apply px-5 py-5 sm:px-6;
+  }
+
+  .paper-section-title {
+    @apply text-[24px] font-semibold tracking-[-0.03em] text-foreground;
+  }
+
+  .paper-stat {
+    @apply rounded-[18px] border border-border bg-card p-4 shadow-sm;
+  }
+
+  .paper-stat-label {
+    font-family: "Anonymous Pro", monospace;
+    @apply text-[11px] uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  .paper-list-row {
+    @apply flex flex-col gap-3 border-b border-border/70 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between;
+  }
+
+  .elegant-button-primary {
+    @apply inline-flex items-center gap-1.5 rounded-[14px] bg-primary px-3.5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:brightness-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .elegant-button-secondary {
+    @apply inline-flex items-center gap-1.5 rounded-[14px] border border-border bg-card px-3.5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .elegant-input {
+    @apply rounded-[14px] border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .elegant-chip {
+    @apply inline-flex items-center gap-1.5 rounded-[12px] border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground;
+  }
+
+  .elegant-card {
+    @apply rounded-[18px] border border-border bg-card shadow-sm transition-shadow hover:shadow-md;
+  }
+
+  /* Typography scale: 14/16/18/24/32/40 */
+  .text-display { @apply text-[40px] font-semibold leading-[1.05] tracking-[-0.04em]; }
+  .text-title   { @apply text-[32px] font-semibold leading-[1.05] tracking-[-0.04em]; }
+  .text-heading  { @apply text-[24px] font-semibold leading-[1.1] tracking-[-0.03em]; }
+  .text-subhead  { @apply text-[18px] font-semibold leading-[1.2] tracking-[-0.02em]; }
+  .text-body     { @apply text-[16px] leading-[1.5]; }
+  .text-caption  { @apply text-[14px] leading-[1.4]; }
+  .text-micro    { @apply text-[11px] uppercase tracking-[0.18em]; }
+
+  .font-elegant-mono {
+    font-family: "Anonymous Pro", monospace;
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-page-in {
+    animation: fade-in-up 0.3s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-page-in { animation: none; }
+  }
+
+  /* Ocultar la marca de agua de tldraw que aparece al usar una IP de red en lugar de localhost.
+     Nuestra licencia BSL-1.1 permite uso interno, pero el SDK asume "production" si no es localhost.
+     Para producción real se requiere inyectar TLDRAW_LICENSE_KEY. */
+  .tl-watermark_SEE-LICENSE {
+    display: none !important;
   }
 }
