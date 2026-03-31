@@ -7,6 +7,15 @@ on:
     branches: ["**"]
 
 jobs:
+  license-review:
+    name: License Review Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check license reviews
+        run: ./scripts/check-license-reviews.sh
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
