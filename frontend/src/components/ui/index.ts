@@ -1,12 +1,3 @@
-export {
-  ElegantModal,
-  ModalTitle,
-  ModalDescription,
-  ModalClose,
-} from "./elegant-modal";
-export { StatusBadge } from "./status-badge";
-export { StatusMessage } from "./status-message";
-
 // shadcn/ui base components
 export { Button, buttonVariants } from "./button";
 export type { ButtonProps } from "./button";

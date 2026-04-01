@@ -177,26 +177,6 @@
     @apply flex flex-col gap-3 border-b border-border/70 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between;
   }
 
-  .elegant-button-primary {
-    @apply inline-flex items-center gap-1.5 rounded-[14px] bg-primary px-3.5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:brightness-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
-  }
-
-  .elegant-button-secondary {
-    @apply inline-flex items-center gap-1.5 rounded-[14px] border border-border bg-card px-3.5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
-  }
-
-  .elegant-input {
-    @apply rounded-[14px] border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
-  }
-
-  .elegant-chip {
-    @apply inline-flex items-center gap-1.5 rounded-[12px] border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground;
-  }
-
-  .elegant-card {
-    @apply rounded-[18px] border border-border bg-card shadow-sm transition-shadow hover:shadow-md;
-  }
-
   /* Typography scale: 14/16/18/24/32/40 */
   .text-display {
     @apply text-[40px] font-semibold leading-[1.05] tracking-[-0.04em];
