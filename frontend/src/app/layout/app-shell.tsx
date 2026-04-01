@@ -24,7 +24,7 @@ import { logoutSession } from "../../features/auth/api";
 
 const navItems = [
   {
-    to: "/",
+    to: "/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
     testId: "nav-dashboard",
@@ -121,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {!collapsed && (
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-muted-foreground">
-                    Socialclaw
+                    Plurist
                   </div>
                   <div className="mt-1 truncate text-[18px] font-semibold tracking-[-0.02em]">
                     Content workspace
