@@ -207,9 +207,7 @@ def test_owner_can_check_connection_status(client):
     )
     connection_id = create_response.json()["id"]
 
-    status_response = client.get(
-        f"/api/v1/integrations/connections/{connection_id}/status"
-    )
+    status_response = client.get(f"/api/v1/integrations/connections/{connection_id}/status")
     assert status_response.status_code == 200
     body = status_response.json()
     assert body["authenticated"] is True

@@ -3,9 +3,9 @@
 from django.db import transaction
 from ninja import Router, Schema
 from ninja.errors import HttpError
-from apps.accounts.session_auth import session_auth as django_auth
 
-from apps.accounts.auth import get_membership, require_publisher_capabilities
+from apps.accounts.auth import require_publisher_capabilities
+from apps.accounts.session_auth import session_auth as django_auth
 from apps.posts.models import DraftPost
 from apps.publishing.models import PublishAttempt
 from apps.publishing.tasks import execute_publish
@@ -70,6 +70,8 @@ def _do_publish_now(
 
     attempts: list[PublishAttempt] = []
 
+    from apps.publishing.models import SocialConnection
+
     with transaction.atomic():
         # Transition post to publishing.
         try:
@@ -78,19 +80,24 @@ def _do_publish_now(
             raise HttpError(400, str(exc))
 
         for network in target_networks:
+            connection = SocialConnection.objects.filter(
+                workspace=post.workspace,
+                network=network,
+                status=SocialConnection.Status.CONNECTED,
+                is_active=True,
+            ).first()
             attempt = PublishAttempt.objects.create(
                 draft_post=post,
                 approved_snapshot=snapshot,
                 network=network,
                 idempotency_key=idempotency_key,
+                social_connection=connection,
             )
             attempts.append(attempt)
 
         # Enqueue tasks after DB commit so Celery sees the rows.
         for attempt in attempts:
-            transaction.on_commit(
-                lambda aid=attempt.pk: execute_publish.delay(aid)
-            )
+            transaction.on_commit(lambda aid=attempt.pk: execute_publish.delay(aid))
 
     return attempts
 
@@ -105,9 +112,7 @@ def publish_now(request, post_id: int):
     """Idempotent immediate publish for an approved post (Owner/Publisher only)."""
     membership = require_publisher_capabilities(request)
 
-    post = DraftPost.objects.filter(
-        pk=post_id, workspace=membership.workspace
-    ).first()
+    post = DraftPost.objects.filter(pk=post_id, workspace=membership.workspace).first()
     if not post:
         raise HttpError(404, "Post not found")
 

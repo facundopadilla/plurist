@@ -2,17 +2,16 @@ from typing import Any
 
 from ninja import Router, Schema
 from ninja.errors import HttpError
-from apps.accounts.session_auth import session_auth as django_auth
 
 from apps.accounts.auth import get_membership, require_editor_capabilities
 from apps.accounts.models import Workspace
+from apps.accounts.session_auth import session_auth as django_auth
 from apps.posts.models import BrandProfileVersion
 
 from .brand_profile import (
     create_brand_profile_version,
     get_active_version,
     map_profile_to_template_inputs,
-    validate_profile_data,
 )
 
 router = Router(tags=["brand_profile"])
@@ -103,9 +102,7 @@ def get_version(request, version_id: int):
         raise HttpError(403, "Membership required")
     workspace = _workspace()
     try:
-        version = BrandProfileVersion.objects.select_related("created_by").get(
-            pk=version_id, workspace=workspace
-        )
+        version = BrandProfileVersion.objects.select_related("created_by").get(pk=version_id, workspace=workspace)
     except BrandProfileVersion.DoesNotExist:
         raise HttpError(404, "Version not found")
     return _version_to_out(version)

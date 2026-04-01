@@ -1,17 +1,18 @@
+import uuid
 from typing import Any
 
-from django.http import HttpRequest, HttpResponseRedirect
-from ninja import Router, Schema
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from ninja import Query, Router, Schema
 from ninja.errors import HttpError
-from apps.accounts.session_auth import session_auth as django_auth
+from ninja.files import UploadedFile
 
 from apps.accounts.auth import get_membership, require_editor_capabilities
 from apps.accounts.models import Workspace
-from apps.posts.models import BrandProfileVersion
+from apps.accounts.session_auth import session_auth as django_auth
+from apps.posts.models import DraftPost
 
-from .hasher import compute_input_hash
 from .models import RenderJob
-from .templates_registry import get_template, list_templates
+from .templates_registry import list_templates
 
 router = Router(tags=["rendering"])
 
@@ -26,10 +27,17 @@ class RenderJobIn(Schema):
     brand_profile_version_id: int
 
 
+class RenderFromHtmlIn(Schema):
+    html_content: str
+    format: str = "1:1"
+    project_id: int | None = None
+
+
 class RenderJobOut(Schema):
     id: int
     template_key: str
-    brand_profile_version_id: int
+    brand_profile_version_id: int | None = None
+    format: str
     input_hash: str
     status: str
     output_storage_key: str
@@ -44,6 +52,12 @@ class TemplateOut(Schema):
     description: str
     viewport_width: int
     viewport_height: int
+
+
+class UploadBlobOut(Schema):
+    storage_key: str
+    draft_post_id: int | None = None
+    content_type: str
 
 
 # ---------------------------------------------------------------------------
@@ -63,6 +77,7 @@ def _job_to_out(job: RenderJob) -> dict[str, Any]:
         "id": job.pk,
         "template_key": job.template_key,
         "brand_profile_version_id": job.brand_profile_version_id,
+        "format": job.format or "1:1",
         "input_hash": job.input_hash,
         "status": job.status,
         "output_storage_key": job.output_storage_key,
@@ -86,6 +101,50 @@ def list_trusted_templates(request: HttpRequest):
     return list_templates()
 
 
+@router.post("/upload-blob", auth=django_auth, response={201: UploadBlobOut})
+def upload_render_blob(
+    request: HttpRequest,
+    file: UploadedFile,
+    draft_post_id: int | None = None,
+):
+    membership = require_editor_capabilities(request)
+    if draft_post_id is None:
+        draft_post_raw = request.POST.get("draft_post_id")
+        if draft_post_raw:
+            try:
+                draft_post_id = int(draft_post_raw)
+            except ValueError as exc:
+                raise HttpError(400, "draft_post_id must be an integer") from exc
+
+    if not (file.content_type or "").startswith("image/"):
+        raise HttpError(400, "Only image uploads are supported")
+
+    storage_key = f"renders/{uuid.uuid4().hex}.png"
+
+    try:
+        from apps.design_bank.storage import upload_file
+
+        upload_file(file.file, storage_key, file.content_type or "image/png")
+    except Exception as exc:
+        raise HttpError(500, f"Upload failed: {exc}")
+
+    if draft_post_id is not None:
+        post = DraftPost.objects.filter(
+            pk=draft_post_id,
+            workspace=membership.workspace,
+        ).first()
+        if not post:
+            raise HttpError(404, "Post not found")
+        post.render_asset_key = storage_key
+        post.save(update_fields=["render_asset_key", "updated_at"])
+
+    return 201, UploadBlobOut(
+        storage_key=storage_key,
+        draft_post_id=draft_post_id,
+        content_type=file.content_type or "image/png",
+    )
+
+
 @router.post("/render-jobs", auth=django_auth, response={201: RenderJobOut})
 def create_render_job(request: HttpRequest, payload: RenderJobIn):
     """
@@ -94,56 +153,10 @@ def create_render_job(request: HttpRequest, payload: RenderJobIn):
     If an identical job (same template + brand profile version) already completed,
     the cached result is returned immediately without queuing a new render.
     """
-    require_editor_capabilities(request)
-    workspace = _workspace()
-
-    # Validate template key against the trusted registry
-    try:
-        get_template(payload.template_key)
-    except KeyError:
-        raise HttpError(400, f"Unknown template key: {payload.template_key!r}")
-
-    # Resolve brand profile version scoped to workspace
-    try:
-        version = BrandProfileVersion.objects.get(
-            pk=payload.brand_profile_version_id,
-            workspace=workspace,
-        )
-    except BrandProfileVersion.DoesNotExist:
-        raise HttpError(404, "Brand profile version not found")
-
-    from apps.design_bank.brand_profile import map_profile_to_template_inputs
-
-    input_variables = map_profile_to_template_inputs(version)
-    input_hash = compute_input_hash(payload.template_key, version.pk, input_variables)
-
-    # Cache check: return existing completed job if inputs are identical
-    cached = RenderJob.objects.filter(
-        input_hash=input_hash,
-        status=RenderJob.Status.COMPLETED,
-    ).first()
-    if cached:
-        return 201, _job_to_out(cached)
-
-    job = RenderJob.objects.create(
-        workspace=workspace,
-        template_key=payload.template_key,
-        brand_profile_version=version,
-        input_variables=input_variables,
-        input_hash=input_hash,
-        status=RenderJob.Status.PENDING,
-        created_by=request.user,
+    raise HttpError(
+        410,
+        ("Server-side Playwright rendering was removed. Use the client-side canvas export flow."),
     )
-
-    try:
-        from .tasks import render_template
-
-        render_template.delay(job.pk)
-    except Exception:
-        # Broker unavailable — job stays pending, can be retried later
-        pass
-
-    return 201, _job_to_out(job)
 
 
 @router.get("/render-jobs/{job_id}", auth=django_auth, response=RenderJobOut)
@@ -188,3 +201,91 @@ def get_render_image(request: HttpRequest, job_id: int):
 
     url = generate_presigned_url(job.output_storage_key, expires_in=300)
     return HttpResponseRedirect(url)
+
+
+@router.post("/render-jobs/from-html", auth=django_auth, response={201: RenderJobOut})
+def create_render_job_from_html(request: HttpRequest, payload: RenderFromHtmlIn):
+    """
+    Create a render job from raw HTML/CSS (Owner/Editor only).
+
+    The HTML is sanitized before rendering. Supports multi-format viewports.
+    Cached by SHA-256 of sanitized HTML + format.
+    """
+    raise HttpError(
+        410,
+        ("Server-side Playwright rendering was removed. Use the client-side canvas export flow."),
+    )
+
+
+@router.get("/render-jobs/{job_id}/export", auth=django_auth)
+def export_render_job(
+    request: HttpRequest,
+    job_id: int,
+    fmt: str = Query(default="png"),
+    quality: int = Query(default=90),
+):
+    """
+    Export a completed render job as PNG, JPG, WebP, or PDF.
+    Downloads the PNG from MinIO, converts it, and streams the result.
+    """
+    membership = get_membership(request)
+    if not membership:
+        raise HttpError(403, "Membership required")
+
+    workspace = _workspace()
+    try:
+        job = RenderJob.objects.get(pk=job_id, workspace=workspace)
+    except RenderJob.DoesNotExist:
+        raise HttpError(404, "Render job not found")
+
+    if job.status != RenderJob.Status.COMPLETED:
+        raise HttpError(409, "Render job is not completed yet")
+
+    if not job.output_storage_key:
+        raise HttpError(500, "Render job completed but has no output")
+
+    from .export import SUPPORTED_FORMATS, export_render, get_png_from_storage
+
+    fmt_lower = fmt.lower()
+    if fmt_lower not in SUPPORTED_FORMATS:
+        supported = ", ".join(sorted(SUPPORTED_FORMATS))
+        raise HttpError(400, f"Unsupported format: {fmt!r}. Choose from: {supported}")
+
+    try:
+        png_bytes = get_png_from_storage(job.output_storage_key)
+        output_bytes, content_type = export_render(
+            png_bytes,
+            fmt_lower,
+            quality=quality,
+        )
+    except Exception as exc:
+        raise HttpError(500, f"Export failed: {exc}")
+
+    ext = "jpg" if fmt_lower == "jpeg" else fmt_lower
+    filename = f"render-{job.pk}.{ext}"
+
+    response = HttpResponse(content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(output_bytes))
+    response.write(output_bytes)
+    return response
+
+
+@router.get("/formats", auth=django_auth)
+def list_formats(request: HttpRequest):
+    """List available post formats with dimensions."""
+    membership = get_membership(request)
+    if not membership:
+        raise HttpError(403, "Membership required")
+    from .formats import FORMAT_REGISTRY
+
+    return [
+        {
+            "key": k,
+            "label": v["label"],
+            "width": v["width"],
+            "height": v["height"],
+            "network": v.get("network", ""),
+        }
+        for k, v in FORMAT_REGISTRY.items()
+    ]

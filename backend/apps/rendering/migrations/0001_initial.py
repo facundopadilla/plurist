@@ -6,34 +6,65 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('accounts', '0003_oidcprovider'),
-        ('posts', '0001_initial'),
+        ("accounts", "0003_oidcprovider"),
+        ("posts", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RenderJob',
+            name="RenderJob",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('template_key', models.CharField(max_length=100)),
-                ('input_variables', models.JSONField(default=dict)),
-                ('input_hash', models.CharField(max_length=64, unique=True)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('rendering', 'Rendering'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending', max_length=20)),
-                ('output_storage_key', models.CharField(blank=True, max_length=512)),
-                ('error_message', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('brand_profile_version', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='render_jobs', to='posts.brandprofileversion')),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='render_jobs', to=settings.AUTH_USER_MODEL)),
-                ('workspace', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='render_jobs', to='accounts.workspace')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("template_key", models.CharField(max_length=100)),
+                ("input_variables", models.JSONField(default=dict)),
+                ("input_hash", models.CharField(max_length=64, unique=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("rendering", "Rendering"),
+                            ("completed", "Completed"),
+                            ("failed", "Failed"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                ("output_storage_key", models.CharField(blank=True, max_length=512)),
+                ("error_message", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "brand_profile_version",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="render_jobs",
+                        to="posts.brandprofileversion",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="render_jobs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "workspace",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="render_jobs", to="accounts.workspace"
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "ordering": ["-created_at"],
             },
         ),
     ]

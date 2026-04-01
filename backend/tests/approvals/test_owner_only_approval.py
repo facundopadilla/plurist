@@ -148,7 +148,7 @@ def test_api_owner_can_approve(client):
     _login(client, owner.email)
 
     response = client.post(
-        f"/api/v1/posts/{post.pk}/approve",
+        f"/api/v1/content/{post.pk}/approve",
         data={"reason": "good"},
         content_type="application/json",
         HTTP_X_CSRF_TOKEN=_csrf(client),
@@ -166,7 +166,7 @@ def test_api_editor_cannot_approve(client):
     _login(client, editor.email)
 
     response = client.post(
-        f"/api/v1/posts/{post.pk}/approve",
+        f"/api/v1/content/{post.pk}/approve",
         data={"reason": "self"},
         content_type="application/json",
         HTTP_X_CSRF_TOKEN=_csrf(client),
@@ -185,7 +185,7 @@ def test_api_publisher_cannot_approve(client):
     _login(client, publisher.email)
 
     response = client.post(
-        f"/api/v1/posts/{post.pk}/approve",
+        f"/api/v1/content/{post.pk}/approve",
         data={"reason": "attempt"},
         content_type="application/json",
         HTTP_X_CSRF_TOKEN=_csrf(client),
@@ -204,7 +204,7 @@ def test_api_owner_can_reject(client):
     _login(client, owner.email)
 
     response = client.post(
-        f"/api/v1/posts/{post.pk}/reject",
+        f"/api/v1/content/{post.pk}/reject",
         data={"reason": "not ready"},
         content_type="application/json",
         HTTP_X_CSRF_TOKEN=_csrf(client),

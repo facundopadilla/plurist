@@ -1,13 +1,22 @@
 from __future__ import annotations
 
-import os
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any, Iterator
 
-from .base import BaseProvider, GenerationResult
+from .base import (
+    BaseProvider,
+    GenerationResult,
+    build_provider_messages,
+    resolve_api_key,
+)
+
+if TYPE_CHECKING:
+    from apps.workspace.models import WorkspaceAISettings
 
 _PROVIDER_NAME = "openrouter"
 _DEFAULT_MODEL = "openai/gpt-4o"
+_ENV_VAR = "OPENROUTER_API_KEY"
+_ENC_FIELD = "openrouter_api_key_enc"
 
 
 class OpenRouterProvider(BaseProvider):
@@ -16,18 +25,31 @@ class OpenRouterProvider(BaseProvider):
     OpenRouter is treated as a standard provider adapter — it routes to various
     upstream models via a single OpenAI-compatible endpoint.
 
-    Uses a real API call when OPENROUTER_API_KEY is present; otherwise returns a
-    deterministic mock so tests never hit the network.
+    Uses a real API call when an API key is present (workspace settings or
+    OPENROUTER_API_KEY env var); otherwise returns a deterministic mock so
+    tests never hit the network.
     """
 
-    def __init__(self, model_id: str = _DEFAULT_MODEL) -> None:
+    def __init__(
+        self,
+        model_id: str = _DEFAULT_MODEL,
+        workspace_settings: "WorkspaceAISettings | None" = None,
+    ) -> None:
         self.model_id = model_id
-        self._api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        self._api_key = resolve_api_key(_ENV_VAR, _ENC_FIELD, workspace_settings)
 
     def generate(self, prompt: str, context: dict[str, Any]) -> GenerationResult:
         if not self._api_key or self._api_key.startswith("mock"):
             return self._mock_result(prompt)
         return self._live_result(prompt, context)
+
+    def generate_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:
+        """Buffered fallback: OpenRouter streaming not implemented in this adapter."""
+        result = self.generate(prompt, context)
+        if result.success:
+            yield result.generated_text
+        else:
+            raise RuntimeError(result.error_message or "OpenRouter generation failed")
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -55,7 +77,7 @@ class OpenRouterProvider(BaseProvider):
                 headers={"Authorization": f"Bearer {self._api_key}"},
                 json={
                     "model": self.model_id,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": build_provider_messages(prompt, context),
                 },
                 timeout=30,
             )

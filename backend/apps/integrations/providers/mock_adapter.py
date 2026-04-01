@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.meta.capabilities import NETWORK_CAPABILITIES
-
 from apps.integrations.adapters import BaseAdapter, MediaUploadResult, PublishResult
+from apps.meta.capabilities import NETWORK_CAPABILITIES
 
 
 class MockAdapter(BaseAdapter):

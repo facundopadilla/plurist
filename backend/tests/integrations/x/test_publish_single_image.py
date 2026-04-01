@@ -1,13 +1,11 @@
 """Tests for X adapter media-upload-then-publish sequence."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from apps.integrations.providers.x import XAdapter
 from apps.integrations.adapters import MediaUploadResult, PublishResult
-
+from apps.integrations.providers.x import XAdapter
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -167,8 +165,9 @@ def test_upload_before_publish_sequence():
     assert mock_post.call_count == 2
 
     # First call was to upload endpoint
-    first_call_url = mock_post.call_args_list[0].args[0] if mock_post.call_args_list[0].args else mock_post.call_args_list[0].kwargs.get("url", "")
-    assert "media/upload" in first_call_url or "upload.twitter.com" in str(mock_post.call_args_list[0])
+    first_call = mock_post.call_args_list[0]
+    first_call_url = first_call.args[0] if first_call.args else first_call.kwargs.get("url", "")
+    assert "media/upload" in first_call_url or "upload.twitter.com" in str(first_call)
 
     # Publish payload carried the media_id
     publish_payload = mock_post.call_args_list[1].kwargs["json"]

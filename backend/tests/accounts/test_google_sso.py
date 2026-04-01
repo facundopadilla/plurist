@@ -22,9 +22,7 @@ pytestmark = pytest.mark.django_db
 
 def _start_google_flow(client):
     with patch.object(accounts_api.oauth.google, "authorize_redirect") as mock_redirect:
-        mock_redirect.return_value = HttpResponseRedirect(
-            "https://accounts.google.com/o/oauth2/v2/auth"
-        )
+        mock_redirect.return_value = HttpResponseRedirect("https://accounts.google.com/o/oauth2/v2/auth")
         response = client.get("/api/v1/auth/google/start")
 
     assert response.status_code == 302

@@ -4,16 +4,18 @@ from typing import Any
 
 from ninja import Router, Schema
 from ninja.errors import HttpError
-from apps.accounts.session_auth import session_auth as django_auth
+from pydantic import Field
 
 from apps.accounts.auth import get_membership, require_editor_capabilities
+from apps.accounts.session_auth import session_auth as django_auth
 from apps.posts.models import BrandProfileVersion, DraftVariant
 
+from .chat_api import router as chat_router
 from .models import CompareRun
 from .providers.registry import get_provider, list_providers
-from .services import run_compare
 
 router = Router(tags=["generation"])
+router.add_router("/chat", chat_router)
 
 
 # ---------------------------------------------------------------------------
@@ -22,11 +24,16 @@ router = Router(tags=["generation"])
 
 
 class CompareRunIn(Schema):
-    template_key: str
+    template_key: str = ""
     campaign_brief: str
     target_network: str = ""
     providers: list[str]
     brand_profile_version_id: int | None = None
+    project_id: int | None = None
+    format: str = "ig_square"
+    slide_count: int | None = Field(default=None, ge=1, le=20)
+    width: int = Field(default=1080, ge=100, le=5120)
+    height: int = Field(default=1080, ge=100, le=5120)
 
 
 class VariantOut(Schema):
@@ -34,7 +41,9 @@ class VariantOut(Schema):
     provider: str
     model_id: str
     generated_text: str
+    generated_html: str
     is_selected: bool
+    slide_index: int | None = None
     created_at: str
 
 
@@ -45,6 +54,10 @@ class CompareRunOut(Schema):
     target_network: str
     providers: list[str]
     status: str
+    format: str
+    slide_count: int | None = None
+    width: int = 1080
+    height: int = 1080
     created_at: str
     variants: list[VariantOut] = []
 
@@ -52,6 +65,10 @@ class CompareRunOut(Schema):
 class SelectVariantOut(Schema):
     ok: bool
     variant_id: int
+
+
+class SelectVariantIn(Schema):
+    slide_index: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +82,9 @@ def _variant_to_out(v: DraftVariant) -> dict[str, Any]:
         "provider": v.provider,
         "model_id": v.model_id,
         "generated_text": v.generated_text,
+        "generated_html": v.generated_html,
         "is_selected": v.is_selected,
+        "slide_index": v.slide_index,
         "created_at": v.created_at.isoformat(),
     }
 
@@ -78,11 +97,14 @@ def _compare_run_to_out(cr: CompareRun, include_variants: bool = False) -> dict[
         "target_network": cr.target_network,
         "providers": cr.providers,
         "status": cr.status,
+        "format": cr.format or "ig_square",
+        "slide_count": cr.slide_count,
+        "width": cr.width,
+        "height": cr.height,
         "created_at": cr.created_at.isoformat(),
         "variants": [],
     }
     if include_variants:
-        # Variants are stored on the DraftPost anchored to this run.
         from apps.posts.models import DraftPost
 
         draft_post = DraftPost.objects.filter(
@@ -90,10 +112,7 @@ def _compare_run_to_out(cr: CompareRun, include_variants: bool = False) -> dict[
             title=f"compare-run-{cr.pk}",
         ).first()
         if draft_post:
-            data["variants"] = [
-                _variant_to_out(v)
-                for v in draft_post.variants.all().order_by("id")
-            ]
+            data["variants"] = [_variant_to_out(v) for v in draft_post.variants.all().order_by("slide_index", "id")]
     return data
 
 
@@ -102,12 +121,11 @@ def _compare_run_to_out(cr: CompareRun, include_variants: bool = False) -> dict[
 # ---------------------------------------------------------------------------
 
 
-@router.post("/compare", auth=django_auth, response={201: CompareRunOut})
+@router.post("/compare", auth=django_auth, response={202: CompareRunOut})
 def start_compare(request, payload: CompareRunIn):
-    """Start a new compare run across the requested providers (Owner/Editor)."""
+    """Start a new compare run across the requested providers (Owner/Editor). Returns 202 immediately."""
     membership = require_editor_capabilities(request)
 
-    # Validate all provider keys upfront — get_provider raises 422 for unknowns.
     for key in payload.providers:
         get_provider(key)
 
@@ -121,19 +139,38 @@ def start_compare(request, payload: CompareRunIn):
         except BrandProfileVersion.DoesNotExist:
             raise HttpError(404, "Brand profile version not found")
 
+    project = None
+    if payload.project_id is not None:
+        try:
+            from apps.projects.models import Project
+
+            project = Project.objects.get(
+                pk=payload.project_id,
+                workspace=membership.workspace,
+            )
+        except Project.DoesNotExist:
+            raise HttpError(404, "Project not found")
+
     compare_run = CompareRun.objects.create(
         workspace=membership.workspace,
         brand_profile_version=brand_profile_version,
+        project=project,
         template_key=payload.template_key,
+        format=payload.format,
         campaign_brief=payload.campaign_brief,
         target_network=payload.target_network,
         providers=payload.providers,
+        slide_count=payload.slide_count,
+        width=payload.width,
+        height=payload.height,
         created_by=request.user,
     )
 
-    run_compare(compare_run)
+    from .tasks import run_compare_task
 
-    return 201, _compare_run_to_out(compare_run, include_variants=True)
+    run_compare_task.delay(compare_run.id)
+
+    return 202, _compare_run_to_out(compare_run, include_variants=False)
 
 
 @router.get("/compare/{compare_run_id}", auth=django_auth, response=CompareRunOut)
@@ -159,7 +196,7 @@ def get_compare(request, compare_run_id: int):
     auth=django_auth,
     response=SelectVariantOut,
 )
-def select_variant(request, compare_run_id: int, variant_id: int):
+def select_variant(request, compare_run_id: int, variant_id: int, payload: SelectVariantIn):
     """Explicitly select a variant from a compare run (Owner/Editor)."""
     membership = require_editor_capabilities(request)
 
@@ -171,7 +208,7 @@ def select_variant(request, compare_run_id: int, variant_id: int):
     except CompareRun.DoesNotExist:
         raise HttpError(404, "Compare run not found")
 
-    from apps.posts.models import DraftPost
+    from apps.posts.models import CarouselSlide, DraftPost
 
     draft_post = DraftPost.objects.filter(
         workspace=compare_run.workspace,
@@ -185,13 +222,27 @@ def select_variant(request, compare_run_id: int, variant_id: int):
     except DraftVariant.DoesNotExist:
         raise HttpError(404, "Variant not found")
 
-    # Deselect all others, then select the chosen one.
-    draft_post.variants.all().update(is_selected=False)
-    variant.is_selected = True
-    variant.save(update_fields=["is_selected"])
+    slide_index = payload.slide_index
 
-    draft_post.selected_variant = variant
-    draft_post.save(update_fields=["selected_variant", "updated_at"])
+    # Validate that the variant belongs to the requested slide
+    if variant.slide_index is not None and variant.slide_index != slide_index:
+        raise HttpError(400, "slide_index does not match variant")
+
+    # For carousel: update/create CarouselSlide for this slide_index
+    # Also update legacy is_selected for backward compat (only for slide 0)
+    CarouselSlide.objects.update_or_create(
+        draft_post=draft_post,
+        slide_index=slide_index,
+        defaults={"selected_variant": variant},
+    )
+
+    # Legacy single-variant selection (backward compat for slide 0)
+    if slide_index == 0:
+        draft_post.variants.filter(slide_index=0).update(is_selected=False)
+        variant.is_selected = True
+        variant.save(update_fields=["is_selected"])
+        draft_post.selected_variant = variant
+        draft_post.save(update_fields=["selected_variant", "updated_at"])
 
     return SelectVariantOut(ok=True, variant_id=variant.pk)
 
@@ -203,3 +254,53 @@ def get_providers(request):
     if not membership:
         raise HttpError(403, "Membership required")
     return list_providers()
+
+
+class OllamaModelOut(Schema):
+    name: str
+    display_name: str
+
+
+@router.get("/ollama/models", auth=django_auth, response=list[OllamaModelOut])
+def get_ollama_models(request):
+    """Proxy Ollama's /api/tags and return normalised model names.
+
+    Requires an authenticated workspace member.  Reads ``ollama_base_url``
+    from workspace AI settings (defaults to ``http://localhost:11434``).
+    Returns an empty list when Ollama is unreachable instead of raising so
+    the frontend can degrade gracefully.
+    """
+    import httpx
+
+    from apps.workspace.models import WorkspaceAISettings
+
+    membership = get_membership(request)
+    if not membership:
+        raise HttpError(403, "Membership required")
+
+    # Resolve base URL from workspace settings
+    base_url = "http://localhost:11434"
+    try:
+        ws_settings = WorkspaceAISettings.objects.filter(workspace=membership.workspace).first()
+        if ws_settings and ws_settings.ollama_base_url:
+            base_url = ws_settings.ollama_base_url.rstrip("/")
+    except Exception:
+        pass
+
+    try:
+        response = httpx.get(f"{base_url}/api/tags", timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        models = data.get("models", [])
+        result = []
+        for m in models:
+            raw_name = m.get("name", "")
+            if not raw_name:
+                continue
+            # Strip ":latest" suffix for cleaner display
+            display = raw_name.replace(":latest", "") if raw_name.endswith(":latest") else raw_name
+            result.append(OllamaModelOut(name=raw_name, display_name=display))
+        return result
+    except Exception:
+        # Ollama not running — return empty list; frontend handles this gracefully
+        return []

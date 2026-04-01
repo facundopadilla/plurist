@@ -48,7 +48,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: sh -c "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers 2"
     env_file:
       - .env
     depends_on:
@@ -81,6 +81,19 @@ services:
       minio:
         condition: service_healthy
 
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A config.celery beat -l info
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   frontend:
     build:
       context: ./frontend
@@ -88,6 +101,9 @@ services:
     command: pnpm run dev --host
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
 

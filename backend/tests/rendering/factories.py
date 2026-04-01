@@ -11,13 +11,15 @@ class BrandProfileVersionFactory(factory.django.DjangoModelFactory):
 
     workspace = factory.SubFactory(WorkspaceFactory)
     version = factory.Sequence(lambda n: n + 1)
-    profile_data = factory.LazyFunction(lambda: {
-        "brand_name": "ACME",
-        "primary_color": "#111111",
-        "secondary_color": "#ffffff",
-        "accent_color": "#ff5500",
-        "slogans": ["Quality first"],
-    })
+    profile_data = factory.LazyFunction(
+        lambda: {
+            "brand_name": "ACME",
+            "primary_color": "#111111",
+            "secondary_color": "#ffffff",
+            "accent_color": "#ff5500",
+            "slogans": ["Quality first"],
+        }
+    )
     created_by = factory.SubFactory(UserFactory)
 
 

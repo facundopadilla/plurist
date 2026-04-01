@@ -5,9 +5,18 @@ import logging
 from celery import shared_task
 from django.utils import timezone
 
+from apps.design_bank.storage import generate_presigned_url
 from apps.integrations.registry import get_adapter
 
 logger = logging.getLogger(__name__)
+
+
+def _prepare_publish_content(snapshot_data: dict) -> dict:
+    content = dict(snapshot_data)
+    render_asset_key = str(content.get("render_asset_key") or "").strip()
+    if render_asset_key and "image_url" not in content:
+        content["image_url"] = generate_presigned_url(render_asset_key, expires_in=3600)
+    return content
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -20,9 +29,9 @@ def execute_publish(self, publish_attempt_id: int) -> None:
     from apps.publishing.models import PublishAttempt
 
     try:
-        attempt = PublishAttempt.objects.select_related(
-            "draft_post", "approved_snapshot"
-        ).get(pk=publish_attempt_id)
+        attempt = PublishAttempt.objects.select_related("draft_post", "approved_snapshot", "social_connection").get(
+            pk=publish_attempt_id
+        )
     except PublishAttempt.DoesNotExist:
         logger.error("PublishAttempt %s not found", publish_attempt_id)
         return
@@ -41,14 +50,12 @@ def execute_publish(self, publish_attempt_id: int) -> None:
     snapshot = attempt.approved_snapshot
 
     adapter = get_adapter(attempt.network)
-    content = dict(snapshot.snapshot_data)
+    content = _prepare_publish_content(snapshot.snapshot_data)
 
     try:
-        result = adapter.publish(connection=None, content=content)
+        result = adapter.publish(connection=attempt.social_connection, content=content)
     except Exception as exc:
-        logger.exception(
-            "Unhandled error publishing attempt %s: %s", publish_attempt_id, exc
-        )
+        logger.exception("Unhandled error publishing attempt %s: %s", publish_attempt_id, exc)
         attempt.status = PublishAttempt.Status.FAILED
         attempt.error_message = str(exc)
         attempt.completed_at = timezone.now()
@@ -67,20 +74,22 @@ def execute_publish(self, publish_attempt_id: int) -> None:
         attempt.status = PublishAttempt.Status.PUBLISHED
         attempt.external_post_id = result.external_post_id
         attempt.completed_at = timezone.now()
-        attempt.save(
-            update_fields=["status", "external_post_id", "completed_at"]
-        )
+        attempt.save(update_fields=["status", "external_post_id", "completed_at"])
 
         # Only mark the post published when ALL attempts for this post are done.
         draft_post.refresh_from_db(fields=["status"])
         if draft_post.status == draft_post.Status.PUBLISHING:
-            remaining = PublishAttempt.objects.filter(
-                draft_post=draft_post,
-                status__in=(
-                    PublishAttempt.Status.PENDING,
-                    PublishAttempt.Status.PUBLISHING,
-                ),
-            ).exclude(pk=attempt.pk).count()
+            remaining = (
+                PublishAttempt.objects.filter(
+                    draft_post=draft_post,
+                    status__in=(
+                        PublishAttempt.Status.PENDING,
+                        PublishAttempt.Status.PUBLISHING,
+                    ),
+                )
+                .exclude(pk=attempt.pk)
+                .count()
+            )
             if remaining == 0:
                 try:
                     draft_post.mark_published()

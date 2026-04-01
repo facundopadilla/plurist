@@ -1,7 +1,6 @@
 """Tests that Instagram rejects text-only posts (image is required)."""
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations
 
 from apps.integrations.providers.instagram import InstagramAdapter
 
@@ -77,8 +76,8 @@ def test_caption_at_max_chars_is_accepted():
 
 def test_mock_mode_returns_mock_adapter_not_instagram(monkeypatch):
     monkeypatch.setenv("FEATURE_INSTAGRAM_LIVE", "false")
-    from apps.integrations.registry import get_adapter
     from apps.integrations.providers.mock_adapter import MockAdapter
+    from apps.integrations.registry import get_adapter
 
     adapter = get_adapter("instagram")
     assert isinstance(adapter, MockAdapter)

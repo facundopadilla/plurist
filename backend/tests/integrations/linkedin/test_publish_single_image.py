@@ -1,11 +1,9 @@
 """Tests for the LinkedIn adapter — mock mode publish."""
+
 from __future__ import annotations
 
-import pytest
-
-from apps.integrations.providers.linkedin import LinkedInAdapter
 from apps.integrations.adapters import PublishResult
-
+from apps.integrations.providers.linkedin import LinkedInAdapter
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -187,8 +185,8 @@ def test_upload_media_fails_on_empty_bytes():
 
 def test_registry_returns_mock_adapter_when_flag_off(monkeypatch):
     monkeypatch.setenv("FEATURE_LINKEDIN_LIVE", "false")
-    from apps.integrations.registry import get_adapter
     from apps.integrations.providers.mock_adapter import MockAdapter
+    from apps.integrations.registry import get_adapter
 
     adapter = get_adapter("linkedin")
     assert isinstance(adapter, MockAdapter)

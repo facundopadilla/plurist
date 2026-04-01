@@ -1,7 +1,6 @@
 """Tests for successful Instagram single-image publish."""
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations
 
 from apps.integrations.providers.instagram import InstagramAdapter
 

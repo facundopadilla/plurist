@@ -3,14 +3,12 @@ Tests for SSRF protection in URL ingestion.
 All external requests are mocked — no real network calls.
 """
 
-import ipaddress
 import socket
-from unittest.mock import patch
 
 import pytest
-
-from apps.design_bank.validators import SSRFError, _is_ip_blocked, validate_url
 from ninja.errors import HttpError
+
+from apps.design_bank.validators import _is_ip_blocked, validate_url
 
 pytestmark = pytest.mark.django_db
 
@@ -18,6 +16,7 @@ pytestmark = pytest.mark.django_db
 # ---------------------------------------------------------------------------
 # Unit tests for the validator functions (no HTTP)
 # ---------------------------------------------------------------------------
+
 
 def test_localhost_127_0_0_1_blocked():
     assert _is_ip_blocked("127.0.0.1") is True
@@ -131,6 +130,7 @@ def test_validate_url_dns_resolution_failure(monkeypatch):
 # API-level tests for URL ingest endpoint
 # ---------------------------------------------------------------------------
 
+
 def _csrf(client):
     r = client.get("/api/v1/auth/csrf")
     return r.json().get("csrf_token", "")
@@ -146,7 +146,11 @@ def _login(client, email, password="testpassword123"):
 
 
 def test_api_blocks_private_ip_url(client, monkeypatch):
-    from tests.accounts.factories import MembershipFactory, UserFactory, WorkspaceFactory
+    from tests.accounts.factories import (
+        MembershipFactory,
+        UserFactory,
+        WorkspaceFactory,
+    )
 
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner@example.com", password="testpassword123")
@@ -170,7 +174,11 @@ def test_api_blocks_private_ip_url(client, monkeypatch):
 
 
 def test_api_accepts_public_url(client, monkeypatch):
-    from tests.accounts.factories import MembershipFactory, UserFactory, WorkspaceFactory
+    from tests.accounts.factories import (
+        MembershipFactory,
+        UserFactory,
+        WorkspaceFactory,
+    )
 
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner2@example.com", password="testpassword123")

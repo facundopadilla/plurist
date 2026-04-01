@@ -65,8 +65,14 @@ def test_summary_has_no_engagement_metrics():
     summary = get_operational_summary(workspace)
 
     forbidden_keys = {
-        "likes", "impressions", "comments", "clicks",
-        "follower_growth", "followers", "reach", "shares",
+        "likes",
+        "impressions",
+        "comments",
+        "clicks",
+        "follower_growth",
+        "followers",
+        "reach",
+        "shares",
     }
     assert forbidden_keys.isdisjoint(summary.keys()), (
         f"Engagement metrics found in summary: {forbidden_keys & summary.keys()}"

@@ -6,15 +6,15 @@ BrandProfileVersion lives in apps.posts.models (created in Task 6).
 This module provides:
 - The curated profile schema for MVP
 - Curation logic to promote extracted design-bank sources into a new version
-- Template mapping contract that converts a BrandProfileVersion into trusted template inputs
+- Template mapping contract that converts a BrandProfileVersion into
+  trusted template inputs
 """
 
-from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from apps.accounts.models import Workspace
 from apps.posts.models import BrandProfileVersion
-
 
 # ---------------------------------------------------------------------------
 # MVP curated profile schema — every field is optional so versions
@@ -24,15 +24,15 @@ from apps.posts.models import BrandProfileVersion
 CURATED_PROFILE_FIELDS = {
     "brand_name": str,
     "voice_notes": str,
-    "logo_asset_keys": list,       # list of storage keys
-    "icon_asset_keys": list,       # optional icon assets
-    "primary_color": str,          # hex e.g. "#1a1a1a"
+    "logo_asset_keys": list,  # list of storage keys
+    "icon_asset_keys": list,  # optional icon assets
+    "primary_color": str,  # hex e.g. "#1a1a1a"
     "secondary_color": str,
     "neutral_color": str,
     "accent_color": str,
-    "approved_fonts": list,        # list of font family names
-    "slogans": list,               # key slogans / taglines
-    "imagery_references": list,    # storage keys or descriptions
+    "approved_fonts": list,  # list of font family names
+    "slogans": list,  # key slogans / taglines
+    "imagery_references": list,  # storage keys or descriptions
 }
 
 
@@ -43,14 +43,12 @@ def validate_profile_data(data: dict) -> dict:
     for field, expected_type in CURATED_PROFILE_FIELDS.items():
         if field in data:
             value = data[field]
-            if expected_type == list and isinstance(value, list):
+            if expected_type is list and isinstance(value, list):
                 cleaned[field] = value
-            elif expected_type == str and isinstance(value, str):
+            elif expected_type is str and isinstance(value, str):
                 cleaned[field] = value
             elif value is not None:
-                raise ValidationError(
-                    f"Field '{field}' must be {expected_type.__name__}, got {type(value).__name__}"
-                )
+                raise ValidationError(f"Field '{field}' must be {expected_type.__name__}, got {type(value).__name__}")
     return cleaned
 
 
@@ -91,16 +89,13 @@ def create_brand_profile_version(
 
 def get_active_version(workspace: Workspace) -> BrandProfileVersion | None:
     """Return the latest (highest version number) brand profile for the workspace."""
-    return (
-        BrandProfileVersion.objects.filter(workspace=workspace)
-        .order_by("-version")
-        .first()
-    )
+    return BrandProfileVersion.objects.filter(workspace=workspace).order_by("-version").first()
 
 
 # ---------------------------------------------------------------------------
 # Template mapping contract
 # ---------------------------------------------------------------------------
+
 
 def map_profile_to_template_inputs(version: BrandProfileVersion) -> dict:
     """Map a BrandProfileVersion into trusted template input variables.

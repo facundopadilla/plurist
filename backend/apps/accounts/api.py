@@ -10,9 +10,12 @@ from django.http import HttpResponseRedirect
 from django.utils import timezone
 from ninja import Router, Schema
 from ninja.errors import HttpError
-from ninja.security import django_auth
 
-from .auth import get_membership, require_owner
+from .auth import (
+    MEMBERSHIP_REQUIRED_DETAIL,
+    get_membership,
+    require_owner,
+)
 from .models import (
     Invite,
     Membership,
@@ -23,6 +26,7 @@ from .models import (
     Workspace,
 )
 from .oidc import oauth
+from .session_auth import session_auth as django_auth
 
 router = Router(tags=["auth"])
 
@@ -85,9 +89,7 @@ def _issue_csrf_token(request):
 
 def _require_csrf(request):
     token = request.session.get("csrf_token")
-    header = request.headers.get("x-csrf-token") or request.META.get(
-        "HTTP_X_CSRF_TOKEN"
-    )
+    header = request.headers.get("x-csrf-token") or request.META.get("HTTP_X_CSRF_TOKEN")
     if not token or not header or token != header:
         raise HttpError(403, "CSRF Failed")
 
@@ -110,6 +112,15 @@ def _google_oidc_callback_uri(request) -> str:
 def _google_login_redirect_response(request, user: User):
     login(request, user)
     return HttpResponseRedirect("/")
+
+
+def _membership_or_logout(request):
+    membership = get_membership(request)
+    if membership:
+        return membership
+
+    logout(request)
+    raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
 
 @router.get("/google/start")
@@ -151,10 +162,14 @@ def google_callback(request):
     if not subject_id or not email:
         raise HttpError(400, "Invalid Google user info")
 
-    existing_provider = OIDCProvider.objects.select_related("user").filter(
-        provider=OIDCProviderChoices.GOOGLE,
-        subject_id=subject_id,
-    ).first()
+    existing_provider = (
+        OIDCProvider.objects.select_related("user")
+        .filter(
+            provider=OIDCProviderChoices.GOOGLE,
+            subject_id=subject_id,
+        )
+        .first()
+    )
     if existing_provider:
         return _google_login_redirect_response(request, existing_provider.user)
 
@@ -218,11 +233,11 @@ def login_view(request, payload: LoginIn):
     _require_csrf(request)
 
     login(request, user)
-    membership = get_membership(request)
+    membership = _membership_or_logout(request)
     return {
         "email": user.email,
         "name": user.name,
-        "role": membership.role if membership else None,
+        "role": membership.role,
     }
 
 
@@ -238,11 +253,11 @@ def me(request):
     csrf_token = _issue_csrf_token(request)
     if not request.user.is_authenticated:
         raise HttpError(401, "Authentication required")
-    membership = get_membership(request)
+    membership = _membership_or_logout(request)
     return {
         "email": request.user.email,
         "name": request.user.name,
-        "role": membership.role if membership else None,
+        "role": membership.role,
         "csrf_token": csrf_token,
     }
 
@@ -256,14 +271,9 @@ def csrf(request):
 def list_members(request):
     owner_membership = require_owner(request)
     members = (
-        Membership.objects.select_related("user")
-        .filter(workspace=owner_membership.workspace)
-        .order_by("user__email")
+        Membership.objects.select_related("user").filter(workspace=owner_membership.workspace).order_by("user__email")
     )
-    return [
-        MemberOut(email=m.user.email, name=m.user.name, role=m.role)
-        for m in members
-    ]
+    return [MemberOut(email=m.user.email, name=m.user.name, role=m.role) for m in members]
 
 
 @router.post("/invites", auth=django_auth, response={201: InviteOut})
@@ -328,10 +338,7 @@ def revoke_invite(request, token: str):
 @transaction.atomic
 def accept_invite(request, token: str, payload: AcceptInviteIn):
     _require_csrf(request)
-    if (
-        payload.confirm_password is not None
-        and payload.confirm_password != payload.password
-    ):
+    if payload.confirm_password is not None and payload.confirm_password != payload.password:
         raise HttpError(400, "Passwords do not match")
 
     invite = Invite.objects.select_for_update().filter(token=token).first()

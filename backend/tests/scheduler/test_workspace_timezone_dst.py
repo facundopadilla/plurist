@@ -1,5 +1,6 @@
+from datetime import timedelta
+
 import pytest
-from datetime import datetime, timedelta
 from django.core.exceptions import ValidationError
 from django.utils import timezone as dj_timezone
 
@@ -11,7 +12,7 @@ pytestmark = pytest.mark.django_db
 
 
 def _make_approved_post(workspace, user):
-    membership = MembershipFactory(user=user, workspace=workspace, role="owner")
+    MembershipFactory(user=user, workspace=workspace, role="owner")
     post = DraftPost.objects.create(
         workspace=workspace,
         created_by=user,

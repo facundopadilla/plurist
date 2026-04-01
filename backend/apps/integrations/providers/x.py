@@ -3,8 +3,8 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from apps.meta.capabilities import NETWORK_CAPABILITIES
 from apps.integrations.adapters import BaseAdapter, MediaUploadResult, PublishResult
+from apps.meta.capabilities import NETWORK_CAPABILITIES
 
 
 class XAdapter(BaseAdapter):
@@ -40,8 +40,16 @@ class XAdapter(BaseAdapter):
             return False
 
     def refresh_token(self, connection: Any) -> bool:
-        """Placeholder — OAuth 2.0 PKCE refresh not yet wired to token store."""
-        return False
+        """Enqueue async refresh via Celery task."""
+        if connection is None:
+            return False
+        try:
+            from apps.integrations.tasks import refresh_single_connection
+
+            refresh_single_connection.delay(connection.pk)
+            return True
+        except Exception:
+            return False
 
     def upload_media(self, connection: Any, media_data: bytes) -> MediaUploadResult:
         """Upload raw image bytes to X media/upload and return the media_id."""
@@ -66,9 +74,7 @@ class XAdapter(BaseAdapter):
             data = response.json()
             media_id = str(data.get("media_id_string", ""))
             if not media_id:
-                return MediaUploadResult(
-                    success=False, error="No media_id_string in response"
-                )
+                return MediaUploadResult(success=False, error="No media_id_string in response")
             return MediaUploadResult(success=True, media_id=media_id)
         except Exception as exc:  # noqa: BLE001
             return MediaUploadResult(success=False, error=str(exc))
@@ -131,11 +137,7 @@ class XAdapter(BaseAdapter):
         """Extract bearer token from connection credentials."""
         if connection is None:
             return ""
-        # SocialConnection stores credentials_enc; in tests a plain dict is
-        # acceptable too.
         if isinstance(connection, dict):
-            return connection.get("bearer_token", "")
-        creds = getattr(connection, "credentials_enc", "") or ""
-        # credentials_enc may be a raw token string or a JSON dict; for now
-        # treat the whole field as the bearer token (simple format).
-        return creds.strip()
+            return connection.get("access_token", connection.get("bearer_token", ""))
+        tokens = connection.get_tokens()
+        return tokens.get("access_token", "")

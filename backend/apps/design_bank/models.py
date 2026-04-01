@@ -10,6 +10,13 @@ class DesignBankSource(models.Model):
         URL = "url", "URL"
         PDF = "pdf", "PDF"
         IMAGE = "image", "Image"
+        COLOR = "color", "Color"
+        FONT = "font", "Font"
+        LOGO = "logo", "Logo"
+        TEXT = "text", "Text"
+        HTML = "html", "HTML"
+        DESIGN_SYSTEM = "design_system", "Design System"
+        MARKDOWN = "markdown", "Markdown"
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -22,6 +29,15 @@ class DesignBankSource(models.Model):
         on_delete=models.CASCADE,
         related_name="design_bank_sources",
     )
+    project = models.ForeignKey(
+        "projects.Project",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="design_bank_sources",
+    )
+    name = models.CharField(max_length=255, blank=True)
+    resource_data = models.JSONField(default=dict)
     source_type = models.CharField(
         max_length=20,
         choices=SourceType.choices,
@@ -37,6 +53,7 @@ class DesignBankSource(models.Model):
     )
     extracted_data = models.JSONField(default=dict)
     error_message = models.TextField(blank=True)
+    file_size_bytes = models.BigIntegerField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

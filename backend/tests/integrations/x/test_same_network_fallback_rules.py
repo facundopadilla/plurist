@@ -1,14 +1,12 @@
 """Tests that X failures NEVER trigger publish attempts on other networks."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from apps.integrations.providers.x import XAdapter
-from apps.integrations.providers.mock_adapter import MockAdapter
 from apps.integrations.adapters import PublishResult
-
+from apps.integrations.providers.mock_adapter import MockAdapter
+from apps.integrations.providers.x import XAdapter
 
 # ---------------------------------------------------------------------------
 # Helpers

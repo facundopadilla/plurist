@@ -35,10 +35,7 @@ class Migration(migrations.Migration):
                     "is_superuser",
                     models.BooleanField(
                         default=False,
-                        help_text=(
-                            "Designates that this user has all permissions "
-                            "without explicitly assigning them."
-                        ),
+                        help_text=("Designates that this user has all permissions without explicitly assigning them."),
                         verbose_name="superuser status",
                     ),
                 ),

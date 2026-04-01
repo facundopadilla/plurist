@@ -7,7 +7,7 @@ from apps.design_bank.brand_profile import (
     map_profile_to_template_inputs,
     validate_profile_data,
 )
-from apps.posts.models import BrandProfileVersion, DraftPost
+from apps.posts.models import DraftPost
 from tests.accounts.factories import MembershipFactory, UserFactory, WorkspaceFactory
 
 pytestmark = pytest.mark.django_db

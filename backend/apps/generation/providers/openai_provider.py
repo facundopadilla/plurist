@@ -1,25 +1,39 @@
 from __future__ import annotations
 
-import os
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any, Iterator
 
-from .base import BaseProvider, GenerationResult
+from .base import (
+    BaseProvider,
+    GenerationResult,
+    build_provider_messages,
+    resolve_api_key,
+)
+
+if TYPE_CHECKING:
+    from apps.workspace.models import WorkspaceAISettings
 
 _PROVIDER_NAME = "openai"
 _DEFAULT_MODEL = "gpt-4o"
+_ENV_VAR = "OPENAI_API_KEY"
+_ENC_FIELD = "openai_api_key_enc"
 
 
 class OpenAIProvider(BaseProvider):
     """OpenAI generation adapter.
 
-    Uses a real API call when OPENAI_API_KEY is present; otherwise returns a
-    deterministic mock so tests never hit the network.
+    Uses a real API call when an API key is present (workspace settings or
+    OPENAI_API_KEY env var); otherwise returns a deterministic mock so tests
+    never hit the network.
     """
 
-    def __init__(self, model_id: str = _DEFAULT_MODEL) -> None:
+    def __init__(
+        self,
+        model_id: str = _DEFAULT_MODEL,
+        workspace_settings: "WorkspaceAISettings | None" = None,
+    ) -> None:
         self.model_id = model_id
-        self._api_key = os.environ.get("OPENAI_API_KEY", "")
+        self._api_key = resolve_api_key(_ENV_VAR, _ENC_FIELD, workspace_settings)
 
     def generate(self, prompt: str, context: dict[str, Any]) -> GenerationResult:
         if not self._api_key or self._api_key.startswith("mock"):
@@ -42,6 +56,47 @@ class OpenAIProvider(BaseProvider):
             cost_estimate=0.0,
         )
 
+    def generate_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:
+        if not self._api_key or self._api_key.startswith("mock"):
+            # Mock: yield word-by-word
+            words = f"[openai-mock] {prompt[:80]}".split()
+            for word in words:
+                yield word + " "
+            return
+        yield from self._live_stream(prompt, context)  # pragma: no cover
+
+    def _live_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:  # pragma: no cover
+        try:
+            import httpx
+
+            with httpx.stream(
+                "POST",
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "model": self.model_id,
+                    "messages": build_provider_messages(prompt, context),
+                    "stream": True,
+                },
+                timeout=60,
+            ) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data = line[6:]
+                    if data == "[DONE]":
+                        break
+                    import json
+
+                    chunk = json.loads(data)
+                    delta = chunk["choices"][0].get("delta", {})
+                    text = delta.get("content", "")
+                    if text:
+                        yield text
+        except Exception as exc:
+            raise RuntimeError(f"OpenAI stream error: {exc}") from exc
+
     def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:  # pragma: no cover
         try:
             import httpx
@@ -52,7 +107,7 @@ class OpenAIProvider(BaseProvider):
                 headers={"Authorization": f"Bearer {self._api_key}"},
                 json={
                     "model": self.model_id,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": build_provider_messages(prompt, context),
                 },
                 timeout=30,
             )

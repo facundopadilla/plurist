@@ -85,9 +85,12 @@ def test_html_source_stored_with_reference_only_flag(client, monkeypatch):
     End-to-end: upload an HTML file, verify the source is created with pending status
     and that if extraction runs it marks reference_only=True.
     """
-    import socket
 
-    from tests.accounts.factories import MembershipFactory, UserFactory, WorkspaceFactory
+    from tests.accounts.factories import (
+        MembershipFactory,
+        UserFactory,
+        WorkspaceFactory,
+    )
 
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner_html@example.com", password="testpassword123")
@@ -103,7 +106,9 @@ def test_html_source_stored_with_reference_only_flag(client, monkeypatch):
     )
 
     from django.core.files.uploadedfile import SimpleUploadedFile
+
     import apps.design_bank.storage as storage_mod
+
     monkeypatch.setattr(storage_mod, "upload_file", lambda *a, **kw: "design-bank/html-key")
     monkeypatch.setattr(storage_mod, "generate_storage_key", lambda fn: "design-bank/html-key")
     monkeypatch.setattr(
@@ -123,5 +128,5 @@ def test_html_source_stored_with_reference_only_flag(client, monkeypatch):
     data = response.json()
     # Source is created — it's stored as reference, not executed
     assert data["status"] == "pending"
-    # source_type is upload (not image/pdf) for .html
-    assert data["source_type"] == "upload"
+    # source_type is html for .html files
+    assert data["source_type"] == "html"

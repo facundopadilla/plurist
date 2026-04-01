@@ -15,10 +15,21 @@ class RenderJob(models.Model):
         FAILED = "failed", "Failed"
 
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="render_jobs")
-    template_key = models.CharField(max_length=100)
+    project = models.ForeignKey(
+        "projects.Project",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="render_jobs",
+    )
+    template_key = models.CharField(max_length=100, blank=True)
+    format = models.CharField(max_length=10, default="1:1")
+    html_content = models.TextField(blank=True)
     brand_profile_version = models.ForeignKey(
         BrandProfileVersion,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="render_jobs",
     )
     input_variables = models.JSONField(default=dict)

@@ -55,6 +55,36 @@ def test_login_with_invalid_password(client):
     assert response.status_code == 401
 
 
+def test_login_without_workspace_membership_returns_403_and_clears_session(client):
+    WorkspaceFactory()
+    user = UserFactory(email="orphan@example.com", password="testpassword123")
+
+    response = client.post(
+        "/api/v1/auth/login",
+        data={"email": user.email, "password": "testpassword123"},
+        content_type="application/json",
+        HTTP_X_CSRF_TOKEN=_csrf(client),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Workspace membership required"
+    assert client.get("/api/v1/auth/me").status_code == 401
+
+
+def test_authenticated_user_without_workspace_membership_gets_403_from_me_and_is_logged_out(
+    client,
+):
+    WorkspaceFactory()
+    user = UserFactory(email="orphan@example.com")
+    client.force_login(user)
+
+    response = client.get("/api/v1/auth/me")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Workspace membership required"
+    assert client.get("/api/v1/auth/me").status_code == 401
+
+
 def test_invite_accept_creates_membership(client):
     workspace = WorkspaceFactory()
     inviter = UserFactory(password="testpassword123")
@@ -106,3 +136,27 @@ def test_invite_expired_returns_400(client):
     )
 
     assert response.status_code == 400
+
+
+def test_logout_clears_authenticated_session(client):
+    workspace = WorkspaceFactory()
+    user = UserFactory(email="owner@example.com", password="testpassword123")
+    MembershipFactory(user=user, workspace=workspace, role="owner")
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        data={"email": user.email, "password": "testpassword123"},
+        content_type="application/json",
+        HTTP_X_CSRF_TOKEN=_csrf(client),
+    )
+    assert login_response.status_code == 200
+
+    logout_response = client.post(
+        "/api/v1/auth/logout",
+        content_type="application/json",
+        HTTP_X_CSRF_TOKEN=_csrf(client),
+    )
+
+    assert logout_response.status_code == 200
+    assert logout_response.json() == {"ok": True}
+    assert client.get("/api/v1/auth/me").status_code == 401

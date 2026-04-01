@@ -8,7 +8,7 @@ pytestmark = pytest.mark.django_db
 
 def test_registry_returns_all_known_providers():
     providers = list_providers()
-    assert set(providers) == {"openai", "anthropic", "gemini", "openrouter"}
+    assert set(providers) == {"openai", "anthropic", "gemini", "openrouter", "ollama"}
 
 
 def test_get_provider_returns_instance_for_each_key():

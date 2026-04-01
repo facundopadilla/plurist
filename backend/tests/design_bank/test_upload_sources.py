@@ -27,6 +27,7 @@ def _login(client, email, password="testpassword123"):
 
 def _mock_storage(monkeypatch):
     import apps.design_bank.storage as storage_mod
+
     monkeypatch.setattr(storage_mod, "upload_file", lambda *a, **kw: "design-bank/test-key")
     monkeypatch.setattr(storage_mod, "generate_storage_key", lambda fn: "design-bank/test-key")
     monkeypatch.setattr(

@@ -30,6 +30,4 @@ def test_x_does_not_require_image():
 
 def test_instagram_text_only_rejected():
     with pytest.raises(ValidationError):
-        validate_publish_payload(
-            network="instagram", body_text="Caption only", has_image=False
-        )
+        validate_publish_payload(network="instagram", body_text="Caption only", has_image=False)

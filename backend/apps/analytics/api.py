@@ -3,9 +3,9 @@ from typing import Any, Optional
 from django.http import HttpRequest
 from ninja import Router, Schema
 from ninja.errors import HttpError
-from apps.accounts.session_auth import session_auth as django_auth
 
 from apps.accounts.auth import get_membership
+from apps.accounts.session_auth import session_auth as django_auth
 
 from .models import AuditEvent
 from .services import get_operational_summary

@@ -106,8 +106,8 @@ def test_editor_cannot_patch_feature_flags(client):
 
 def test_mock_mode_returns_mock_adapter(monkeypatch):
     monkeypatch.setenv("FEATURE_LINKEDIN_LIVE", "false")
-    from apps.integrations.registry import get_adapter
     from apps.integrations.providers.mock_adapter import MockAdapter
+    from apps.integrations.registry import get_adapter
 
     adapter = get_adapter("linkedin")
     assert isinstance(adapter, MockAdapter)

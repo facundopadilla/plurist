@@ -29,9 +29,7 @@ def get_network_capabilities():
     return [NETWORK_CAPABILITIES[key] for key in ["linkedin", "x", "instagram"]]
 
 
-def validate_publish_payload(
-    network: str, body_text: str = "", has_image: bool = False
-):
+def validate_publish_payload(network: str, body_text: str = "", has_image: bool = False):
     if network not in NETWORK_CAPABILITIES:
         raise ValidationError("Unsupported network")
 
@@ -39,8 +37,5 @@ def validate_publish_payload(
     if capability["requires_image"] and not has_image:
         raise ValidationError(f"{network} requires at least one image")
 
-    if (
-        capability["supports_text"]
-        and len(body_text or "") > capability["text_max_chars"]
-    ):
+    if capability["supports_text"] and len(body_text or "") > capability["text_max_chars"]:
         raise ValidationError(f"{network} text exceeds max length")

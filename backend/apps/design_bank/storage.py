@@ -54,9 +54,33 @@ def delete_file(storage_key: str) -> None:
     client.delete_object(Bucket=_bucket(), Key=storage_key)
 
 
-def generate_presigned_url(storage_key: str, expires_in: int = 3600) -> str:
-    """Generate a presigned download URL (private — not publicly accessible)."""
+def download_file(storage_key: str) -> bytes:
+    """Download an object from S3/MinIO and return raw bytes."""
+    import io
+
     client = _client()
+    buf = io.BytesIO()
+    client.download_fileobj(_bucket(), storage_key, buf)
+    return buf.getvalue()
+
+
+def generate_presigned_url(storage_key: str, expires_in: int = 3600) -> str:
+    """Generate a presigned download URL using the public MinIO endpoint.
+
+    We create the boto3 client with the *public* endpoint URL so the generated
+    URL is signed for the same hostname the browser will use.  Using the
+    internal hostname (minio:9000) and rewriting it afterwards invalidates the
+    HMAC because ``host`` is included in the signed headers.
+    """
+    public_url = getattr(settings, "DESIGN_BANK_S3_PUBLIC_URL", None)
+    endpoint = public_url or getattr(settings, "DESIGN_BANK_S3_ENDPOINT_URL", None)
+    client = boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        aws_access_key_id=getattr(settings, "DESIGN_BANK_S3_ACCESS_KEY", None),
+        aws_secret_access_key=getattr(settings, "DESIGN_BANK_S3_SECRET_KEY", None),
+        region_name=getattr(settings, "DESIGN_BANK_S3_REGION", "us-east-1"),
+    )
     return client.generate_presigned_url(
         "get_object",
         Params={"Bucket": _bucket(), "Key": storage_key},

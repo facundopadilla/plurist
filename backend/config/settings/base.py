@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "apps.generation",
     "apps.analytics",
     "apps.scheduler",
+    "apps.projects",
 ]
 
 MIDDLEWARE = [
@@ -53,6 +54,7 @@ TEMPLATES = [
 ROOT_URLCONF = "config.urls"
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -99,7 +101,40 @@ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 GOOGLE_OIDC_CLIENT_ID = os.environ.get("GOOGLE_OIDC_CLIENT_ID", "")
 GOOGLE_OIDC_CLIENT_SECRET = os.environ.get("GOOGLE_OIDC_CLIENT_SECRET", "")
 GOOGLE_ALLOWED_DOMAINS = [
-    domain.strip().lower()
-    for domain in os.environ.get("GOOGLE_ALLOWED_DOMAINS", "").split(",")
-    if domain.strip()
+    domain.strip().lower() for domain in os.environ.get("GOOGLE_ALLOWED_DOMAINS", "").split(",") if domain.strip()
 ]
+
+# MinIO / S3 storage (design bank + project icons)
+_minio_endpoint = os.environ.get("MINIO_ENDPOINT", "minio:9000")
+DESIGN_BANK_S3_ENDPOINT_URL = f"http://{_minio_endpoint}"
+DESIGN_BANK_S3_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "socialclaw")
+DESIGN_BANK_S3_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "socialclaw")
+DESIGN_BANK_S3_BUCKET = os.environ.get("MINIO_BUCKET", "design-bank")
+DESIGN_BANK_S3_REGION = os.environ.get("MINIO_REGION", "us-east-1")
+# Public URL for presigned URLs (rewrite internal hostname to browser-accessible host)
+DESIGN_BANK_S3_PUBLIC_URL = os.environ.get("MINIO_PUBLIC_URL", "http://localhost:9000")
+
+# Social network OAuth credentials
+X_CLIENT_ID = os.environ.get("X_CLIENT_ID", "")
+X_CLIENT_SECRET = os.environ.get("X_CLIENT_SECRET", "")
+LINKEDIN_CLIENT_ID = os.environ.get("LINKEDIN_CLIENT_ID", "")
+LINKEDIN_CLIENT_SECRET = os.environ.get("LINKEDIN_CLIENT_SECRET", "")
+INSTAGRAM_CLIENT_ID = os.environ.get("INSTAGRAM_CLIENT_ID", "")
+INSTAGRAM_CLIENT_SECRET = os.environ.get("INSTAGRAM_CLIENT_SECRET", "")
+SOCIAL_TOKEN_ENCRYPTION_KEY = os.environ.get("SOCIAL_TOKEN_ENCRYPTION_KEY", "")
+
+# AI provider key encryption.
+# Resolution order (AIKeyVault): AI_ENCRYPTION_KEY → SOCIAL_TOKEN_ENCRYPTION_KEY → SECRET_KEY
+AI_ENCRYPTION_KEY = os.environ.get("AI_ENCRYPTION_KEY", "")
+
+# Celery Beat schedule
+CELERY_BEAT_SCHEDULE = {
+    "refresh-expiring-social-tokens": {
+        "task": "apps.integrations.tasks.refresh_expiring_tokens",
+        "schedule": 6 * 60 * 60,  # every 6 hours
+    },
+    "check-pending-schedules": {
+        "task": "apps.scheduler.tasks.check_pending_schedules",
+        "schedule": 60,  # every minute
+    },
+}

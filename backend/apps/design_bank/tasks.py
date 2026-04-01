@@ -6,7 +6,6 @@ import logging
 
 import requests
 from celery import shared_task
-from django.conf import settings
 
 from .validators import (
     DOWNLOAD_TIMEOUT,
@@ -116,6 +115,7 @@ def extract_from_url(self, source_id: int):
             raise ValueError(f"Scan failed: {scan_result.detail}")
 
         import io
+
         storage_key = generate_storage_key(source.original_filename or "file")
         upload_file(io.BytesIO(data), storage_key, content_type)
 
@@ -138,9 +138,11 @@ def extract_from_url(self, source_id: int):
 @shared_task(bind=True, max_retries=3)
 def extract_from_file(self, source_id: int):
     """Read a file that's already been uploaded to storage, extract metadata."""
+    import mimetypes
+
     from .models import DesignBankSource
     from .scanners import get_scanner
-    from .storage import generate_presigned_url
+    from .storage import download_file
 
     source = _get_source(source_id)
     if source is None:
@@ -151,13 +153,10 @@ def extract_from_file(self, source_id: int):
     source.save(update_fields=["status", "updated_at"])
 
     try:
-        # Download from storage to scan and extract
-        presigned = generate_presigned_url(source.storage_key, expires_in=300)
-        response = requests.get(presigned, timeout=DOWNLOAD_TIMEOUT)
-        response.raise_for_status()
-        data = response.content
+        # Download directly via internal MinIO endpoint (avoids localhost presigned URL issue)
+        data = download_file(source.storage_key)
 
-        content_type = response.headers.get("Content-Type", "application/octet-stream")
+        content_type = mimetypes.guess_type(source.original_filename or "")[0] or "application/octet-stream"
 
         scanner = get_scanner()
         scan_result = scanner.scan_bytes(data, filename=source.original_filename or "")

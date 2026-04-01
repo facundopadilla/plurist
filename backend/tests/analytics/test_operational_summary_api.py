@@ -27,6 +27,7 @@ def _login(client, email, password="testpassword123"):
 
 # --- /analytics/summary ---
 
+
 def test_summary_returns_correct_structure(client):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner@example.com", password="testpassword123")
@@ -80,6 +81,7 @@ def test_summary_accessible_by_publisher(client):
 
 # --- /analytics/timeline ---
 
+
 def test_timeline_returns_list_of_events(client):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner2@example.com", password="testpassword123")
@@ -125,6 +127,7 @@ def test_timeline_unauthenticated_returns_401(client):
 
 
 # --- /analytics/timeline/{target_type}/{target_id} ---
+
 
 def test_target_timeline_filters_correctly(client):
     workspace = WorkspaceFactory()

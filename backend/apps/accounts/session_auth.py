@@ -7,5 +7,4 @@ don't need Django's cookie-based CSRF since they're a pure JSON API.
 
 from ninja.security import SessionAuth
 
-
 session_auth = SessionAuth(csrf=False)

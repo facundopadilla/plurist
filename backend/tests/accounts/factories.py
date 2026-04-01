@@ -9,6 +9,7 @@ from apps.accounts.models import Invite, Membership, RoleChoices, User, Workspac
 class WorkspaceFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Workspace
+        django_get_or_create = ("id",)
 
     id = 1
     name = "Socialclaw"

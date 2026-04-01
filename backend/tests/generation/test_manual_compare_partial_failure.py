@@ -2,6 +2,7 @@
 Tests that a compare run where one provider fails still returns results from
 the other providers and sets status to partial_failure.
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -44,6 +45,7 @@ def test_partial_failure_one_provider_fails():
         template_key="social-post-v1",
         campaign_brief="Launch our new product",
         providers=["openai", "anthropic"],
+        slide_count=1,
         created_by=user,
     )
 
@@ -81,6 +83,7 @@ def test_all_providers_succeed_status_completed():
         template_key="social-post-v1",
         campaign_brief="Summer sale campaign",
         providers=["openai", "gemini"],
+        slide_count=1,
         created_by=user,
     )
 
@@ -109,6 +112,7 @@ def test_all_providers_fail_status_partial_failure():
         template_key="social-post-v1",
         campaign_brief="Winter campaign",
         providers=["openai", "anthropic"],
+        slide_count=1,
         created_by=user,
     )
 
@@ -154,8 +158,7 @@ def test_api_post_compare_returns_201(client):
         HTTP_X_CSRF_TOKEN=csrf_token,
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 202
     body = response.json()
-    assert body["status"] in {"completed", "partial_failure"}
-    assert isinstance(body["variants"], list)
-    assert len(body["variants"]) >= 1
+    assert "id" in body
+    assert body["status"] in {"pending", "running", "completed", "partial_failure"}

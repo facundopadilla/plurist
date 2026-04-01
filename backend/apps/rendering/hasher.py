@@ -23,3 +23,13 @@ def compute_input_hash(
     # sort_keys ensures deterministic ordering regardless of dict insertion order
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def compute_html_hash(html_content: str, fmt: str) -> str:
+    """Return a SHA-256 hex digest for a direct HTML render."""
+    canonical = json.dumps(
+        {"html": html_content, "format": fmt},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode()).hexdigest()

@@ -1,8 +1,8 @@
 """Test that stale approvals invalidate schedules."""
-import pytest
+
 from datetime import timedelta
 
-from django.core.exceptions import ValidationError
+import pytest
 from django.utils import timezone as dj_timezone
 
 from apps.posts.models import DraftPost

@@ -1,7 +1,7 @@
 # pyright: reportAttributeAccessIssue=false
 """Tests for idempotent immediate-publish endpoint."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -11,6 +11,9 @@ from apps.publishing.models import PublishAttempt
 from tests.accounts.factories import MembershipFactory, UserFactory, WorkspaceFactory
 
 pytestmark = pytest.mark.django_db(transaction=True)
+
+# Patch the task object imported at module level in api.py.
+_PATCH_TASK = "apps.publishing.api.execute_publish"
 
 
 # ---------------------------------------------------------------------------
@@ -44,8 +47,8 @@ def _create_approved_post(workspace, editor, owner):
 # ---------------------------------------------------------------------------
 
 
-@patch("apps.publishing.tasks.execute_publish.delay")
-def test_same_idempotency_key_returns_existing_attempts(mock_delay):
+@patch(_PATCH_TASK)
+def test_same_idempotency_key_returns_existing_attempts(mock_task):
     """Second call with same key returns existing attempts without creating new rows."""
     workspace = WorkspaceFactory()
     editor = _create_user_with_role(workspace, RoleChoices.EDITOR)
@@ -59,23 +62,20 @@ def test_same_idempotency_key_returns_existing_attempts(mock_delay):
     # First call
     attempts_1 = _do_publish_now(post, actor=owner, idempotency_key=key)
     assert len(attempts_1) == 1
-    assert mock_delay.call_count == 1
+    assert mock_task.delay.call_count == 1
 
-    # Reset post back to approved so the second call doesn't fail on status check.
-    # With idempotency the second call should short-circuit before calling start_publishing.
-    mock_delay.reset_mock()
+    mock_task.delay.reset_mock()
 
-    # Second call with same key
+    # Second call with same key — must short-circuit before start_publishing.
     attempts_2 = _do_publish_now(post, actor=owner, idempotency_key=key)
 
     assert len(attempts_2) == 1
     assert attempts_2[0].pk == attempts_1[0].pk, "Must return the same attempt row"
-    # No new Celery task should have been enqueued
-    mock_delay.assert_not_called()
+    mock_task.delay.assert_not_called()
 
 
-@patch("apps.publishing.tasks.execute_publish.delay")
-def test_different_idempotency_key_creates_new_attempt(mock_delay):
+@patch(_PATCH_TASK)
+def test_different_idempotency_key_creates_new_attempt(mock_task):
     """Different key on a fresh approved post creates a new attempt."""
     workspace = WorkspaceFactory()
     editor = _create_user_with_role(workspace, RoleChoices.EDITOR)
@@ -88,11 +88,11 @@ def test_different_idempotency_key_creates_new_attempt(mock_delay):
 
     assert len(attempts) == 1
     assert PublishAttempt.objects.filter(draft_post=post).count() == 1
-    mock_delay.assert_called_once_with(attempts[0].pk)
+    mock_task.delay.assert_called_once_with(attempts[0].pk)
 
 
-@patch("apps.publishing.tasks.execute_publish.delay")
-def test_only_one_adapter_call_per_network_on_idempotent_retry(mock_delay):
+@patch(_PATCH_TASK)
+def test_only_one_adapter_call_per_network_on_idempotent_retry(mock_task):
     """Adapter publish() is called exactly once per network even if endpoint is hit twice."""
     workspace = WorkspaceFactory()
     editor = _create_user_with_role(workspace, RoleChoices.EDITOR)
@@ -106,7 +106,7 @@ def test_only_one_adapter_call_per_network_on_idempotent_retry(mock_delay):
     _do_publish_now(post, actor=owner, idempotency_key=key)
 
     # Only 1 Celery task enqueued across both calls
-    assert mock_delay.call_count == 1
+    assert mock_task.delay.call_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -128,8 +128,8 @@ def _login(client, email, password="testpassword123"):
     )
 
 
-@patch("apps.publishing.tasks.execute_publish.delay")
-def test_publish_now_endpoint_returns_202(mock_delay, client):
+@patch(_PATCH_TASK)
+def test_publish_now_endpoint_returns_202(mock_task, client):
     workspace = WorkspaceFactory()
     editor = UserFactory(email="editor@pub.com", password="testpassword123")
     MembershipFactory(user=editor, workspace=workspace, role=RoleChoices.EDITOR)
@@ -151,8 +151,8 @@ def test_publish_now_endpoint_returns_202(mock_delay, client):
     assert body["attempts"][0]["idempotency_key"] == "test-key-001"
 
 
-@patch("apps.publishing.tasks.execute_publish.delay")
-def test_publish_now_endpoint_idempotent_second_request(mock_delay, client):
+@patch(_PATCH_TASK)
+def test_publish_now_endpoint_idempotent_second_request(mock_task, client):
     workspace = WorkspaceFactory()
     editor = UserFactory(email="editor2@pub.com", password="testpassword123")
     MembershipFactory(user=editor, workspace=workspace, role=RoleChoices.EDITOR)
@@ -181,11 +181,11 @@ def test_publish_now_endpoint_idempotent_second_request(mock_delay, client):
     attempt_id_2 = r2.json()["attempts"][0]["id"]
 
     assert attempt_id_1 == attempt_id_2
-    assert mock_delay.call_count == 1
+    assert mock_task.delay.call_count == 1
 
 
-@patch("apps.publishing.tasks.execute_publish.delay")
-def test_publish_now_endpoint_requires_publisher_role(mock_delay, client):
+@patch(_PATCH_TASK)
+def test_publish_now_endpoint_requires_publisher_role(mock_task, client):
     workspace = WorkspaceFactory()
     editor = UserFactory(email="editor3@pub.com", password="testpassword123")
     MembershipFactory(user=editor, workspace=workspace, role=RoleChoices.EDITOR)
@@ -202,8 +202,8 @@ def test_publish_now_endpoint_requires_publisher_role(mock_delay, client):
     assert response.status_code == 403
 
 
-@patch("apps.publishing.tasks.execute_publish.delay")
-def test_publish_now_endpoint_rejects_non_approved_post(mock_delay, client):
+@patch(_PATCH_TASK)
+def test_publish_now_endpoint_rejects_non_approved_post(mock_task, client):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner4@pub.com", password="testpassword123")
     MembershipFactory(user=owner, workspace=workspace, role=RoleChoices.OWNER)

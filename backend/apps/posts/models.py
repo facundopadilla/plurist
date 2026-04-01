@@ -43,6 +43,12 @@ class DraftPost(models.Model):
         PUBLISHED = "published", "Published"
         FAILED = "failed", "Failed"
 
+    # Legacy format keys — kept for reference only
+    LEGACY_FORMAT_SQUARE = "1:1"
+    LEGACY_FORMAT_LANDSCAPE = "16:9"
+    LEGACY_FORMAT_PORTRAIT = "4:5"
+    LEGACY_FORMAT_STORY = "9:16"
+
     MATERIAL_FIELDS = {
         "body_text",
         "selected_variant",
@@ -53,6 +59,9 @@ class DraftPost(models.Model):
         "selected_variant_id",
         "brand_profile_version_id",
         "template_definition_id",
+        "html_content",
+        "format",
+        "project_id",
     }
 
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
@@ -78,6 +87,15 @@ class DraftPost(models.Model):
         blank=True,
         related_name="draft_posts",
     )
+    project = models.ForeignKey(
+        "projects.Project",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posts",
+    )
+    format = models.CharField(max_length=20, default="ig_square", blank=True)
+    html_content = models.TextField(blank=True)
     render_asset_key = models.CharField(max_length=255, blank=True)
     selected_variant = models.ForeignKey(
         "posts.DraftVariant",
@@ -111,6 +129,9 @@ class DraftPost(models.Model):
             "render_asset_key": self.render_asset_key,
             "brand_profile_version_id": self.brand_profile_version_id,
             "template_definition_id": self.template_definition_id,
+            "html_content": self.html_content,
+            "format": self.format,
+            "project_id": self.project_id,
         }
 
     def _membership_role(self, user):
@@ -126,10 +147,8 @@ class DraftPost(models.Model):
             raise PermissionError("User role is not allowed for this transition")
 
     def _ensure_content_valid_for_submission(self):
-        if not self.body_text.strip() and not self.render_asset_key.strip():
-            raise ValidationError(
-                "Draft must include text or render asset before submit"
-            )
+        if not self.body_text.strip() and not self.render_asset_key.strip() and not self.html_content.strip():
+            raise ValidationError("Draft must include text, render asset, or HTML content before submit")
 
     def _invalidate_approval_if_needed(self):
         if self._loaded_status not in {
@@ -157,11 +176,7 @@ class DraftPost(models.Model):
 
     def save(self, *args, **kwargs):
         invalidated = self._invalidate_approval_if_needed()
-        if (
-            invalidated
-            and "update_fields" in kwargs
-            and kwargs["update_fields"] is not None
-        ):
+        if invalidated and "update_fields" in kwargs and kwargs["update_fields"] is not None:
             update_fields = set(kwargs["update_fields"])
             update_fields.update({"status", "submitted_at", "approved_at"})
             kwargs["update_fields"] = list(update_fields)
@@ -201,6 +216,9 @@ class DraftPost(models.Model):
             "selected_variant_id": self.selected_variant_id,
             "brand_profile_version_id": self.brand_profile_version_id,
             "template_definition_id": self.template_definition_id,
+            "html_content": self.html_content,
+            "format": self.format,
+            "project_id": self.project_id,
         }
         ApprovedSnapshot.objects.update_or_create(
             draft_post=self,
@@ -251,9 +269,7 @@ class DraftPost(models.Model):
         self.status = self.Status.PUBLISHED
         self.published_at = timezone.now()
         self.failure_message = ""
-        self.save(
-            update_fields=["status", "published_at", "failure_message", "updated_at"]
-        )
+        self.save(update_fields=["status", "published_at", "failure_message", "updated_at"])
 
     def mark_failed(self, message):
         if self.status != self.Status.PUBLISHING:
@@ -273,5 +289,54 @@ class DraftVariant(models.Model):
     model_id = models.CharField(max_length=100)
     prompt_text = models.TextField()
     generated_text = models.TextField()
+    generated_html = models.TextField(blank=True)
     is_selected = models.BooleanField(default=False)
+    slide_index = models.PositiveSmallIntegerField(null=True, blank=True)
+    variant_type = models.CharField(max_length=20, default="default")
+    derived_from_variant = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="derived_variants",
+    )
+    generation_meta = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DraftFrameMetadata(models.Model):
+    draft_post = models.ForeignKey(
+        DraftPost,
+        on_delete=models.CASCADE,
+        related_name="frame_metadata",
+    )
+    slide_index = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=255, blank=True)
+    is_favorite = models.BooleanField(default=False)
+    annotations = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        unique_together = [("draft_post", "slide_index")]
+        ordering = ["slide_index"]
+
+
+class CarouselSlide(models.Model):
+    """Per-slide variant selection for carousel posts."""
+
+    draft_post = models.ForeignKey(
+        DraftPost,
+        on_delete=models.CASCADE,
+        related_name="carousel_slides",
+    )
+    slide_index = models.PositiveSmallIntegerField()
+    selected_variant = models.ForeignKey(
+        DraftVariant,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="carousel_selections",
+    )
+
+    class Meta:
+        unique_together = [("draft_post", "slide_index")]
+        ordering = ["slide_index"]

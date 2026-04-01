@@ -16,18 +16,12 @@ class ScheduleEntry(models.Model):
         TRIGGERED = "triggered", "Triggered"
         CANCELLED = "cancelled", "Cancelled"
 
-    workspace = models.ForeignKey(
-        Workspace, on_delete=models.CASCADE, related_name="schedule_entries"
-    )
-    draft_post = models.ForeignKey(
-        DraftPost, on_delete=models.CASCADE, related_name="schedule_entries"
-    )
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="schedule_entries")
+    draft_post = models.ForeignKey(DraftPost, on_delete=models.CASCADE, related_name="schedule_entries")
     network = models.CharField(max_length=20)
     scheduled_for = models.DateTimeField()
     timezone = models.CharField(max_length=50, default="UTC")
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.PENDING
-    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

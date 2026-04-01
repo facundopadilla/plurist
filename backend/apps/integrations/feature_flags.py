@@ -23,7 +23,7 @@ def get_all_flags() -> dict[str, bool]:
 
 
 def set_flag(network: str, live: bool) -> None:
-    """Set the in-process flag for a network (writes to os.environ for the current process)."""
+    """Set the in-process flag for a network (writes to os.environ)."""
     env_key = _FLAG_ENV_KEYS.get(network)
     if not env_key:
         raise ValueError(f"Unknown network: {network}")
