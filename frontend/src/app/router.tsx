@@ -17,6 +17,13 @@ import { SettingsIntegrationsPage } from "../features/integrations/settings-inte
 import { RedesSocialesPage } from "../features/integrations/redes-sociales-page";
 import { AIProvidersPage } from "../features/settings/ai-providers/ai-providers-page";
 
+// Landing — public, code-split
+const LandingPage = lazy(() =>
+  import("../features/landing/landing-page").then((m) => ({
+    default: m.LandingPage,
+  })),
+);
+
 // Canvas Compose — full-screen, code-split, no AppShell wrapper
 const CanvasComposePage = lazy(() =>
   import("../features/canvas/canvas-compose-page").then((m) => ({
@@ -65,6 +72,22 @@ export function AppRouter() {
         />
         <Route
           path="/"
+          element={
+            <Suspense
+              fallback={
+                <div className="flex h-screen w-screen items-center justify-center bg-background">
+                  <span className="text-muted-foreground text-sm">
+                    Loading...
+                  </span>
+                </div>
+              }
+            >
+              <LandingPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/dashboard"
           element={
             <RequireAuth>
               <AppShell>

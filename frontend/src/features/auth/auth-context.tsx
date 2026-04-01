@@ -78,7 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const path = window.location.pathname;
-    const isPublicAuthPath = path === "/login" || path.startsWith("/invite/");
+    const isPublicAuthPath =
+      path === "/" || path === "/login" || path.startsWith("/invite/");
 
     if (isPublicAuthPath) {
       initialDoneRef.current = true;

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -177,12 +177,21 @@
     @apply flex flex-col gap-3 border-b border-border/70 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between;
   }
 
-  /* Typography scale: 14/16/18/24/32/40 */
+  /* Typography scale: 14/16/18/24/32/40/48/64/72 */
+  .font-display {
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  }
+  .text-hero {
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    @apply text-[48px] font-bold leading-[1.02] tracking-[-0.04em] sm:text-[64px] lg:text-[72px];
+  }
   .text-display {
-    @apply text-[40px] font-semibold leading-[1.05] tracking-[-0.04em];
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    @apply text-[40px] font-bold leading-[1.05] tracking-[-0.04em];
   }
   .text-title {
-    @apply text-[32px] font-semibold leading-[1.05] tracking-[-0.04em];
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    @apply text-[32px] font-bold leading-[1.05] tracking-[-0.04em];
   }
   .text-heading {
     @apply text-[24px] font-semibold leading-[1.1] tracking-[-0.03em];
@@ -198,6 +207,11 @@
   }
   .text-micro {
     @apply text-[11px] uppercase tracking-[0.18em];
+  }
+
+  .text-section-headline {
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    @apply text-[32px] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[40px];
   }
 
   .font-elegant-mono {
