@@ -142,3 +142,6 @@ frontend/.pnpm-store/
 
 # Static analysis reports (generated, not source)
 ops/static-analysis/reports/
+
+# SonarScanner working directory (generated on each scan run)
+.scannerwork/
