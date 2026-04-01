@@ -122,3 +122,23 @@ postgres-data/
 # Temporary research repos (used by planning agents)
 tmp_repos/
 .omx/
+
+# AI agent tooling (local config, auth, memory, sessions)
+.agents/
+.claude/
+.codex/
+.omc/
+**/.omc/
+.opencode/
+AGENTS.md
+CLAUDE.md
+
+# Temporary screenshots / debug artifacts
+.tmp-screens/
+
+# pnpm content-addressable store (local cache)
+.pnpm-store/
+frontend/.pnpm-store/
+
+# Static analysis reports (generated, not source)
+ops/static-analysis/reports/
