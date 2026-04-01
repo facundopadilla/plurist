@@ -5,6 +5,7 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended",
+    "prettier",
   ],
   ignorePatterns: ["dist", ".eslintrc.cjs"],
   parser: "@typescript-eslint/parser",
@@ -28,8 +29,7 @@ module.exports = {
         patterns: [
           {
             group: ["@xyflow/*"],
-            message:
-              "All @xyflow packages are deprecated. Use tldraw instead.",
+            message: "All @xyflow packages are deprecated. Use tldraw instead.",
           },
         ],
       },

@@ -1,0 +1,14 @@
+{
+  "name": "socialclaw-githooks",
+  "private": true,
+  "packageManager": "pnpm@9.4.0",
+  "scripts": {
+    "prepare": "husky",
+    "hooks:precommit": "uv run --project backend --extra dev pre-commit run --hook-stage pre-commit --show-diff-on-failure --color always",
+    "hooks:prepush": "uv run --project backend --extra dev pre-commit run --hook-stage pre-push --show-diff-on-failure --color always"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "prettier": "^3.3.3"
+  }
+}

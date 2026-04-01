@@ -1,0 +1,16 @@
+.claude/
+.codex/
+.git/
+.omx/
+.opencode/
+.sisyphus/
+.tmp-screens/
+backend/**/__pycache__/
+backend/.omc/
+frontend/.omc/
+frontend/.pnpm-store/
+frontend/dist/
+frontend/node_modules/
+frontend/playwright-report/
+frontend/test-results/
+tmp_repos/
