@@ -24,7 +24,7 @@ class Command(BaseCommand):
                 defaults={"name": name},
             )
             if created:
-                user.set_password("testpassword123")
+                user.set_password("testpassword123")  # nosec B106 -- dev seed command, not production
                 user.save(update_fields=["password"])
             Membership.objects.get_or_create(
                 user=user,

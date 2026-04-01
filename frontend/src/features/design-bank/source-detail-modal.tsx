@@ -476,6 +476,8 @@ export function SourceDetailModal({
                   <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words hljs">
                     {highlightedCode ? (
                       <code
+                        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
+                        // highlightedCode is produced by highlight.js which escapes HTML entities — not raw user input
                         dangerouslySetInnerHTML={{ __html: highlightedCode }}
                       />
                     ) : (

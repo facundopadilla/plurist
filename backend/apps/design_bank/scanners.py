@@ -39,6 +39,6 @@ def get_scanner() -> BaseScannerBackend:
     module_path, class_name = backend_path.rsplit(".", 1)
     import importlib
 
-    module = importlib.import_module(module_path)
+    module = importlib.import_module(module_path)  # nosec B108 -- value comes from Django settings (operator-controlled), not user input
     cls = getattr(module, class_name)
     return cls()

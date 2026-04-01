@@ -11,7 +11,7 @@ function makeMockIframe(
   bodyHtml: string = "<p>Hello</p><h1>Title</h1><span>Text</span>",
 ) {
   const doc = document.implementation.createHTMLDocument("test");
-  doc.body.innerHTML = bodyHtml;
+  doc.body.innerHTML = bodyHtml; // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method -- test-only mock DOM construction, no user-facing surface
 
   const iframe = {
     contentDocument: doc,

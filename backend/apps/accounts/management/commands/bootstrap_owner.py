@@ -24,7 +24,7 @@ class Command(BaseCommand):
             defaults={"name": "Owner"},
         )
         if created:
-            user.set_password(password)
+            user.set_password(password)  # nosec B106 -- management command, password supplied by operator via CLI arg
             user.save(update_fields=["password"])
 
         membership, membership_created = Membership.objects.get_or_create(

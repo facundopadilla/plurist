@@ -52,6 +52,9 @@ export function renderHtmlIntoShadowHost(
   const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
   const { headMarkup, bodyMarkup } = extractHtmlDocument(html);
 
+  // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method
+  // Intentional: this is the canvas HTML renderer. The Shadow DOM provides style isolation.
+  // Content is workspace-owned HTML (not raw user input) rendered in a sandboxed tldraw shape.
   root.innerHTML = `
     ${headMarkup}
     <style>

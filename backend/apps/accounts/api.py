@@ -381,7 +381,7 @@ def dev_seed(request):
     for email, name, role in accounts:
         user, created = User.objects.get_or_create(email=email, defaults={"name": name})
         if created:
-            user.set_password("testpassword123")
+            user.set_password("testpassword123")  # nosec B106 -- dev seed endpoint, not production
             user.save(update_fields=["password"])
         Membership.objects.get_or_create(
             user=user,

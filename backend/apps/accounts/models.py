@@ -18,7 +18,7 @@ class UserManager(BaseUserManager):
             raise ValueError("Users must have an email")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra)
-        user.set_password(password)
+        user.set_password(password)  # nosec B106 -- password validation is enforced at the serializer/API layer, not the model manager
         user.save(using=self._db)
         return user
 
