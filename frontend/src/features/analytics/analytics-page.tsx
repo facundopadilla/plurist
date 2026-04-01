@@ -8,7 +8,7 @@ import {
   AlertCircle,
   Clock,
 } from "lucide-react";
-import { StatusBadge } from "../../components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { fetchSummary, fetchTimeline } from "./api";
 import type { AuditEvent } from "./types";
 
@@ -155,10 +155,12 @@ export function AnalyticsPage() {
                 <div className="paper-kicker">Audit trail</div>
                 <h2 className="paper-section-title mt-3">Timeline</h2>
               </div>
-              <StatusBadge
-                variant="token"
-                label={`${timeline.length} events`}
-              />
+              <Badge
+                variant="neutral"
+                className="font-mono uppercase tracking-[0.18em]"
+              >
+                {timeline.length} events
+              </Badge>
             </div>
           </div>
           <div className="paper-panel-body">

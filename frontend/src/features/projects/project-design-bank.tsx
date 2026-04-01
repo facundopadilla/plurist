@@ -22,6 +22,8 @@ import {
   File,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "../auth/use-auth";
 import {
   fetchProjectSources,
@@ -118,7 +120,7 @@ function ResourceCard({
     <div
       onClick={onClick}
       className={cn(
-        "flex items-start gap-3 elegant-card p-3",
+        "flex items-start gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm p-3",
         onClick && "cursor-pointer hover:bg-accent/30 transition-colors",
       )}
     >
@@ -311,7 +313,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
   ];
 
   return (
-    <div className="elegant-card">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
       <div className="flex border-b border-border">
         {tabs.map((t) => (
           <button
@@ -354,7 +356,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               />
             </label>
             {fileMutation.isError && (
-              <p className="mt-1 text-xs text-red-500">
+              <p className="mt-1 text-xs text-destructive">
                 {fileMutation.error instanceof Error
                   ? fileMutation.error.message
                   : "Upload fallido"}
@@ -365,17 +367,16 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
 
         {activeTab === "url" && (
           <div className="flex gap-2">
-            <input
+            <Input
               type="url"
               value={urlValue}
               onChange={(e) => setUrlValue(e.target.value)}
               placeholder="https://..."
-              className="elegant-input flex-1"
+              className="flex-1"
             />
-            <button
+            <Button
               onClick={() => urlMutation.mutate()}
               disabled={urlMutation.isPending || !urlValue.trim()}
-              className="elegant-button-primary"
             >
               {urlMutation.isPending ? (
                 <Loader2 size={13} className="animate-spin" />
@@ -383,18 +384,18 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 <Plus size={13} />
               )}
               Agregar
-            </button>
+            </Button>
           </div>
         )}
 
         {activeTab === "color" && (
           <div className="flex flex-wrap gap-2">
-            <input
+            <Input
               type="text"
               value={colorName}
               onChange={(e) => setColorName(e.target.value)}
               placeholder="Nombre (ej. Primario)"
-              className="elegant-input flex-1 min-w-[120px]"
+              className="flex-1 min-w-[120px]"
             />
             <div className="flex items-center gap-1.5 rounded-[14px] border border-input bg-background px-2 py-1">
               <input
@@ -407,17 +408,16 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 {colorHex}
               </span>
             </div>
-            <input
+            <Input
               type="text"
               value={colorRole}
               onChange={(e) => setColorRole(e.target.value)}
               placeholder="Rol (opcional)"
-              className="elegant-input w-28"
+              className="w-28"
             />
-            <button
+            <Button
               onClick={() => colorMutation.mutate()}
               disabled={colorMutation.isPending || !colorName.trim()}
-              className="elegant-button-primary"
             >
               {colorMutation.isPending ? (
                 <Loader2 size={13} className="animate-spin" />
@@ -425,32 +425,31 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 <Plus size={13} />
               )}
               Agregar
-            </button>
+            </Button>
           </div>
         )}
 
         {activeTab === "font" && (
           <div className="flex flex-wrap gap-2">
-            <input
+            <Input
               type="text"
               value={fontName}
               onChange={(e) => setFontName(e.target.value)}
               placeholder="Nombre (ej. Fuente titular)"
-              className="elegant-input flex-1 min-w-[140px]"
+              className="flex-1 min-w-[140px]"
             />
-            <input
+            <Input
               type="text"
               value={fontFamily}
               onChange={(e) => setFontFamily(e.target.value)}
               placeholder="Familia (ej. Inter)"
-              className="elegant-input flex-1 min-w-[120px]"
+              className="flex-1 min-w-[120px]"
             />
-            <button
+            <Button
               onClick={() => fontMutation.mutate()}
               disabled={
                 fontMutation.isPending || !fontName.trim() || !fontFamily.trim()
               }
-              className="elegant-button-primary"
             >
               {fontMutation.isPending ? (
                 <Loader2 size={13} className="animate-spin" />
@@ -458,24 +457,24 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 <Plus size={13} />
               )}
               Agregar
-            </button>
+            </Button>
           </div>
         )}
 
         {activeTab === "text" && (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 value={textName}
                 onChange={(e) => setTextName(e.target.value)}
                 placeholder="Nombre (ej. Tagline)"
-                className="elegant-input flex-1"
+                className="flex-1"
               />
               <select
                 value={textKind}
                 onChange={(e) => setTextKind(e.target.value)}
-                className="elegant-input px-2"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="copy">Copy</option>
                 <option value="tagline">Tagline</option>
@@ -489,16 +488,16 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 onChange={(e) => setTextContent(e.target.value)}
                 placeholder="Escribí tu copy de marca aquí..."
                 rows={2}
-                className="elegant-input flex-1 resize-none"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 flex-1 resize-none"
               />
-              <button
+              <Button
                 onClick={() => textMutation.mutate()}
                 disabled={
                   textMutation.isPending ||
                   !textName.trim() ||
                   !textContent.trim()
                 }
-                className="self-end elegant-button-primary"
+                className="self-end"
               >
                 {textMutation.isPending ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -506,7 +505,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                   <Plus size={13} />
                 )}
                 Agregar
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -571,7 +570,7 @@ export function ProjectDesignBank({ projectId }: { projectId: number }) {
       )}
 
       {isError && (
-        <p className="text-sm text-red-500">
+        <p className="text-sm text-destructive">
           No se pudo cargar el design bank.
         </p>
       )}

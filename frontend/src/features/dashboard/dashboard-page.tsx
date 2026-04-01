@@ -11,7 +11,7 @@ import {
 import { fetchContent } from "../content/api";
 import { fetchEntries } from "../scheduler/api";
 import { fetchSummary } from "../analytics/api";
-import { StatusBadge } from "../../components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 
 function StatCard({
   label,
@@ -173,19 +173,19 @@ export function DashboardPage() {
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {post.target_networks.map((network) => (
-                          <StatusBadge
+                          <Badge
                             key={network}
-                            label={network}
-                            tone="neutral"
-                            variant="token"
-                          />
+                            variant="neutral"
+                            className="font-mono uppercase tracking-[0.18em]"
+                          >
+                            {network}
+                          </Badge>
                         ))}
                       </div>
                     </div>
                     <div className="flex items-start justify-end">
-                      <StatusBadge
-                        label={post.status.replace("_", " ")}
-                        tone={
+                      <Badge
+                        variant={
                           post.status === "published"
                             ? "success"
                             : post.status === "pending_approval"
@@ -194,8 +194,10 @@ export function DashboardPage() {
                                 ? "danger"
                                 : "neutral"
                         }
-                        variant="token"
-                      />
+                        className="font-mono uppercase tracking-[0.18em]"
+                      >
+                        {post.status.replace("_", " ")}
+                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -230,11 +232,12 @@ export function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-start justify-end">
-                      <StatusBadge
-                        label={entry.status}
-                        tone="neutral"
-                        variant="token"
-                      />
+                      <Badge
+                        variant="neutral"
+                        className="font-mono uppercase tracking-[0.18em]"
+                      >
+                        {entry.status}
+                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -267,7 +270,12 @@ export function DashboardPage() {
                   ) : null}
                 </div>
                 <div className="flex items-start justify-end">
-                  <StatusBadge label="failed" tone="danger" variant="token" />
+                  <Badge
+                    variant="danger"
+                    className="font-mono uppercase tracking-[0.18em]"
+                  >
+                    failed
+                  </Badge>
                 </div>
               </div>
             ))}

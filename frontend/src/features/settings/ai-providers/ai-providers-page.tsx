@@ -11,6 +11,10 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "../../auth/use-auth";
 import { fetchAISettings, saveAISettings, testOllamaConnection } from "./api";
 import type { AISettingsOut } from "./api";
@@ -69,27 +73,27 @@ function ProviderKeyRow({
         </div>
         <div className="flex items-center gap-1.5">
           {hasKey ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+            <Badge variant="success" className="rounded-full px-2 py-0.5 gap-1">
               <Check size={10} />
               Configured
-            </span>
+            </Badge>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-xs text-muted-foreground">
+            <Badge variant="neutral" className="rounded-full px-2 py-0.5">
               Not set
-            </span>
+            </Badge>
           )}
         </div>
       </div>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <input
+          <Input
             type={visible ? "text" : "password"}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={
               hasKey ? "Enter new key to replace…" : "Enter API key…"
             }
-            className="elegant-input w-full pr-9 font-mono text-sm"
+            className="w-full pr-9 font-mono text-sm"
             autoComplete="off"
             spellCheck={false}
           />
@@ -102,10 +106,11 @@ function ProviderKeyRow({
             {visible ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         </div>
-        <button
+        <Button
           onClick={() => void handleSave()}
           disabled={isSaving || !value.trim()}
-          className="elegant-button-primary px-3 py-1.5 text-xs disabled:opacity-50"
+          size="sm"
+          className="px-3 py-1.5 text-xs"
         >
           {isSaving ? (
             <Loader2 size={13} className="animate-spin" />
@@ -114,16 +119,18 @@ function ProviderKeyRow({
           ) : (
             "Save"
           )}
-        </button>
+        </Button>
         {hasKey && (
-          <button
+          <Button
             onClick={() => void handleClear()}
             disabled={isSaving}
-            className="inline-flex items-center gap-1 rounded-[10px] border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-950 dark:hover:border-red-800 disabled:opacity-50"
+            variant="outline"
+            size="sm"
+            className="gap-1 text-muted-foreground hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-950 dark:hover:border-red-800"
           >
             <X size={12} />
             Clear
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -186,24 +193,27 @@ function OllamaSection({ currentUrl, onSave, isSaving }: OllamaSectionProps) {
         </p>
       </div>
       <div className="flex gap-2">
-        <input
+        <Input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="http://localhost:11434"
-          className="elegant-input flex-1 font-mono text-sm"
+          className="flex-1 font-mono text-sm"
         />
-        <button
+        <Button
           onClick={() => void handleSave()}
           disabled={isSaving || url === currentUrl}
-          className="elegant-button-primary px-3 py-1.5 text-xs disabled:opacity-50"
+          size="sm"
+          className="px-3 py-1.5 text-xs"
         >
           {isSaving ? <Loader2 size={13} className="animate-spin" /> : "Save"}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => void handleTest()}
           disabled={testStatus === "testing"}
-          className="inline-flex items-center gap-1.5 rounded-[10px] border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
         >
           {testStatus === "testing" ? (
             <Loader2 size={13} className="animate-spin" />
@@ -211,19 +221,18 @@ function OllamaSection({ currentUrl, onSave, isSaving }: OllamaSectionProps) {
             <Wifi size={13} />
           )}
           Test
-        </button>
+        </Button>
       </div>
       {testStatus !== "idle" && testStatus !== "testing" && (
-        <div
-          className={`flex items-center gap-1.5 text-xs rounded-md px-3 py-2 ${
-            testStatus === "ok"
-              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
-              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
-          }`}
+        <Alert
+          variant={testStatus === "ok" ? "success" : "destructive"}
+          className="py-2"
         >
-          {testStatus === "ok" ? <Check size={12} /> : <WifiOff size={12} />}
-          {testMessage}
-        </div>
+          <AlertDescription className="flex items-center gap-1.5 text-xs">
+            {testStatus === "ok" ? <Check size={12} /> : <WifiOff size={12} />}
+            {testMessage}
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );
@@ -308,7 +317,7 @@ export function AIProvidersPage() {
 
   if (isError || !data) {
     return (
-      <p className="text-sm text-red-500 py-8">
+      <p className="text-sm text-destructive py-8">
         Failed to load AI settings. Please refresh the page.
       </p>
     );
@@ -347,14 +356,16 @@ export function AIProvidersPage() {
       </div>
 
       {mutation.isError && (
-        <div className="rounded-[14px] border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-          {mutation.error instanceof Error
-            ? mutation.error.message
-            : "Failed to save settings."}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : "Failed to save settings."}
+          </AlertDescription>
+        </Alert>
       )}
 
-      <div className="elegant-card px-5 py-1">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm px-5 py-1">
         {PROVIDERS.map((p) => (
           <ProviderKeyRow
             key={p.fieldName}
@@ -368,7 +379,7 @@ export function AIProvidersPage() {
         ))}
       </div>
 
-      <div className="elegant-card px-5 py-2">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm px-5 py-2">
         <OllamaSection
           currentUrl={data.ollama_base_url}
           onSave={handleSaveOllamaUrl}

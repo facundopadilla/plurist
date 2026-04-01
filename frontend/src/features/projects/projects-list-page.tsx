@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { DynamicIcon } from "./tag-icon-picker";
 import { cn } from "../../lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "../auth/use-auth";
 import { fetchProjects, getProjectIconUrl } from "./api";
 import { ProjectCard } from "./project-card";
@@ -146,13 +148,10 @@ export function ProjectsListPage() {
             </div>
           )}
           {canCreate && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="elegant-button-primary"
-            >
+            <Button onClick={() => setShowCreate(true)}>
               <Plus size={14} />
               New Project
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -166,18 +165,18 @@ export function ProjectsListPage() {
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
               />
-              <input
+              <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar proyectos..."
-                className="elegant-input w-full pl-8 pr-3"
+                className="w-full pl-8 pr-3"
               />
             </div>
             <select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="elegant-input px-3"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="name-asc">A → Z</option>
               <option value="name-desc">Z → A</option>
@@ -225,14 +224,14 @@ export function ProjectsListPage() {
       )}
 
       {isError && (
-        <p className="text-sm text-red-500">
+        <p className="text-sm text-destructive">
           Failed to load projects. Please refresh.
         </p>
       )}
 
       {/* Empty state — no projects at all */}
       {!isLoading && !hasProjects && (
-        <div className="elegant-card flex flex-col items-center justify-center border-dashed py-16 text-center">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm flex flex-col items-center justify-center border-dashed py-16 text-center">
           <FolderKanban size={32} className="text-muted-foreground mb-3" />
           <p className="text-sm font-medium text-foreground">No projects yet</p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -241,20 +240,17 @@ export function ProjectsListPage() {
               : "Projects will appear here once created."}
           </p>
           {canCreate && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="elegant-button-primary mt-4"
-            >
+            <Button onClick={() => setShowCreate(true)} className="mt-4">
               <Plus size={14} />
               New Project
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {/* Empty state — filter has no results */}
       {!isLoading && hasProjects && sorted.length === 0 && (
-        <div className="elegant-card flex flex-col items-center justify-center border-dashed py-12 text-center">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm flex flex-col items-center justify-center border-dashed py-12 text-center">
           <Search size={24} className="text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">
             Sin proyectos que coincidan con los filtros.

@@ -10,6 +10,8 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "../auth/use-auth";
 import {
   fetchConnections,
@@ -33,7 +35,7 @@ function ConnectionCard({ conn }: { conn: SocialConnection }) {
   });
 
   return (
-    <div className="elegant-card flex items-center gap-4 p-4">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm flex items-center gap-4 p-4">
       <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-muted">
         {conn.is_active ? (
           <Wifi size={18} className="text-green-500" />
@@ -86,13 +88,13 @@ function AddConnectionForm() {
   });
 
   return (
-    <div className="elegant-card space-y-3 p-4">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm space-y-3 p-4">
       <h3 className="text-sm font-semibold">Add Connection</h3>
       <div className="flex gap-2 flex-wrap">
         <select
           value={network}
           onChange={(e) => setNetwork(e.target.value)}
-          className="elegant-input py-1.5"
+          className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         >
           {NETWORKS.map((n) => (
             <option key={n} value={n}>
@@ -100,17 +102,16 @@ function AddConnectionForm() {
             </option>
           ))}
         </select>
-        <input
+        <Input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Display name..."
-          className="elegant-input min-w-[200px] flex-1 py-1.5"
+          className="min-w-[200px] flex-1"
         />
-        <button
+        <Button
           onClick={() => mutation.mutate()}
           disabled={mutation.isPending || !displayName.trim()}
-          className="elegant-button-primary py-1.5"
         >
           {mutation.isPending ? (
             <Loader2 size={14} className="animate-spin" />
@@ -118,10 +119,10 @@ function AddConnectionForm() {
             <Plus size={14} />
           )}
           Add
-        </button>
+        </Button>
       </div>
       {mutation.isError && (
-        <p className="text-xs text-red-500">
+        <p className="text-xs text-destructive">
           {mutation.error instanceof Error
             ? mutation.error.message
             : "Failed to add connection"}
@@ -157,7 +158,7 @@ function FeatureFlagsSection() {
       <h2 className="text-sm font-semibold text-foreground">
         Network Feature Flags
       </h2>
-      <div className="elegant-card divide-y divide-border">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm divide-y divide-border">
         {(Object.keys(flags) as (keyof FeatureFlags)[]).map((network) => (
           <div
             key={network}
@@ -218,7 +219,7 @@ export function SettingsIntegrationsPage() {
       )}
 
       {isError && (
-        <p className="text-sm text-red-500">
+        <p className="text-sm text-destructive">
           Failed to load connections. Please refresh the page.
         </p>
       )}

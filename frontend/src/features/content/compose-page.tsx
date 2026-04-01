@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, Send, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "../auth/use-auth";
 import { createContent, submitContentForApproval } from "./api";
 import { startCompare, fetchProviders } from "../generation/api";
@@ -121,13 +123,13 @@ export function ComposePage() {
       {/* Título */}
       <div className="space-y-2">
         <label className="text-sm font-medium">Título</label>
-        <input
+        <Input
           data-testid="post-title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Título del contenido..."
-          className="elegant-input w-full"
+          className="w-full"
         />
       </div>
 
@@ -165,7 +167,7 @@ export function ComposePage() {
           onChange={(e) => setBrief(e.target.value)}
           placeholder="Describe qué querés comunicar..."
           rows={4}
-          className="elegant-input w-full"
+          className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -186,23 +188,22 @@ export function ComposePage() {
       </div>
 
       {/* Generar */}
-      <button
+      <Button
         onClick={() => compareMutation.mutate()}
         disabled={
           compareMutation.isPending ||
           !brief.trim() ||
           selectedProviders.length === 0
         }
-        className="elegant-button-primary"
       >
         {compareMutation.isPending && (
           <Loader2 className="animate-spin" size={14} />
         )}
         {compareRunId ? "Regenerar" : "Generar diseño"}
-      </button>
+      </Button>
 
       {compareMutation.isError && (
-        <p className="text-xs text-red-500">
+        <p className="text-xs text-destructive">
           {compareMutation.error instanceof Error
             ? compareMutation.error.message
             : "Error al generar"}
@@ -220,7 +221,7 @@ export function ComposePage() {
       )}
 
       {/* Enviar para aprobación */}
-      <button
+      <Button
         data-testid="submit-for-approval"
         onClick={() => createAndSubmitMutation.mutate()}
         disabled={
@@ -229,7 +230,6 @@ export function ComposePage() {
           !network ||
           createAndSubmitMutation.isPending
         }
-        className="elegant-button-primary"
       >
         {createAndSubmitMutation.isPending ? (
           <Loader2 className="animate-spin" size={14} />
@@ -237,10 +237,10 @@ export function ComposePage() {
           <Send size={14} />
         )}
         Enviar para aprobación
-      </button>
+      </Button>
 
       {createAndSubmitMutation.isError && (
-        <p className="text-xs text-red-500">
+        <p className="text-xs text-destructive">
           {createAndSubmitMutation.error instanceof Error
             ? createAndSubmitMutation.error.message
             : "Error al enviar"}

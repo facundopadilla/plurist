@@ -17,6 +17,7 @@ import {
   Bot,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { Button } from "@/components/ui/button";
 import { useTheme } from "../use-theme";
 import { useAuth } from "../../features/auth/use-auth";
 import { logoutSession } from "../../features/auth/api";
@@ -127,17 +128,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
               )}
-              <button
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => setCollapsed(!collapsed)}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                className="elegant-button-secondary hidden shrink-0 p-2 lg:inline-flex"
+                className="hidden shrink-0 lg:inline-flex"
               >
                 {collapsed ? (
                   <PanelLeftOpen size={15} />
                 ) : (
                   <PanelLeftClose size={15} />
                 )}
-              </button>
+              </Button>
             </div>
             {!collapsed && (
               <div className="mt-3 grid gap-1 text-sm text-muted-foreground">
@@ -226,53 +229,57 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {collapsed ? (
                 <>
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => void handleLogout()}
                     data-testid="logout-button"
                     aria-label="Sign out"
                     title="Sign out"
-                    className="elegant-button-secondary w-full justify-between disabled:opacity-60 lg:w-auto lg:p-2 lg:justify-center"
+                    className="w-full justify-between disabled:opacity-60 lg:w-auto lg:p-2 lg:justify-center"
                     disabled={isLoggingOut}
                   >
                     <span className="lg:hidden">
                       {isLoggingOut ? "Signing out..." : "Sign out"}
                     </span>
                     <LogOut size={15} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={toggle}
                     data-testid="theme-toggle"
                     aria-label="Toggle theme"
                     title={theme === "dark" ? "Light mode" : "Dark mode"}
-                    className="elegant-button-secondary w-full justify-between lg:w-auto lg:p-2 lg:justify-center"
+                    className="w-full justify-between lg:w-auto lg:p-2 lg:justify-center"
                   >
                     <span className="lg:hidden">
                       {theme === "dark" ? "Light mode" : "Dark mode"}
                     </span>
                     {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => void handleLogout()}
                     data-testid="logout-button"
                     aria-label="Sign out"
-                    className="elegant-button-secondary w-full justify-between disabled:opacity-60"
+                    className="w-full justify-between disabled:opacity-60"
                     disabled={isLoggingOut}
                   >
                     <span>{isLoggingOut ? "Signing out..." : "Sign out"}</span>
                     <LogOut size={15} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={toggle}
                     data-testid="theme-toggle"
                     aria-label="Toggle theme"
-                    className="elegant-button-secondary w-full justify-between"
+                    className="w-full justify-between"
                   >
                     <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
                     {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-                  </button>
+                  </Button>
                 </>
               )}
             </div>

@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { Button } from "@/components/ui/button";
 import { fetchProject, getProjectIconUrl } from "./api";
 import { ProjectDesignBank } from "./project-design-bank";
 import { ProjectContent } from "./project-content";
@@ -55,7 +56,7 @@ export function ProjectDetailPage() {
 
   if (isError || !project) {
     return (
-      <p className="text-sm text-red-500">
+      <p className="text-sm text-destructive">
         Project not found or failed to load.
       </p>
     );
@@ -129,22 +130,26 @@ export function ProjectDetailPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {canEdit && (
-            <button
+            <Button
               onClick={() => setShowEdit(true)}
-              className="inline-flex items-center gap-1.5 rounded-[14px] border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent transition-colors"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
             >
               <Pencil size={12} />
               Editar
-            </button>
+            </Button>
           )}
           {isOwner && (
-            <button
+            <Button
               onClick={() => setShowDelete(true)}
-              className="inline-flex items-center gap-1.5 rounded-[14px] border border-red-200 dark:border-red-800 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-red-200 dark:border-red-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
             >
               <Trash2 size={12} />
               Eliminar
-            </button>
+            </Button>
           )}
         </div>
       </div>

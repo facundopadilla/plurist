@@ -35,8 +35,16 @@ import { SourceDetailModal } from "./source-detail-modal";
 import { AddResourceModal } from "./add-resource-modal";
 import { FolderCard } from "./folder-card";
 import { fetchProjects, getProjectIconUrl } from "../projects/api";
-import { StatusBadge } from "../../components/ui/status-badge";
-import { ElegantModal } from "../../components/ui/elegant-modal";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { DesignBankSource } from "./types";
 import type { Project } from "../projects/types";
 
@@ -163,24 +171,33 @@ function sourceStatusProps(status: string) {
     case "ready":
       return {
         label: "ready",
-        tone: "success" as const,
+        variant: "success" as const,
         icon: <CheckCircle size={11} />,
       };
     case "processing":
       return {
         label: "processing",
-        tone: "warning" as const,
+        variant: "warning" as const,
         icon: <Loader2 size={11} className="animate-spin" />,
       };
     case "failed":
       return {
         label: "failed",
-        tone: "danger" as const,
+        variant: "danger" as const,
         icon: <XCircle size={11} />,
       };
     default:
-      return { label: "pending", tone: "neutral" as const, icon: undefined };
+      return { label: "pending", variant: "neutral" as const, icon: undefined };
   }
+}
+
+function SourceStatusBadge({ status }: { status: string }) {
+  const { label, variant, icon } = sourceStatusProps(status);
+  return (
+    <Badge variant={variant} className="rounded-full px-2 py-0.5 gap-1">
+      {icon} {label}
+    </Badge>
+  );
 }
 
 function SourceCard({
@@ -216,7 +233,7 @@ function SourceCard({
       data-testid="design-bank-source-card"
       onClick={onClick}
       className={cn(
-        "group relative flex items-start gap-3 elegant-card p-4",
+        "group relative flex items-start gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm p-4",
         onClick && "cursor-pointer hover:bg-accent/30 transition-colors",
       )}
     >
@@ -263,14 +280,16 @@ function SourceCard({
         )}
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <span data-testid="design-bank-source-status">
-            <StatusBadge {...sourceStatusProps(source.status)} variant="pill" />
+            <SourceStatusBadge status={source.status} />
           </span>
           <span className="text-xs text-muted-foreground uppercase tracking-wide">
             {source.source_type}
           </span>
         </div>
         {source.status === "failed" && source.error_message && (
-          <p className="mt-1 text-xs text-red-500">{source.error_message}</p>
+          <p className="mt-1 text-xs text-destructive">
+            {source.error_message}
+          </p>
         )}
       </div>
     </div>
@@ -314,7 +333,7 @@ function SourceRow({
       <p className="text-sm text-foreground truncate flex-1">{label}</p>
       <div className="flex items-center gap-2 shrink-0">
         <span data-testid="design-bank-source-status">
-          <StatusBadge {...sourceStatusProps(source.status)} variant="pill" />
+          <SourceStatusBadge status={source.status} />
         </span>
         <span className="text-xs text-muted-foreground uppercase tracking-wide hidden sm:inline">
           {source.source_type}
@@ -686,13 +705,10 @@ export function DesignBankPage() {
 
         <div className="flex items-center gap-2 shrink-0">
           {canUpload && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="elegant-button-primary py-1.5"
-            >
+            <Button size="sm" onClick={() => setShowAddModal(true)}>
               <Plus size={14} />
               Agregar recurso
-            </button>
+            </Button>
           )}
           {/* View toggle */}
           <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
@@ -732,18 +748,18 @@ export function DesignBankPage() {
               size={14}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
             />
-            <input
+            <Input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar recursos..."
-              className="elegant-input w-full pl-8"
+              className="w-full pl-8"
             />
           </div>
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="elegant-input px-2"
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="name-asc">A → Z</option>
             <option value="name-desc">Z → A</option>
@@ -779,7 +795,7 @@ export function DesignBankPage() {
 
       {/* Error */}
       {sourcesError && (
-        <p className="text-sm text-red-500">
+        <p className="text-sm text-destructive">
           No se pudieron cargar los recursos.
         </p>
       )}
@@ -958,60 +974,69 @@ export function DesignBankPage() {
       />
 
       {/* Delete confirmation modal */}
-      <ElegantModal
+      <Dialog
         open={!!deletingSource}
         onOpenChange={(o) => {
           if (!o) setDeletingSource(null);
         }}
-        maxWidth="max-w-sm"
-        title="Confirmar eliminación"
       >
-        <div className="p-6 space-y-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle size={20} className="text-red-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-foreground">
-                ¿Eliminar recurso?
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Confirmar eliminación</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                size={20}
+                className="text-red-500 shrink-0 mt-0.5"
+              />
+              <div>
+                <p className="font-semibold text-foreground">
+                  ¿Eliminar recurso?
+                </p>
+                <DialogDescription className="mt-1">
+                  &ldquo;
+                  {deletingSource?.name ||
+                    deletingSource?.original_filename ||
+                    `#${deletingSource?.id}`}
+                  &rdquo; se eliminará permanentemente.
+                </DialogDescription>
+              </div>
+            </div>
+            {deleteMutation.isError && (
+              <p className="text-xs text-destructive">
+                {deleteMutation.error instanceof Error
+                  ? deleteMutation.error.message
+                  : "Error al eliminar"}
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                &ldquo;
-                {deletingSource?.name ||
-                  deletingSource?.original_filename ||
-                  `#${deletingSource?.id}`}
-                &rdquo; se eliminará permanentemente.
-              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeletingSource(null)}
+                disabled={deleteMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() =>
+                  deletingSource && deleteMutation.mutate(deletingSource.id)
+                }
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending && (
+                  <Loader2 size={12} className="animate-spin" />
+                )}
+                Eliminar
+              </Button>
             </div>
           </div>
-          {deleteMutation.isError && (
-            <p className="text-xs text-red-500">
-              {deleteMutation.error instanceof Error
-                ? deleteMutation.error.message
-                : "Error al eliminar"}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setDeletingSource(null)}
-              disabled={deleteMutation.isPending}
-              className="elegant-button-secondary py-1.5 px-3"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() =>
-                deletingSource && deleteMutation.mutate(deletingSource.id)
-              }
-              disabled={deleteMutation.isPending}
-              className="inline-flex items-center gap-1.5 rounded-[14px] bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
-              {deleteMutation.isPending && (
-                <Loader2 size={12} className="animate-spin" />
-              )}
-              Eliminar
-            </button>
-          </div>
-        </div>
-      </ElegantModal>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

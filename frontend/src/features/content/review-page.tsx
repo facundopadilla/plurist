@@ -19,7 +19,9 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { StatusBadge } from "../../components/ui/status-badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "../auth/use-auth";
 import {
   fetchContent,
@@ -54,7 +56,7 @@ function getStoredView(key: string, fallback: ViewMode): ViewMode {
 }
 
 // ---------------------------------------------------------------------------
-// StatusBadge helpers
+// Badge helpers
 // ---------------------------------------------------------------------------
 
 const statusIcons: Record<string, React.ReactNode> = {
@@ -93,7 +95,10 @@ function NetworkBadges({ networks }: { networks: string[] }) {
   return (
     <div className="flex gap-1">
       {networks.map((n) => (
-        <span key={n} className="elegant-chip px-2 py-0.5">
+        <span
+          key={n}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+        >
           {n}
         </span>
       ))}
@@ -136,7 +141,7 @@ function PostCard({ post }: { post: DraftPost }) {
   const canPublish = (isOwner || isPublisher) && post.status === "approved";
 
   return (
-    <div className="elegant-card p-4 space-y-3">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="font-medium text-foreground truncate">{post.title}</h3>
@@ -146,11 +151,10 @@ function PostCard({ post }: { post: DraftPost }) {
             </p>
           )}
         </div>
-        <StatusBadge
-          label={post.status.replace("_", " ")}
-          tone={mapStatusToTone(post.status)}
-          icon={statusIcons[post.status]}
-        />
+        <Badge variant={mapStatusToTone(post.status)} className="gap-1">
+          {statusIcons[post.status]}
+          {post.status.replace("_", " ")}
+        </Badge>
       </div>
 
       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
@@ -168,16 +172,17 @@ function PostCard({ post }: { post: DraftPost }) {
       </div>
 
       {post.failure_message && (
-        <p className="text-xs text-red-500">{post.failure_message}</p>
+        <p className="text-xs text-destructive">{post.failure_message}</p>
       )}
 
       <div className="flex items-center gap-2">
         {canApprove && (
           <>
-            <button
+            <Button
               onClick={() => approveMutation.mutate()}
               disabled={approveMutation.isPending}
-              className="inline-flex items-center gap-1.5 rounded-[14px] bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              size="sm"
+              className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
             >
               {approveMutation.isPending ? (
                 <Loader2 size={12} className="animate-spin" />
@@ -185,21 +190,23 @@ function PostCard({ post }: { post: DraftPost }) {
                 <CheckCircle size={12} />
               )}
               Approve
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowRejectForm(!showRejectForm)}
-              className="inline-flex items-center gap-1.5 rounded-[14px] bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              size="sm"
+              className="gap-1.5 bg-red-600 hover:bg-red-700 text-white"
             >
               <XCircle size={12} />
               Reject
-            </button>
+            </Button>
           </>
         )}
         {canPublish && (
-          <button
+          <Button
             onClick={() => publishMutation.mutate()}
             disabled={publishMutation.isPending}
-            className="inline-flex items-center gap-1.5 rounded-[14px] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:brightness-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            size="sm"
+            className="gap-1.5"
           >
             {publishMutation.isPending ? (
               <Loader2 size={12} className="animate-spin" />
@@ -207,30 +214,31 @@ function PostCard({ post }: { post: DraftPost }) {
               <Send size={12} />
             )}
             Publish Now
-          </button>
+          </Button>
         )}
       </div>
 
       {showRejectForm && (
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Reason for rejection..."
-            className="elegant-input flex-1 py-1.5"
+            className="flex-1"
           />
-          <button
+          <Button
             onClick={() => rejectMutation.mutate()}
             disabled={rejectMutation.isPending}
-            className="inline-flex items-center rounded-[14px] bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            size="sm"
+            className="bg-red-600 hover:bg-red-700 text-white"
           >
             {rejectMutation.isPending ? (
               <Loader2 size={12} className="animate-spin" />
             ) : (
               "Confirm"
             )}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -513,19 +521,21 @@ export function ReviewPage() {
         {activeFolder != null ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={exitFolder}
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm"
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft size={16} />
                 <span>Contenido</span>
-              </button>
+              </Button>
               <span className="text-muted-foreground">/</span>
               <span className="font-semibold text-foreground">
                 {folderLabel}
               </span>
             </div>
-            <button
+            <Button
               onClick={() =>
                 navigate(
                   activeFolder !== "unassigned"
@@ -533,11 +543,10 @@ export function ReviewPage() {
                     : "/compose",
                 )
               }
-              className="elegant-button-primary"
             >
               <Plus size={14} />
               Nuevo contenido
-            </button>
+            </Button>
           </div>
         ) : (
           <>
@@ -548,7 +557,7 @@ export function ReviewPage() {
                   Revisá, aprobá y publicá contenido por proyecto.
                 </p>
               </div>
-              <button
+              <Button
                 onClick={() =>
                   navigate(
                     activeFolder && activeFolder !== "unassigned"
@@ -556,11 +565,10 @@ export function ReviewPage() {
                       : "/compose",
                   )
                 }
-                className="elegant-button-primary"
               >
                 <Plus size={14} />
                 Nuevo contenido
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -608,18 +616,18 @@ export function ReviewPage() {
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
               />
-              <input
+              <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar contenido..."
-                className="elegant-input w-full pl-8"
+                className="w-full pl-8"
               />
             </div>
             <select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="elegant-input px-2"
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="name-asc">A → Z</option>
               <option value="name-desc">Z → A</option>
@@ -671,7 +679,9 @@ export function ReviewPage() {
 
       {/* Error */}
       {isError && (
-        <p className="text-sm text-red-500">No se pudo cargar el contenido.</p>
+        <p className="text-sm text-destructive">
+          No se pudo cargar el contenido.
+        </p>
       )}
 
       {!isLoading && (
@@ -709,12 +719,14 @@ export function ReviewPage() {
               <p className="text-sm text-muted-foreground">
                 Sin proyectos que coincidan con la búsqueda.
               </p>
-              <button
+              <Button
+                variant="link"
+                size="sm"
                 onClick={() => setSearch("")}
-                className="mt-2 text-xs text-primary hover:underline"
+                className="mt-2"
               >
                 Limpiar búsqueda
-              </button>
+              </Button>
             </div>
           )}
 

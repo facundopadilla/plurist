@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronDown, Check, FolderOpen, Cpu } from "lucide-react";
 import { cn } from "../../lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 import { fetchProjects } from "../projects/api";
 import {
   fetchFormats,
@@ -41,8 +47,8 @@ export function ProjectDropdown() {
   const selected = projects.find((p) => p.id === projectId);
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <FolderOpen size={13} className="text-muted-foreground" />
           <span className="max-w-[120px] truncate">
@@ -50,43 +56,38 @@ export function ProjectDropdown() {
           </span>
           <ChevronDown size={12} className="text-muted-foreground" />
         </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="z-50 min-w-[180px] max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-md p-1"
-          sideOffset={4}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-[180px] max-h-64 overflow-y-auto">
+        <DropdownMenuItem
+          onSelect={() => setConfig({ projectId: null })}
+          className={cn(
+            "flex items-center gap-2",
+            projectId === null && "font-medium",
+          )}
         >
-          <DropdownMenu.Item
-            onSelect={() => setConfig({ projectId: null })}
+          <FolderOpen size={13} className="text-muted-foreground" />
+          <span className="flex-1">Sin proyecto</span>
+          {projectId === null && <Check size={13} />}
+        </DropdownMenuItem>
+        {projects.map((p) => (
+          <DropdownMenuItem
+            key={p.id}
+            onSelect={() => setConfig({ projectId: p.id })}
             className={cn(
-              "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer outline-none hover:bg-accent",
-              projectId === null && "font-medium",
+              "flex items-center gap-2",
+              projectId === p.id && "font-medium",
             )}
           >
-            <FolderOpen size={13} className="text-muted-foreground" />
-            <span className="flex-1">Sin proyecto</span>
-            {projectId === null && <Check size={13} />}
-          </DropdownMenu.Item>
-          {projects.map((p) => (
-            <DropdownMenu.Item
-              key={p.id}
-              onSelect={() => setConfig({ projectId: p.id })}
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer outline-none hover:bg-accent",
-                projectId === p.id && "font-medium",
-              )}
-            >
-              <div
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: p.color || "#6366f1" }}
-              />
-              <span className="flex-1 truncate">{p.name}</span>
-              {projectId === p.id && <Check size={13} />}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+            <div
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: p.color || "#6366f1" }}
+            />
+            <span className="flex-1 truncate">{p.name}</span>
+            {projectId === p.id && <Check size={13} />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -99,41 +100,36 @@ export function NetworkDropdown() {
   const selected = NETWORKS.find((n) => n.id === network);
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <span>{selected ? selected.label : "Red social"}</span>
           <ChevronDown size={12} className="text-muted-foreground" />
         </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="z-50 min-w-[160px] rounded-lg border border-border bg-card shadow-md p-1"
-          sideOffset={4}
-        >
-          {NETWORKS.map((n) => (
-            <DropdownMenu.Item
-              key={n.id}
-              onSelect={() =>
-                setConfig({
-                  network: n.id,
-                  formatKey: "",
-                  formatWidth: 1080,
-                  formatHeight: 1080,
-                })
-              }
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer outline-none hover:bg-accent",
-                network === n.id && "font-medium",
-              )}
-            >
-              <span className="flex-1">{n.label}</span>
-              {network === n.id && <Check size={13} />}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-[160px]">
+        {NETWORKS.map((n) => (
+          <DropdownMenuItem
+            key={n.id}
+            onSelect={() =>
+              setConfig({
+                network: n.id,
+                formatKey: "",
+                formatWidth: 1080,
+                formatHeight: 1080,
+              })
+            }
+            className={cn(
+              "flex items-center gap-2",
+              network === n.id && "font-medium",
+            )}
+          >
+            <span className="flex-1">{n.label}</span>
+            {network === n.id && <Check size={13} />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -154,8 +150,8 @@ export function FormatDropdown() {
   const selected = formats.find((f) => f.key === formatKey);
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
           disabled={!network}
           className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
@@ -163,42 +159,37 @@ export function FormatDropdown() {
           <span>{selected ? selected.label : "Formato"}</span>
           <ChevronDown size={12} className="text-muted-foreground" />
         </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="z-50 min-w-[200px] max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-md p-1"
-          sideOffset={4}
-        >
-          {networkFormats.length === 0 && (
-            <div className="px-2 py-2 text-sm text-muted-foreground">
-              Seleccioná una red primero
-            </div>
-          )}
-          {networkFormats.map((fmt) => (
-            <DropdownMenu.Item
-              key={fmt.key}
-              onSelect={() =>
-                setConfig({
-                  formatKey: fmt.key,
-                  formatWidth: fmt.width,
-                  formatHeight: fmt.height,
-                })
-              }
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer outline-none hover:bg-accent",
-                formatKey === fmt.key && "font-medium",
-              )}
-            >
-              <span className="flex-1">{fmt.label}</span>
-              <span className="text-xs text-muted-foreground">
-                {fmt.width}×{fmt.height}
-              </span>
-              {formatKey === fmt.key && <Check size={13} />}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-[200px] max-h-64 overflow-y-auto">
+        {networkFormats.length === 0 && (
+          <div className="px-2 py-2 text-sm text-muted-foreground">
+            Seleccioná una red primero
+          </div>
+        )}
+        {networkFormats.map((fmt) => (
+          <DropdownMenuItem
+            key={fmt.key}
+            onSelect={() =>
+              setConfig({
+                formatKey: fmt.key,
+                formatWidth: fmt.width,
+                formatHeight: fmt.height,
+              })
+            }
+            className={cn(
+              "flex items-center gap-2",
+              formatKey === fmt.key && "font-medium",
+            )}
+          >
+            <span className="flex-1">{fmt.label}</span>
+            <span className="text-xs text-muted-foreground">
+              {fmt.width}×{fmt.height}
+            </span>
+            {formatKey === fmt.key && <Check size={13} />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -229,8 +220,8 @@ export function ProviderDropdown() {
   };
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <span>
             {selectedProviders.length === 0
@@ -239,45 +230,34 @@ export function ProviderDropdown() {
           </span>
           <ChevronDown size={12} className="text-muted-foreground" />
         </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="z-50 min-w-[200px] rounded-lg border border-border bg-card shadow-md p-1"
-          sideOffset={4}
-        >
-          {providers.map((key) => {
-            const isSelected = selectedProviders.includes(key);
-            const isOllama = key === "ollama";
-            return (
-              <DropdownMenu.CheckboxItem
-                key={key}
-                checked={isSelected}
-                onCheckedChange={() => toggle(key)}
-                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer outline-none hover:bg-accent"
-              >
-                <DropdownMenu.ItemIndicator>
-                  <Check size={13} />
-                </DropdownMenu.ItemIndicator>
-                <span className={cn("flex-1", !isSelected && "pl-[17px]")}>
-                  {key}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-[200px]">
+        {providers.map((key) => {
+          const isSelected = selectedProviders.includes(key);
+          const isOllama = key === "ollama";
+          return (
+            <DropdownMenuCheckboxItem
+              key={key}
+              checked={isSelected}
+              onCheckedChange={() => toggle(key)}
+            >
+              <span className="flex-1">{key}</span>
+              {isOllama && ollamaModels.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {ollamaModels.length} model
+                  {ollamaModels.length !== 1 ? "s" : ""}
                 </span>
-                {isOllama && ollamaModels.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {ollamaModels.length} model
-                    {ollamaModels.length !== 1 ? "s" : ""}
-                  </span>
-                )}
-                {isOllama && ollamaModels.length === 0 && (
-                  <span className="text-xs text-muted-foreground/60">
-                    offline
-                  </span>
-                )}
-              </DropdownMenu.CheckboxItem>
-            );
-          })}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+              )}
+              {isOllama && ollamaModels.length === 0 && (
+                <span className="text-xs text-muted-foreground/60">
+                  offline
+                </span>
+              )}
+            </DropdownMenuCheckboxItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -378,8 +358,8 @@ export function ModelDropdown() {
     : "Modelo";
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
           disabled={selectedProviders.length === 0}
           className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
@@ -388,63 +368,58 @@ export function ModelDropdown() {
           <span className="max-w-[160px] truncate">{displayLabel}</span>
           <ChevronDown size={12} className="text-muted-foreground" />
         </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="z-50 min-w-[220px] max-h-72 overflow-y-auto rounded-lg border border-border bg-card shadow-md p-1"
-          sideOffset={4}
-        >
-          {selectedProviders.length > 1 && (
-            <div className="px-2 pt-1 pb-0.5">
-              {selectedProviders.map((p) => (
-                <button
-                  key={p}
-                  onClick={() =>
-                    setConfig({
-                      selectedProviders: [
-                        p,
-                        ...selectedProviders.filter((x) => x !== p),
-                      ],
-                    })
-                  }
-                  className={cn(
-                    "inline-flex items-center px-2 py-0.5 mr-1 mb-1 text-xs rounded-full border transition-colors",
-                    p === activeProvider
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:bg-accent",
-                  )}
-                >
-                  {p}
-                </button>
-              ))}
-              <div className="border-b border-border mt-1 mb-1" />
-            </div>
-          )}
-          {models.length === 0 && (
-            <div className="px-2 py-2 text-xs text-muted-foreground">
-              {activeProvider === "ollama"
-                ? "Ollama offline o sin modelos"
-                : "Sin modelos disponibles"}
-            </div>
-          )}
-          {models.map((model) => {
-            const isSelected = selectedModels[activeProvider] === model;
-            return (
-              <DropdownMenu.Item
-                key={model}
-                onSelect={() => handleSelectModel(activeProvider, model)}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-[220px] max-h-72 overflow-y-auto">
+        {selectedProviders.length > 1 && (
+          <div className="px-2 pt-1 pb-0.5">
+            {selectedProviders.map((p) => (
+              <button
+                key={p}
+                onClick={() =>
+                  setConfig({
+                    selectedProviders: [
+                      p,
+                      ...selectedProviders.filter((x) => x !== p),
+                    ],
+                  })
+                }
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer outline-none hover:bg-accent",
-                  isSelected && "font-medium",
+                  "inline-flex items-center px-2 py-0.5 mr-1 mb-1 text-xs rounded-full border transition-colors",
+                  p === activeProvider
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-accent",
                 )}
               >
-                <span className="flex-1 truncate">{model}</span>
-                {isSelected && <Check size={13} />}
-              </DropdownMenu.Item>
-            );
-          })}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+                {p}
+              </button>
+            ))}
+            <div className="border-b border-border mt-1 mb-1" />
+          </div>
+        )}
+        {models.length === 0 && (
+          <div className="px-2 py-2 text-xs text-muted-foreground">
+            {activeProvider === "ollama"
+              ? "Ollama offline o sin modelos"
+              : "Sin modelos disponibles"}
+          </div>
+        )}
+        {models.map((model) => {
+          const isSelected = selectedModels[activeProvider] === model;
+          return (
+            <DropdownMenuItem
+              key={model}
+              onSelect={() => handleSelectModel(activeProvider, model)}
+              className={cn(
+                "flex items-center gap-2",
+                isSelected && "font-medium",
+              )}
+            >
+              <span className="flex-1 truncate">{model}</span>
+              {isSelected && <Check size={13} />}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

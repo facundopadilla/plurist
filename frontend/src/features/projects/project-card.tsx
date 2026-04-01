@@ -44,7 +44,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
     <div className="relative">
       <div
         onClick={() => navigate(`/projects/${project.id}`)}
-        className="elegant-card block border p-5 transition-colors group cursor-pointer hover:border-primary/30"
+        className="rounded-xl border border-border bg-card text-card-foreground shadow-sm block p-5 transition-colors group cursor-pointer hover:border-primary/30"
         style={{ borderTopColor: projectColor, backgroundColor: cardBg }}
       >
         <div className="flex items-start gap-3">
@@ -111,7 +111,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           <Link
             to={`/design-bank?folder=${project.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="elegant-chip hover:bg-primary/10 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
           >
             <ImageIcon size={11} />
             Design Bank
@@ -119,7 +119,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           <Link
             to={`/contenido?folder=${project.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="elegant-chip hover:bg-primary/10 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
           >
             <FileText size={11} />
             Contenido

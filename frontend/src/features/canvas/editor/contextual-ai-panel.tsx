@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useCanvasStore } from "../canvas-store";
 import { ModelDropdown, ProviderDropdown } from "../header-dropdowns";
 import { streamChatMessage } from "../chat/use-chat-stream";
+import { Button } from "@/components/ui/button";
 import type { VariantGenerationMeta, VariantType } from "../types";
 
 function describeMode(
@@ -222,14 +223,15 @@ export function ContextualAiPanel() {
             <p className="text-xs text-muted-foreground">{modeUi.summary}</p>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={closeContextualAi}
-          className="rounded p-1 text-muted-foreground transition hover:bg-accent hover:text-foreground"
           aria-label="Cerrar IA contextual"
+          className="h-8 w-8 text-muted-foreground"
         >
           <X size={16} />
-        </button>
+        </Button>
       </div>
 
       <div className="flex h-[calc(100vh-56px)] flex-col gap-4 p-4">
@@ -258,14 +260,14 @@ export function ContextualAiPanel() {
           </div>
         )}
 
-        <button
+        <Button
           type="button"
           onClick={() => void handleGenerate()}
           disabled={isGenerating}
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
+          className="w-full justify-center"
         >
           {isGenerating ? "Generando..." : modeUi.action}
-        </button>
+        </Button>
       </div>
     </aside>
   );

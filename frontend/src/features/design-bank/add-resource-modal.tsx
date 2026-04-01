@@ -11,6 +11,8 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   uploadFile,
   ingestUrl,
@@ -177,7 +179,7 @@ export function AddResourceModal({
                   e.target.value ? Number(e.target.value) : null,
                 )
               }
-              className="elegant-input w-full"
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Sin proyecto</option>
               {projects.map((p) => (
@@ -238,7 +240,7 @@ export function AddResourceModal({
                 />
               </label>
               {fileError && (
-                <p className="mt-1 text-xs text-red-500">{fileError}</p>
+                <p className="mt-1 text-xs text-destructive">{fileError}</p>
               )}
               {fileMutation.isSuccess && (
                 <p className="mt-1 text-xs text-green-600">
@@ -250,17 +252,16 @@ export function AddResourceModal({
 
           {activeTab === "url" && (
             <div className="flex gap-2">
-              <input
+              <Input
                 type="url"
                 value={urlValue}
                 onChange={(e) => setUrlValue(e.target.value)}
                 placeholder="https://..."
-                className="elegant-input flex-1"
+                className="flex-1"
               />
-              <button
+              <Button
                 onClick={() => urlMutation.mutate()}
                 disabled={urlMutation.isPending || !urlValue.trim()}
-                className="elegant-button-primary"
               >
                 {urlMutation.isPending ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -268,18 +269,18 @@ export function AddResourceModal({
                   <Plus size={13} />
                 )}
                 Agregar
-              </button>
+              </Button>
             </div>
           )}
 
           {activeTab === "color" && (
             <div className="flex flex-wrap gap-2">
-              <input
+              <Input
                 type="text"
                 value={colorName}
                 onChange={(e) => setColorName(e.target.value)}
                 placeholder="Nombre (ej. Primario)"
-                className="elegant-input flex-1 min-w-[120px]"
+                className="flex-1 min-w-[120px]"
               />
               <div className="flex items-center gap-1.5 rounded-[14px] border border-input bg-background px-2 py-1">
                 <input
@@ -292,17 +293,16 @@ export function AddResourceModal({
                   {colorHex}
                 </span>
               </div>
-              <input
+              <Input
                 type="text"
                 value={colorRole}
                 onChange={(e) => setColorRole(e.target.value)}
                 placeholder="Rol (opcional)"
-                className="elegant-input w-28"
+                className="w-28"
               />
-              <button
+              <Button
                 onClick={() => colorMutation.mutate()}
                 disabled={colorMutation.isPending || !colorName.trim()}
-                className="elegant-button-primary"
               >
                 {colorMutation.isPending ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -310,34 +310,33 @@ export function AddResourceModal({
                   <Plus size={13} />
                 )}
                 Agregar
-              </button>
+              </Button>
             </div>
           )}
 
           {activeTab === "font" && (
             <div className="flex flex-wrap gap-2">
-              <input
+              <Input
                 type="text"
                 value={fontName}
                 onChange={(e) => setFontName(e.target.value)}
                 placeholder="Nombre (ej. Fuente titular)"
-                className="elegant-input flex-1 min-w-[140px]"
+                className="flex-1 min-w-[140px]"
               />
-              <input
+              <Input
                 type="text"
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
                 placeholder="Familia (ej. Inter)"
-                className="elegant-input flex-1 min-w-[120px]"
+                className="flex-1 min-w-[120px]"
               />
-              <button
+              <Button
                 onClick={() => fontMutation.mutate()}
                 disabled={
                   fontMutation.isPending ||
                   !fontName.trim() ||
                   !fontFamily.trim()
                 }
-                className="elegant-button-primary"
               >
                 {fontMutation.isPending ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -345,24 +344,24 @@ export function AddResourceModal({
                   <Plus size={13} />
                 )}
                 Agregar
-              </button>
+              </Button>
             </div>
           )}
 
           {activeTab === "text" && (
             <div className="space-y-2">
               <div className="flex gap-2">
-                <input
+                <Input
                   type="text"
                   value={textName}
                   onChange={(e) => setTextName(e.target.value)}
                   placeholder="Nombre (ej. Tagline)"
-                  className="elegant-input flex-1"
+                  className="flex-1"
                 />
                 <select
                   value={textKind}
                   onChange={(e) => setTextKind(e.target.value)}
-                  className="elegant-input px-2"
+                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="copy">Copy</option>
                   <option value="tagline">Tagline</option>
@@ -376,16 +375,16 @@ export function AddResourceModal({
                   onChange={(e) => setTextContent(e.target.value)}
                   placeholder="Escribí tu copy de marca aquí..."
                   rows={3}
-                  className="elegant-input flex-1 resize-none"
+                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 flex-1 resize-none"
                 />
-                <button
+                <Button
                   onClick={() => textMutation.mutate()}
                   disabled={
                     textMutation.isPending ||
                     !textName.trim() ||
                     !textContent.trim()
                   }
-                  className="self-end elegant-button-primary"
+                  className="self-end"
                 >
                   {textMutation.isPending ? (
                     <Loader2 size={13} className="animate-spin" />
@@ -393,7 +392,7 @@ export function AddResourceModal({
                     <Plus size={13} />
                   )}
                   Agregar
-                </button>
+                </Button>
               </div>
             </div>
           )}

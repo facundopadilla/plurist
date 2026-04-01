@@ -19,7 +19,7 @@ function ContentRow({ post }: { post: DraftPost }) {
     STATUS_STYLES[post.status] ?? "bg-muted text-muted-foreground";
 
   return (
-    <div className="flex items-center gap-3 elegant-card p-3">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm p-3">
       <FileText size={14} className="text-muted-foreground shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-foreground truncate">
@@ -73,7 +73,9 @@ export function ProjectContent({ projectId }: { projectId: number }) {
 
   if (isError) {
     return (
-      <p className="text-sm text-red-500">No se pudo cargar el contenido.</p>
+      <p className="text-sm text-destructive">
+        No se pudo cargar el contenido.
+      </p>
     );
   }
 

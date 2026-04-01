@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Download, Send } from "lucide-react";
 import { useCanvasStore } from "./canvas-store";
 import { cn } from "../../lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface HeaderBarProps {
   onExport?: () => void;
@@ -64,24 +65,27 @@ export function HeaderBar({ onExport, onSubmit }: HeaderBarProps) {
 
       {/* Export */}
       {onExport && (
-        <button
+        <Button
           onClick={onExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border text-foreground hover:bg-accent transition-colors flex-shrink-0"
+          variant="outline"
+          size="sm"
+          className="gap-1.5 flex-shrink-0"
         >
           <Download size={14} />
           <span>Exportar</span>
-        </button>
+        </Button>
       )}
 
       {/* Submit */}
-      <button
+      <Button
         onClick={onSubmit}
         disabled={!draftPostId || isDirty || isStreaming}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+        size="sm"
+        className="gap-1.5 flex-shrink-0"
       >
         <Send size={14} />
         <span>Enviar a aprobación</span>
-      </button>
+      </Button>
     </header>
   );
 }

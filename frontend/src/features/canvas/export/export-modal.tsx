@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Download, X } from "lucide-react";
 import { useCanvasStore } from "../canvas-store";
+import { Button } from "@/components/ui/button";
 import {
   exportSlideToBlob,
   downloadBlob,
@@ -74,12 +75,14 @@ export function ExportModal({ onClose }: ExportModalProps) {
           <h2 className="text-sm font-semibold text-foreground">
             Exportar slides
           </h2>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="h-8 w-8 text-muted-foreground"
           >
             <X size={16} />
-          </button>
+          </Button>
         </div>
 
         {/* Slide count */}
@@ -134,14 +137,14 @@ export function ExportModal({ onClose }: ExportModalProps) {
         )}
 
         {/* Actions */}
-        <button
+        <Button
           onClick={handleExport}
           disabled={isExporting || slideEntries.length === 0}
-          className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full justify-center gap-2"
         >
           <Download size={15} />
           {isExporting ? "Exportando..." : "Descargar"}
-        </button>
+        </Button>
       </div>
     </div>
   );

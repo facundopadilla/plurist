@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { loginWithPassword } from "./api";
-import { StatusMessage } from "../../components/ui/status-message";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 export function LoginPage() {
   const [searchParams] = useSearchParams();
@@ -57,21 +58,24 @@ export function LoginPage() {
 
       <div className="space-y-3">
         {inviteAccepted ? (
-          <StatusMessage
-            icon={CheckCircle2}
-            tone="success"
-            message="Account created. Sign in to continue."
-          />
+          <Alert variant="success">
+            <CheckCircle2 size={16} />
+            <AlertDescription>
+              Account created. Sign in to continue.
+            </AlertDescription>
+          </Alert>
         ) : null}
         {loggedOut ? (
-          <StatusMessage
-            icon={LogOut}
-            tone="success"
-            message="You have been signed out."
-          />
+          <Alert variant="success">
+            <LogOut size={16} />
+            <AlertDescription>You have been signed out.</AlertDescription>
+          </Alert>
         ) : null}
         {error ? (
-          <StatusMessage icon={CircleAlert} tone="error" message={error} />
+          <Alert variant="destructive">
+            <CircleAlert size={16} />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
       </div>
 
@@ -118,23 +122,25 @@ export function LoginPage() {
       </div>
 
       <div className="space-y-3 pt-2">
-        <button
+        <Button
           type="submit"
           data-testid="login-submit"
-          className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-primary px-3 py-3 text-[16px] font-medium text-primary-foreground transition-colors hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="w-full justify-center gap-2 rounded-[14px] px-3 py-3 text-[16px]"
           disabled={isSubmitting}
         >
           <span>{isSubmitting ? "Signing in..." : "Sign in"}</span>
           {!isSubmitting ? <ArrowRight size={16} /> : null}
-        </button>
+        </Button>
 
-        <a
-          href="/api/v1/auth/google/start"
-          data-testid="login-google"
-          className="flex w-full items-center justify-center rounded-[14px] border border-input bg-background px-3 py-3 text-[16px] font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        <Button
+          variant="outline"
+          asChild
+          className="w-full justify-center rounded-[14px] px-3 py-3 text-[16px]"
         >
-          Continue with Google
-        </a>
+          <a href="/api/v1/auth/google/start" data-testid="login-google">
+            Continue with Google
+          </a>
+        </Button>
       </div>
 
       <div className="font-elegant-mono border-t border-border pt-4 text-[12px] uppercase tracking-[0.16em] text-muted-foreground">

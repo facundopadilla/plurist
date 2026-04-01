@@ -8,8 +8,9 @@ import {
   Plug,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { StatusBadge } from "../../components/ui/status-badge";
-import { StatusMessage } from "../../components/ui/status-message";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   fetchConnections,
   startOAuthConnect,
@@ -41,28 +42,41 @@ function connectionStatusProps(status: SocialConnection["status"]) {
     case "connected":
       return {
         label: "Conectado",
-        tone: "success" as const,
+        variant: "success" as const,
         icon: <CheckCircle size={11} />,
       };
     case "expired":
       return {
         label: "Expirado",
-        tone: "warning" as const,
+        variant: "warning" as const,
         icon: <AlertCircle size={11} />,
       };
     case "error":
       return {
         label: "Error",
-        tone: "danger" as const,
+        variant: "danger" as const,
         icon: <AlertCircle size={11} />,
       };
     default:
       return {
         label: "Desconectado",
-        tone: "neutral" as const,
+        variant: "neutral" as const,
         icon: undefined,
       };
   }
+}
+
+function ConnectionStatusBadge({
+  status,
+}: {
+  status: SocialConnection["status"];
+}) {
+  const { label, variant, icon } = connectionStatusProps(status);
+  return (
+    <Badge variant={variant} className="rounded-full px-2 py-0.5 gap-1">
+      {icon} {label}
+    </Badge>
+  );
 }
 
 export function RedesSocialesPage() {
@@ -112,12 +126,10 @@ export function RedesSocialesPage() {
   return (
     <div className="max-w-2xl animate-page-in">
       {toast && (
-        <StatusMessage
-          icon={CheckCircle}
-          message={toast}
-          tone="success"
-          className="mb-6"
-        />
+        <Alert variant="success" className="mb-6">
+          <CheckCircle size={16} />
+          <AlertDescription>{toast}</AlertDescription>
+        </Alert>
       )}
 
       <div className="mb-6">
@@ -138,7 +150,7 @@ export function RedesSocialesPage() {
             <div
               key={id}
               className={cn(
-                "elegant-card flex items-center gap-4",
+                "rounded-xl border border-border bg-card text-card-foreground shadow-sm flex items-center gap-4",
                 isConnected && "border-green-200 dark:border-green-800/50",
               )}
             >
@@ -147,12 +159,7 @@ export function RedesSocialesPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-sm">{label}</span>
-                  {conn && (
-                    <StatusBadge
-                      {...connectionStatusProps(conn.status)}
-                      variant="pill"
-                    />
-                  )}
+                  {conn && <ConnectionStatusBadge status={conn.status} />}
                 </div>
                 {conn ? (
                   <p className="mt-0.5 text-xs text-muted-foreground truncate">
@@ -172,34 +179,36 @@ export function RedesSocialesPage() {
 
               <div className="shrink-0">
                 {!conn ? (
-                  <button
+                  <Button
                     onClick={() => handleConnect(id)}
                     disabled={loading}
                     aria-label={`Conectar ${label}`}
-                    className="elegant-button-primary gap-1.5"
+                    className="gap-1.5"
                   >
                     <Plug size={14} />
                     Conectar
-                  </button>
+                  </Button>
                 ) : needsReconnect ? (
-                  <button
+                  <Button
                     onClick={() => handleConnect(id)}
                     aria-label={`Reconectar ${label}`}
-                    className="elegant-button-secondary gap-1.5"
+                    variant="outline"
+                    className="gap-1.5"
                   >
                     <RefreshCw size={14} />
                     Reconectar
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
                     onClick={() => void handleDisconnect(conn)}
                     disabled={isDisconnecting}
                     aria-label={`Desconectar ${label}`}
-                    className="elegant-button-secondary gap-1.5 text-red-600 hover:text-red-700 dark:text-red-400 disabled:opacity-50"
+                    variant="outline"
+                    className="gap-1.5 text-red-600 hover:text-red-700 dark:text-red-400"
                   >
                     <Unplug size={14} />
                     {isDisconnecting ? "Desconectando..." : "Desconectar"}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
