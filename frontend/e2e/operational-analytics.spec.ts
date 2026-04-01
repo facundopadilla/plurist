@@ -16,7 +16,9 @@ async function login(page: import("@playwright/test").Page, email: string) {
 }
 
 test.describe("Operational analytics", () => {
-  test("owner receives workflow counters from analytics summary", async ({ page }) => {
+  test("owner receives workflow counters from analytics summary", async ({
+    page,
+  }) => {
     await login(page, "owner@example.com");
     const csrf = await getCsrf(page);
 
@@ -47,7 +49,9 @@ test.describe("Operational analytics", () => {
     );
   });
 
-  test("analytics summary does NOT contain engagement metrics", async ({ page }) => {
+  test("analytics summary does NOT contain engagement metrics", async ({
+    page,
+  }) => {
     await login(page, "owner@example.com");
     const csrf = await getCsrf(page);
 

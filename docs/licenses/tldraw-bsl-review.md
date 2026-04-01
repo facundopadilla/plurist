@@ -13,13 +13,13 @@
 The tldraw SDK is distributed under the **Business Source License 1.1**.
 Key terms (as of tldraw v4):
 
-| Term | Value |
-| --- | --- |
-| Licensed work | tldraw SDK (npm: `tldraw`) |
+| Term                 | Value                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Licensed work        | tldraw SDK (npm: `tldraw`)                                                                                                                |
 | Additional use grant | You may use the Licensed Work in production, provided your product is **not** a Whiteboard or Diagramming tool that competes with tldraw. |
-| Change date | 4 years after each release date |
-| Change license | Apache 2.0 |
-| Licensor | tldraw Inc. |
+| Change date          | 4 years after each release date                                                                                                           |
+| Change license       | Apache 2.0                                                                                                                                |
+| Licensor             | tldraw Inc.                                                                                                                               |
 
 **After the change date**, each version automatically converts to Apache 2.0.
 
@@ -27,14 +27,14 @@ Key terms (as of tldraw v4):
 
 ## Use-case analysis for SocialClaw
 
-| Criterion | Assessment |
-| --- | --- |
-| Product category | Social-media content creation / publishing platform |
-| Canvas purpose | Render AI-generated HTML content (posts, stories, carousels) on a composable surface |
-| Competes with tldraw? | **No.** SocialClaw is not a whiteboard, diagramming, or collaborative drawing tool. The canvas is an internal rendering surface, not the product itself. |
-| Self-hosted model | Open-source, self-hostable (n8n-style). Users run SocialClaw locally or on their own infrastructure. |
-| SaaS model | Paid cloud subscription for hosted version. |
-| Redistribution of tldraw source? | **No.** tldraw is consumed as an npm dependency. No source redistribution. |
+| Criterion                        | Assessment                                                                                                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product category                 | Social-media content creation / publishing platform                                                                                                      |
+| Canvas purpose                   | Render AI-generated HTML content (posts, stories, carousels) on a composable surface                                                                     |
+| Competes with tldraw?            | **No.** SocialClaw is not a whiteboard, diagramming, or collaborative drawing tool. The canvas is an internal rendering surface, not the product itself. |
+| Self-hosted model                | Open-source, self-hostable (n8n-style). Users run SocialClaw locally or on their own infrastructure.                                                     |
+| SaaS model                       | Paid cloud subscription for hosted version.                                                                                                              |
+| Redistribution of tldraw source? | **No.** tldraw is consumed as an npm dependency. No source redistribution.                                                                               |
 
 ### Conclusion
 
@@ -59,5 +59,5 @@ Both the self-hosted and SaaS deployment models are compliant.
 - [ ] Product confirms SocialClaw does not compete with tldraw's whiteboard/diagramming market
 - [ ] Legal review completed (if applicable)
 
-**Approved by:** ___________________________
-**Date:** ___________________________
+**Approved by:** \***\*\*\*\*\*\*\***\_\_\_\***\*\*\*\*\*\*\***
+**Date:** \***\*\*\*\*\*\*\***\_\_\_\***\*\*\*\*\*\*\***

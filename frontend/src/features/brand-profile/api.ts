@@ -6,11 +6,15 @@ export function fetchVersions() {
 }
 
 export function fetchActiveVersion() {
-  return apiRequest<BrandProfileVersion>("/api/v1/brand-profile/versions/active");
+  return apiRequest<BrandProfileVersion>(
+    "/api/v1/brand-profile/versions/active",
+  );
 }
 
 export function fetchVersion(id: number) {
-  return apiRequest<BrandProfileVersion>(`/api/v1/brand-profile/versions/${id}`);
+  return apiRequest<BrandProfileVersion>(
+    `/api/v1/brand-profile/versions/${id}`,
+  );
 }
 
 export function createVersion(data: {

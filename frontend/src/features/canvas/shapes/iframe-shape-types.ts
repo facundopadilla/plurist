@@ -34,13 +34,14 @@ export interface IframeShapeProps {
 }
 
 // ── Validated props schema (tldraw validators) ─────────────────────
-export const iframeShapeProps: RecordProps<TLShape<typeof IFRAME_SHAPE_TYPE>> = {
-  w: T.number,
-  h: T.number,
-  html: T.string,
-  slideId: T.string,
-  slideIndex: T.number,
-};
+export const iframeShapeProps: RecordProps<TLShape<typeof IFRAME_SHAPE_TYPE>> =
+  {
+    w: T.number,
+    h: T.number,
+    html: T.string,
+    slideId: T.string,
+    slideIndex: T.number,
+  };
 
 // ── Derived type shortcut ──────────────────────────────────────────
 export type IframeShape = TLShape<typeof IFRAME_SHAPE_TYPE>;

@@ -14,8 +14,12 @@ async function createDraftPost(
   title: string,
 ): Promise<number> {
   await login(page, "editor@example.com");
-  const resp = await page.request.post("/api/v1/posts/", {
-    data: { title, body_text: "Scheduler e2e test body.", target_networks: ["linkedin"] },
+  const resp = await page.request.post("/api/v1/content/", {
+    data: {
+      title,
+      body_text: "Scheduler e2e test body.",
+      target_networks: ["linkedin"],
+    },
   });
   expect(resp.status()).toBe(201);
   const post = (await resp.json()) as { id: number };
@@ -27,13 +31,18 @@ async function submitAndApprove(
   postId: number,
 ) {
   await login(page, "editor@example.com");
-  const submitResp = await page.request.post(`/api/v1/posts/${postId}/submit`);
+  const submitResp = await page.request.post(
+    `/api/v1/content/${postId}/submit`,
+  );
   expect(submitResp.status()).toBe(200);
 
   await login(page, "owner@example.com");
-  const approveResp = await page.request.post(`/api/v1/posts/${postId}/approve`, {
-    data: { reason: "" },
-  });
+  const approveResp = await page.request.post(
+    `/api/v1/content/${postId}/approve`,
+    {
+      data: { reason: "" },
+    },
+  );
   expect(approveResp.status()).toBe(200);
 }
 
@@ -42,9 +51,15 @@ test.describe("Scheduler calendar", () => {
     const postId = await createDraftPost(page, "E2E Schedule Test Post");
     await submitAndApprove(page, postId);
 
-    const scheduledAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const scheduledAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    ).toISOString();
     const schedResp = await page.request.post("/api/v1/scheduler/entries", {
-      data: { draft_post_id: postId, network: "linkedin", scheduled_for: scheduledAt },
+      data: {
+        draft_post_id: postId,
+        network: "linkedin",
+        scheduled_for: scheduledAt,
+      },
     });
     expect(schedResp.status()).toBe(201);
 
@@ -57,7 +72,11 @@ test.describe("Scheduler calendar", () => {
     expect(entry.status).toBe("pending");
 
     const evidence = `post_id=${postId}\nentry_id=${entry.id}\nstatus=${entry.status}`;
-    await fs.writeFile("../.sisyphus/evidence/task-19-schedule-approved.txt", evidence, "utf-8");
+    await fs.writeFile(
+      "../.sisyphus/evidence/task-19-schedule-approved.txt",
+      evidence,
+      "utf-8",
+    );
   });
 
   test("editor cannot schedule a post (403)", async ({ page }) => {
@@ -65,27 +84,47 @@ test.describe("Scheduler calendar", () => {
     await submitAndApprove(page, postId);
 
     await login(page, "editor@example.com");
-    const scheduledAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const scheduledAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    ).toISOString();
     const schedResp = await page.request.post("/api/v1/scheduler/entries", {
-      data: { draft_post_id: postId, network: "linkedin", scheduled_for: scheduledAt },
+      data: {
+        draft_post_id: postId,
+        network: "linkedin",
+        scheduled_for: scheduledAt,
+      },
     });
     expect(schedResp.status()).toBe(403);
 
     const evidence = `post_id=${postId}\nstatus=${schedResp.status()}`;
-    await fs.writeFile("../.sisyphus/evidence/task-19-editor-forbidden.txt", evidence, "utf-8");
+    await fs.writeFile(
+      "../.sisyphus/evidence/task-19-editor-forbidden.txt",
+      evidence,
+      "utf-8",
+    );
   });
 
   test("scheduling a non-approved post fails (400)", async ({ page }) => {
     const postId = await createDraftPost(page, "E2E Non-Approved Schedule");
 
     await login(page, "owner@example.com");
-    const scheduledAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const scheduledAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    ).toISOString();
     const schedResp = await page.request.post("/api/v1/scheduler/entries", {
-      data: { draft_post_id: postId, network: "linkedin", scheduled_for: scheduledAt },
+      data: {
+        draft_post_id: postId,
+        network: "linkedin",
+        scheduled_for: scheduledAt,
+      },
     });
     expect(schedResp.status()).toBe(400);
 
     const evidence = `post_id=${postId}\nstatus=${schedResp.status()}`;
-    await fs.writeFile("../.sisyphus/evidence/task-19-non-approved.txt", evidence, "utf-8");
+    await fs.writeFile(
+      "../.sisyphus/evidence/task-19-non-approved.txt",
+      evidence,
+      "utf-8",
+    );
   });
 });

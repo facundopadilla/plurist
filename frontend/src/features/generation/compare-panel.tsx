@@ -4,6 +4,10 @@ import {
   Loader2,
   CheckCircle,
   Sparkles,
+  Code,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { fetchCompareRun, selectVariant } from "./api";
@@ -11,12 +15,20 @@ import type { GenerationVariant } from "./types";
 
 interface ComparePanelProps {
   compareRunId: number;
-  onVariantSelected?: (variant: GenerationVariant) => void;
+  width?: number;
+  height?: number;
+  onVariantSelected?: (variant: GenerationVariant, slideIndex: number) => void;
 }
 
-export function ComparePanel({ compareRunId, onVariantSelected }: ComparePanelProps) {
+export function ComparePanel({
+  compareRunId,
+  width = 1080,
+  height = 1080,
+  onVariantSelected,
+}: ComparePanelProps) {
   const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Record<number, number>>({});
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const { data: run, isLoading } = useQuery({
     queryKey: ["compare-run", compareRunId],
@@ -28,12 +40,20 @@ export function ComparePanel({ compareRunId, onVariantSelected }: ComparePanelPr
   });
 
   const selectMutation = useMutation({
-    mutationFn: (variantId: number) => selectVariant(compareRunId, variantId),
-    onSuccess: (_data, variantId) => {
-      setSelectedId(variantId);
-      queryClient.invalidateQueries({ queryKey: ["compare-run", compareRunId] });
+    mutationFn: ({
+      variantId,
+      slideIdx,
+    }: {
+      variantId: number;
+      slideIdx: number;
+    }) => selectVariant(compareRunId, variantId, slideIdx),
+    onSuccess: (_data, { variantId, slideIdx }) => {
+      setSelectedIds((prev) => ({ ...prev, [slideIdx]: variantId }));
+      void queryClient.invalidateQueries({
+        queryKey: ["compare-run", compareRunId],
+      });
       const variant = run?.variants.find((v) => v.id === variantId);
-      if (variant && onVariantSelected) onVariantSelected(variant);
+      if (variant && onVariantSelected) onVariantSelected(variant, slideIdx);
     },
   });
 
@@ -41,7 +61,7 @@ export function ComparePanel({ compareRunId, onVariantSelected }: ComparePanelPr
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
         <Loader2 className="animate-spin" size={16} />
-        Loading compare results...
+        Cargando resultados...
       </div>
     );
   }
@@ -50,32 +70,103 @@ export function ComparePanel({ compareRunId, onVariantSelected }: ComparePanelPr
 
   const isRunning = run.status === "pending" || run.status === "running";
 
+  // Group variants by slide index
+  const variantsBySlide: Record<number, GenerationVariant[]> = {};
+  for (const v of run.variants) {
+    const idx = v.slide_index ?? 0;
+    if (!variantsBySlide[idx]) variantsBySlide[idx] = [];
+    variantsBySlide[idx].push(v);
+  }
+
+  // Total slides: from run.slide_count or from actual variants
+  const slideIndexes = Object.keys(variantsBySlide)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const totalSlides = Math.max(
+    run.slide_count ?? 1,
+    slideIndexes.length > 0 ? slideIndexes[slideIndexes.length - 1] + 1 : 1,
+  );
+
+  const currentVariants = variantsBySlide[currentSlide] ?? [];
+  const runWidth = run.width ?? width;
+  const runHeight = run.height ?? height;
+
   return (
     <div className="space-y-4">
+      {/* Status bar */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         {isRunning && <Loader2 className="animate-spin" size={14} />}
         <span>
-          Status: <span className="font-medium text-foreground">{run.status}</span>
+          Estado:{" "}
+          <span className="font-medium text-foreground">{run.status}</span>
         </span>
         <span>·</span>
-        <span>{run.variants.length} variant(s)</span>
+        <span>{run.variants.length} variante(s)</span>
+        {totalSlides > 1 && (
+          <>
+            <span>·</span>
+            <span>{totalSlides} slides</span>
+          </>
+        )}
       </div>
 
+      {/* Carousel navigation (only when multi-slide) */}
+      {totalSlides > 1 && (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCurrentSlide((s) => Math.max(0, s - 1))}
+            disabled={currentSlide === 0}
+            className="p-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-medium">
+            Slide {currentSlide + 1} / {totalSlides}
+          </span>
+          <button
+            onClick={() =>
+              setCurrentSlide((s) => Math.min(totalSlides - 1, s + 1))
+            }
+            disabled={currentSlide >= totalSlides - 1}
+            className="p-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Variant cards for current slide */}
       <div className="grid gap-4 md:grid-cols-2">
-        {run.variants.map((variant) => (
-          <VariantCard
-            key={variant.id}
-            variant={variant}
-            isSelected={selectedId === variant.id || variant.is_selected}
-            onSelect={() => selectMutation.mutate(variant.id)}
-            isSelecting={selectMutation.isPending}
-          />
-        ))}
+        {currentVariants.map((variant) => {
+          const slideIdx = variant.slide_index ?? 0;
+          return (
+            <VariantCard
+              key={variant.id}
+              variant={variant}
+              runWidth={runWidth}
+              runHeight={runHeight}
+              isSelected={
+                selectedIds[slideIdx] === variant.id || variant.is_selected
+              }
+              onSelect={() =>
+                selectMutation.mutate({ variantId: variant.id, slideIdx })
+              }
+              isSelecting={selectMutation.isPending}
+            />
+          );
+        })}
       </div>
+
+      {isRunning && currentVariants.length === 0 && (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
+          <Loader2 className="animate-spin" size={14} />
+          Generando slide {currentSlide + 1}...
+        </div>
+      )}
 
       {!isRunning && run.variants.length === 0 && (
         <p className="text-muted-foreground text-sm py-4 text-center">
-          No variants generated. All providers may have failed.
+          No se generaron variantes. Todos los proveedores fallaron.
         </p>
       )}
     </div>
@@ -84,15 +175,22 @@ export function ComparePanel({ compareRunId, onVariantSelected }: ComparePanelPr
 
 function VariantCard({
   variant,
+  runWidth,
+  runHeight,
   isSelected,
   onSelect,
   isSelecting,
 }: {
   variant: GenerationVariant;
+  runWidth: number;
+  runHeight: number;
   isSelected: boolean;
   onSelect: () => void;
   isSelecting: boolean;
 }) {
+  const [showHtml, setShowHtml] = useState(true);
+  const hasHtml = Boolean(variant.generated_html);
+
   return (
     <div
       data-testid={`compare-provider-${variant.provider}`}
@@ -100,33 +198,102 @@ function VariantCard({
         "border rounded-lg p-4 space-y-3 transition-colors",
         isSelected
           ? "border-foreground bg-accent"
-          : "border-border hover:border-foreground/50"
+          : "border-border hover:border-foreground/50",
       )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles size={14} />
           <span className="font-medium text-sm">{variant.provider}</span>
-          <span className="text-xs text-muted-foreground">{variant.model_id}</span>
+          <span className="text-xs text-muted-foreground">
+            {variant.model_id}
+          </span>
         </div>
-        {isSelected && <CheckCircle size={16} className="text-foreground" />}
+        <div className="flex items-center gap-1">
+          {hasHtml && (
+            <div className="flex rounded-md border border-border overflow-hidden text-xs">
+              <button
+                onClick={() => setShowHtml(true)}
+                className={cn(
+                  "px-2 py-1 flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  showHtml
+                    ? "bg-foreground text-background"
+                    : "hover:bg-accent",
+                )}
+              >
+                <Eye size={11} /> Preview
+              </button>
+              <button
+                onClick={() => setShowHtml(false)}
+                className={cn(
+                  "px-2 py-1 flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  !showHtml
+                    ? "bg-foreground text-background"
+                    : "hover:bg-accent",
+                )}
+              >
+                <Code size={11} /> Código
+              </button>
+            </div>
+          )}
+          {isSelected && <CheckCircle size={16} className="text-foreground" />}
+        </div>
       </div>
 
-      <p className="text-sm whitespace-pre-wrap">{variant.generated_text}</p>
+      {/* Content preview */}
+      {hasHtml && showHtml ? (
+        <HtmlPreview
+          html={variant.generated_html}
+          width={runWidth}
+          height={runHeight}
+        />
+      ) : (
+        <p className="text-sm whitespace-pre-wrap min-h-[60px]">
+          {variant.generated_text || variant.generated_html.slice(0, 200)}
+        </p>
+      )}
 
-      <button
-        data-testid="select-variant"
-        onClick={onSelect}
-        disabled={isSelected || isSelecting}
-        className={cn(
-          "w-full text-sm py-2 px-3 rounded-md font-medium transition-colors",
-          isSelected
-            ? "bg-foreground text-background cursor-default"
-            : "border border-border hover:bg-accent"
-        )}
-      >
-        {isSelected ? "Selected" : "Select variant"}
-      </button>
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button
+          data-testid="select-variant"
+          onClick={onSelect}
+          disabled={isSelected || isSelecting}
+          className={cn(
+            "flex-1 text-sm py-2 px-3 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            isSelected
+              ? "bg-foreground text-background cursor-default"
+              : "border border-border hover:bg-accent",
+          )}
+        >
+          {isSelected ? "Seleccionado" : "Seleccionar variante"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HtmlPreview({
+  html,
+  width,
+  height,
+}: {
+  html: string;
+  width: number;
+  height: number;
+}) {
+  return (
+    <div
+      className="relative w-full overflow-hidden rounded-md border border-border bg-white"
+      style={{ aspectRatio: `${width} / ${height}` }}
+    >
+      <iframe
+        srcDoc={html}
+        sandbox="allow-same-origin"
+        title="Design preview"
+        className="absolute inset-0 w-full h-full border-none"
+        style={{ pointerEvents: "none" }}
+      />
     </div>
   );
 }

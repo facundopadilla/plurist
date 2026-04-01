@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -98,7 +98,9 @@
   }
 
   html {
-    font-feature-settings: "liga" 1, "kern" 1;
+    font-feature-settings:
+      "liga" 1,
+      "kern" 1;
   }
 
   body {
@@ -188,21 +190,41 @@
   }
 
   /* Typography scale: 14/16/18/24/32/40 */
-  .text-display { @apply text-[40px] font-semibold leading-[1.05] tracking-[-0.04em]; }
-  .text-title   { @apply text-[32px] font-semibold leading-[1.05] tracking-[-0.04em]; }
-  .text-heading  { @apply text-[24px] font-semibold leading-[1.1] tracking-[-0.03em]; }
-  .text-subhead  { @apply text-[18px] font-semibold leading-[1.2] tracking-[-0.02em]; }
-  .text-body     { @apply text-[16px] leading-[1.5]; }
-  .text-caption  { @apply text-[14px] leading-[1.4]; }
-  .text-micro    { @apply text-[11px] uppercase tracking-[0.18em]; }
+  .text-display {
+    @apply text-[40px] font-semibold leading-[1.05] tracking-[-0.04em];
+  }
+  .text-title {
+    @apply text-[32px] font-semibold leading-[1.05] tracking-[-0.04em];
+  }
+  .text-heading {
+    @apply text-[24px] font-semibold leading-[1.1] tracking-[-0.03em];
+  }
+  .text-subhead {
+    @apply text-[18px] font-semibold leading-[1.2] tracking-[-0.02em];
+  }
+  .text-body {
+    @apply text-[16px] leading-[1.5];
+  }
+  .text-caption {
+    @apply text-[14px] leading-[1.4];
+  }
+  .text-micro {
+    @apply text-[11px] uppercase tracking-[0.18em];
+  }
 
   .font-elegant-mono {
     font-family: "Anonymous Pro", monospace;
   }
 
   @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-page-in {
@@ -210,13 +232,17 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-page-in { animation: none; }
+    .animate-page-in {
+      animation: none;
+    }
   }
+}
 
-  /* Ocultar la marca de agua de tldraw que aparece al usar una IP de red en lugar de localhost.
-     Nuestra licencia BSL-1.1 permite uso interno, pero el SDK asume "production" si no es localhost.
-     Para producción real se requiere inyectar TLDRAW_LICENSE_KEY. */
-  .tl-watermark_SEE-LICENSE {
-    display: none !important;
-  }
+/* Ocultar la marca de agua de tldraw que aparece al usar una IP de red en lugar de localhost.
+   Nuestra licencia BSL-1.1 permite uso interno, pero el SDK asume "production" si no es localhost.
+   Para producción real se requiere inyectar TLDRAW_LICENSE_KEY.
+   NOTA: Esto debe ir FUERA de un @layer de Tailwind, de lo contrario la especificidad
+   dinámica del componente Tldraw (que inyecta un <style>) la sobreescribe. */
+.tl-watermark_SEE-LICENSE {
+  display: none !important;
 }

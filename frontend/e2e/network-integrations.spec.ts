@@ -1,10 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
-async function loginAs(
-  page: import("@playwright/test").Page,
-  email: string,
-) {
+async function loginAs(page: import("@playwright/test").Page, email: string) {
   await page.goto("/login");
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill("testpassword123");
@@ -19,7 +16,9 @@ async function getCsrf(page: import("@playwright/test").Page) {
 }
 
 test.describe("Network integrations (Task 13)", () => {
-  test("owner navigates to /settings/integrations and the page loads", async ({ page }) => {
+  test("owner navigates to /settings/integrations and the page loads", async ({
+    page,
+  }) => {
     await loginAs(page, "owner@example.com");
     await page.goto("/settings/integrations");
     await expect(page).toHaveURL("/settings/integrations");
@@ -28,7 +27,9 @@ test.describe("Network integrations (Task 13)", () => {
     });
   });
 
-  test("owner creates a connection via API and verifies it exists", async ({ page }) => {
+  test("owner creates a connection via API and verifies it exists", async ({
+    page,
+  }) => {
     await loginAs(page, "owner@example.com");
 
     const csrf = await getCsrf(page);
@@ -66,7 +67,10 @@ test.describe("Network integrations (Task 13)", () => {
     );
 
     expect(listResponse.status()).toBe(200);
-    const connections = (await listResponse.json()) as Array<{ id: number; network: string }>;
+    const connections = (await listResponse.json()) as Array<{
+      id: number;
+      network: string;
+    }>;
     const found = connections.find((c) => c.id === created.id);
     expect(found).toBeDefined();
     expect(found?.network).toBe("linkedin");
@@ -83,7 +87,9 @@ test.describe("Network integrations (Task 13)", () => {
     );
   });
 
-  test("editor gets 403 when attempting to create a connection via API", async ({ page }) => {
+  test("editor gets 403 when attempting to create a connection via API", async ({
+    page,
+  }) => {
     await loginAs(page, "editor@example.com");
 
     const csrf = await getCsrf(page);

@@ -10,11 +10,13 @@ async function login(page: import("@playwright/test").Page, email: string) {
 }
 
 test.describe("Immediate publish flow", () => {
-  test("full publish flow: create → submit → approve → publish", async ({ page }) => {
+  test("full publish flow: create → submit → approve → publish", async ({
+    page,
+  }) => {
     // Step 1: editor creates a draft post
     await login(page, "editor@example.com");
 
-    const createResp = await page.request.post("/api/v1/posts/", {
+    const createResp = await page.request.post("/api/v1/content/", {
       data: {
         title: "E2E Publish Test Post",
         body_text: "This post will go through the full publish flow.",
@@ -27,14 +29,19 @@ test.describe("Immediate publish flow", () => {
     const postId = post.id;
 
     // Step 2: editor submits post for approval
-    const submitResp = await page.request.post(`/api/v1/posts/${postId}/submit`);
+    const submitResp = await page.request.post(
+      `/api/v1/content/${postId}/submit`,
+    );
     expect(submitResp.status()).toBe(200);
 
     // Step 3: owner approves the post
     await login(page, "owner@example.com");
-    const approveResp = await page.request.post(`/api/v1/posts/${postId}/approve`, {
-      data: { reason: "" },
-    });
+    const approveResp = await page.request.post(
+      `/api/v1/content/${postId}/approve`,
+      {
+        data: { reason: "" },
+      },
+    );
     expect(approveResp.status()).toBe(200);
 
     // Step 4: publisher publishes the post
@@ -47,7 +54,10 @@ test.describe("Immediate publish flow", () => {
       },
     );
     expect(publishResp.status()).toBe(202);
-    const published = (await publishResp.json()) as { post_status: string; attempts: unknown[] };
+    const published = (await publishResp.json()) as {
+      post_status: string;
+      attempts: unknown[];
+    };
 
     const evidence = [
       `post_id=${postId}`,
@@ -55,13 +65,19 @@ test.describe("Immediate publish flow", () => {
       `final_status=${published.post_status}`,
       `attempts=${published.attempts?.length ?? 0}`,
     ].join("\n");
-    await fs.writeFile("../.sisyphus/evidence/task-17-publish-flow.txt", evidence, "utf-8");
+    await fs.writeFile(
+      "../.sisyphus/evidence/task-17-publish-flow.txt",
+      evidence,
+      "utf-8",
+    );
   });
 
-  test("idempotency: same Idempotency-Key returns same attempt", async ({ page }) => {
+  test("idempotency: same Idempotency-Key returns same attempt", async ({
+    page,
+  }) => {
     await login(page, "editor@example.com");
 
-    const createResp = await page.request.post("/api/v1/posts/", {
+    const createResp = await page.request.post("/api/v1/content/", {
       data: {
         title: "E2E Idempotency Test Post",
         body_text: "Testing idempotent publish.",
@@ -72,10 +88,10 @@ test.describe("Immediate publish flow", () => {
     const post = (await createResp.json()) as { id: number };
     const postId = post.id;
 
-    await page.request.post(`/api/v1/posts/${postId}/submit`);
+    await page.request.post(`/api/v1/content/${postId}/submit`);
 
     await login(page, "owner@example.com");
-    await page.request.post(`/api/v1/posts/${postId}/approve`, {
+    await page.request.post(`/api/v1/content/${postId}/approve`, {
       data: { reason: "" },
     });
 
@@ -87,14 +103,20 @@ test.describe("Immediate publish flow", () => {
       { headers: { "Idempotency-Key": idempotencyKey } },
     );
     expect(firstResp.status()).toBe(202);
-    const firstBody = (await firstResp.json()) as { post_id: number; attempts: { id: number }[] };
+    const firstBody = (await firstResp.json()) as {
+      post_id: number;
+      attempts: { id: number }[];
+    };
 
     const secondResp = await page.request.post(
       `/api/v1/publishing/publish-now/${postId}`,
       { headers: { "Idempotency-Key": idempotencyKey } },
     );
     expect(secondResp.status()).toBe(202);
-    const secondBody = (await secondResp.json()) as { post_id: number; attempts: { id: number }[] };
+    const secondBody = (await secondResp.json()) as {
+      post_id: number;
+      attempts: { id: number }[];
+    };
 
     const firstIds = firstBody.attempts.map((a) => a.id).sort();
     const secondIds = secondBody.attempts.map((a) => a.id).sort();
@@ -107,6 +129,10 @@ test.describe("Immediate publish flow", () => {
       `attempts_second=${JSON.stringify(secondIds)}`,
       `match=${JSON.stringify(firstIds) === JSON.stringify(secondIds)}`,
     ].join("\n");
-    await fs.writeFile("../.sisyphus/evidence/task-17-idempotency.txt", evidence, "utf-8");
+    await fs.writeFile(
+      "../.sisyphus/evidence/task-17-idempotency.txt",
+      evidence,
+      "utf-8",
+    );
   });
 });

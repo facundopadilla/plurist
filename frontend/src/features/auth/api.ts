@@ -1,76 +1,63 @@
-import { getCsrfToken, setCsrfToken } from "./csrf";
+import { ApiError, apiRequest } from "../../lib/api/client";
 import type { AuthUser } from "./types";
 
-interface RequestOptions {
-  method?: "GET" | "POST" | "DELETE";
-  body?: unknown;
-}
-
-async function ensureCsrfToken(): Promise<string> {
-  const existing = getCsrfToken();
-  if (existing) {
-    return existing;
-  }
-
-  const response = await fetch("/api/v1/auth/csrf", { credentials: "include" });
-  const data = (await response.json()) as { csrf_token?: string };
-  if (data.csrf_token) {
-    setCsrfToken(data.csrf_token);
-  }
-  return getCsrfToken();
-}
-
-async function authRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = {};
-  if (options.body !== undefined) {
-    headers["Content-Type"] = "application/json";
-  }
-  if (options.method && options.method !== "GET") {
-    headers["X-CSRF-Token"] = await ensureCsrfToken();
-  }
-
-  const response = await fetch(path, {
-    method: options.method ?? "GET",
-    credentials: "include",
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
-
-  if (!response.ok) {
-    const detail = await response
-      .json()
-      .then((data) => (typeof data?.detail === "string" ? data.detail : "Request failed"))
-      .catch(() => "Request failed");
-    throw new Error(detail);
-  }
-
-  return (await response.json()) as T;
-}
-
 export function fetchMe() {
-  return authRequest<AuthUser>("/api/v1/auth/me");
+  return apiRequest<AuthUser>("/api/v1/auth/me");
+}
+
+/**
+ * Silent session probe — returns null on 401/403 instead of throwing.
+ * Use this for the initial page-load check where unauthenticated state
+ * is the expected happy path before login.
+ */
+export async function fetchMeSilent(): Promise<
+  (AuthUser & { csrf_token?: string }) | null
+> {
+  const response = await fetch("/api/v1/auth/me", { credentials: "include" });
+  if (response.status === 401 || response.status === 403) {
+    return null;
+  }
+  if (!response.ok) {
+    const text = await response.text().catch(() => "Request failed");
+    let detail = text;
+    try {
+      const data = JSON.parse(text) as { detail?: string };
+      if (typeof data.detail === "string") detail = data.detail;
+    } catch {
+      // keep raw text
+    }
+    throw new ApiError(response.status, detail);
+  }
+  return (await response.json()) as AuthUser & { csrf_token?: string };
 }
 
 export function loginWithPassword(email: string, password: string) {
-  return authRequest<AuthUser>("/api/v1/auth/login", {
+  return apiRequest<AuthUser>("/api/v1/auth/login", {
     method: "POST",
     body: { email, password },
   });
 }
 
 export function logoutSession() {
-  return authRequest<{ ok: boolean }>("/api/v1/auth/logout", { method: "POST" });
+  return apiRequest<{ ok: boolean }>("/api/v1/auth/logout", { method: "POST" });
 }
 
-export function acceptInvite(token: string, name: string, password: string, confirmPassword: string) {
-  return authRequest<{ ok: boolean }>(`/api/v1/auth/invites/${token}/accept`, {
+export function acceptInvite(
+  token: string,
+  name: string,
+  password: string,
+  confirmPassword: string,
+) {
+  return apiRequest<{ ok: boolean }>(`/api/v1/auth/invites/${token}/accept`, {
     method: "POST",
     body: { name, password, confirm_password: confirmPassword },
   });
 }
 
 export function devSeed() {
-  return authRequest<{ ok: boolean }>("/api/v1/auth/dev-seed", {
+  return apiRequest<{ ok: boolean }>("/api/v1/auth/dev-seed", {
     method: "POST",
   });
 }
+
+export { ApiError };

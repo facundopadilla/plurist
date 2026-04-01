@@ -1,52 +1,34 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AppShell } from "./layout/app-shell";
 import { AuthShell } from "./layout/auth-shell";
 import { LoginPage } from "../features/auth/login-page";
 import { InviteAcceptPage } from "../features/auth/invite-accept-page";
 import { RequireAuth } from "../features/auth/require-auth";
+import { DashboardPage } from "../features/dashboard/dashboard-page";
 import { DesignBankPage } from "../features/design-bank/design-bank-page";
-import { ComposePage } from "../features/posts/compose-page";
+import { ProjectsListPage } from "../features/projects/projects-list-page";
+import { ProjectDetailPage } from "../features/projects/project-detail-page";
+import { ReviewPage } from "../features/content/review-page";
+import { QueuePage } from "../features/scheduler/queue-page";
+import { CalendarPage } from "../features/scheduler/calendar-page";
+import { AnalyticsPage } from "../features/analytics/analytics-page";
+import { SettingsIntegrationsPage } from "../features/integrations/settings-integrations-page";
+import { RedesSocialesPage } from "../features/integrations/redes-sociales-page";
+import { AIProvidersPage } from "../features/settings/ai-providers/ai-providers-page";
 
-const Dashboard = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Dashboard</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
-  </div>
+// Canvas Compose — full-screen, code-split, no AppShell wrapper
+const CanvasComposePage = lazy(() =>
+  import("../features/canvas/canvas-compose-page").then((m) => ({
+    default: m.CanvasComposePage,
+  })),
 );
 
-
-const Review = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Review</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
-  </div>
-);
-
-const Queue = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Queue</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
-  </div>
-);
-
-const CalendarPage = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Calendar</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
-  </div>
-);
-
-const Analytics = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Analytics</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
-  </div>
-);
-
-const SettingsIntegrations = () => (
-  <div>
-    <h1 className="text-2xl font-semibold">Settings — Integrations</h1>
-    <p className="text-muted-foreground mt-2">Coming soon.</p>
+const CanvasComposeFallback = () => (
+  <div className="flex h-screen w-screen items-center justify-center bg-background">
+    <span className="text-muted-foreground text-sm">
+      Cargando Canvas Studio...
+    </span>
   </div>
 );
 
@@ -61,7 +43,9 @@ const NotFound = () => (
 
 export function AppRouter() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <Routes>
         <Route
           path="/login"
@@ -84,7 +68,7 @@ export function AppRouter() {
           element={
             <RequireAuth>
               <AppShell>
-                <Dashboard />
+                <DashboardPage />
               </AppShell>
             </RequireAuth>
           }
@@ -100,22 +84,44 @@ export function AppRouter() {
           }
         />
         <Route
-          path="/posts"
+          path="/projects"
           element={
             <RequireAuth>
               <AppShell>
-                <ComposePage />
+                <ProjectsListPage />
               </AppShell>
             </RequireAuth>
           }
         />
         <Route
-          path="/review"
+          path="/projects/:projectId"
           element={
             <RequireAuth>
               <AppShell>
-                <Review />
+                <ProjectDetailPage />
               </AppShell>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/contenido"
+          element={
+            <RequireAuth>
+              <AppShell>
+                <ReviewPage />
+              </AppShell>
+            </RequireAuth>
+          }
+        />
+        {/* Backward-compatible redirect: /posts → /contenido */}
+        <Route path="/posts" element={<Navigate to="/contenido" replace />} />
+        <Route
+          path="/compose"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<CanvasComposeFallback />}>
+                <CanvasComposePage />
+              </Suspense>
             </RequireAuth>
           }
         />
@@ -124,7 +130,7 @@ export function AppRouter() {
           element={
             <RequireAuth>
               <AppShell>
-                <Queue />
+                <QueuePage />
               </AppShell>
             </RequireAuth>
           }
@@ -144,7 +150,7 @@ export function AppRouter() {
           element={
             <RequireAuth>
               <AppShell>
-                <Analytics />
+                <AnalyticsPage />
               </AppShell>
             </RequireAuth>
           }
@@ -154,7 +160,27 @@ export function AppRouter() {
           element={
             <RequireAuth>
               <AppShell>
-                <SettingsIntegrations />
+                <SettingsIntegrationsPage />
+              </AppShell>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings/redes-sociales"
+          element={
+            <RequireAuth>
+              <AppShell>
+                <RedesSocialesPage />
+              </AppShell>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings/ai-providers"
+          element={
+            <RequireAuth>
+              <AppShell>
+                <AIProvidersPage />
               </AppShell>
             </RequireAuth>
           }

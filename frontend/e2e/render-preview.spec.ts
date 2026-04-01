@@ -113,7 +113,9 @@ test.describe("Render preview", () => {
     expect(["pending", "completed", "failed"]).toContain(finalStatus);
   });
 
-  test("create render job with invalid template key returns 400 or 422", async ({ page }) => {
+  test("create render job with invalid template key returns 400 or 422", async ({
+    page,
+  }) => {
     await loginAs(page, "editor@example.com");
 
     const csrf = await getCsrf(page);

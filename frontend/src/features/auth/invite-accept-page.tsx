@@ -23,7 +23,7 @@ export function InviteAcceptPage() {
     setIsSubmitting(true);
     try {
       await acceptInvite(token, name, password, confirmPassword);
-      navigate("/login", { replace: true });
+      navigate("/login?inviteAccepted=1", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not accept invite");
     } finally {
@@ -32,7 +32,11 @@ export function InviteAcceptPage() {
   };
 
   return (
-    <form className="space-y-4" onSubmit={onSubmit} data-testid="invite-accept-form">
+    <form
+      className="space-y-4"
+      onSubmit={onSubmit}
+      data-testid="invite-accept-form"
+    >
       <h1 className="text-xl font-semibold text-center">Accept invite</h1>
       <div className="space-y-1">
         <label htmlFor="invite-name" className="text-sm text-muted-foreground">
@@ -42,12 +46,15 @@ export function InviteAcceptPage() {
           id="invite-name"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="elegant-input w-full"
           required
         />
       </div>
       <div className="space-y-1">
-        <label htmlFor="invite-password" className="text-sm text-muted-foreground">
+        <label
+          htmlFor="invite-password"
+          className="text-sm text-muted-foreground"
+        >
           Password
         </label>
         <input
@@ -55,12 +62,15 @@ export function InviteAcceptPage() {
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="elegant-input w-full"
           required
         />
       </div>
       <div className="space-y-1">
-        <label htmlFor="invite-confirm-password" className="text-sm text-muted-foreground">
+        <label
+          htmlFor="invite-confirm-password"
+          className="text-sm text-muted-foreground"
+        >
           Confirm password
         </label>
         <input
@@ -68,14 +78,14 @@ export function InviteAcceptPage() {
           type="password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="elegant-input w-full"
           required
         />
       </div>
       {error ? <p className="text-sm text-red-500">{error}</p> : null}
       <button
         type="submit"
-        className="w-full rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium"
+        className="elegant-button-primary w-full justify-center"
         disabled={isSubmitting}
       >
         {isSubmitting ? "Creating account..." : "Accept invite"}

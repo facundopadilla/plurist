@@ -14,8 +14,8 @@ test.describe("App shell", () => {
     await expect(page.getByTestId("app-sidebar")).toBeVisible();
     await expect(page.getByTestId("nav-dashboard")).toBeVisible();
     await expect(page.getByTestId("nav-design-bank")).toBeVisible();
-    await expect(page.getByTestId("nav-posts")).toBeVisible();
-    await expect(page.getByTestId("nav-review")).toBeVisible();
+    await expect(page.getByTestId("nav-contenido")).toBeVisible();
+    await expect(page.getByTestId("nav-revision")).toBeVisible();
     await expect(page.getByTestId("nav-queue")).toBeVisible();
     await expect(page.getByTestId("nav-calendar")).toBeVisible();
     await expect(page.getByTestId("nav-analytics")).toBeVisible();

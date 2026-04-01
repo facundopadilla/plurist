@@ -22,7 +22,9 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-red-500">Failed to load source details.</p>;
+    return (
+      <p className="text-sm text-red-500">Failed to load source details.</p>
+    );
   }
 
   const hasExtracted =
@@ -65,7 +67,9 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
       )}
       {data.status === "failed" && data.error_message && (
         <div className="space-y-1">
-          <p className="text-xs font-medium text-red-500 uppercase tracking-wide">Error</p>
+          <p className="text-xs font-medium text-red-500 uppercase tracking-wide">
+            Error
+          </p>
           <p className="text-sm text-red-500">{data.error_message}</p>
         </div>
       )}

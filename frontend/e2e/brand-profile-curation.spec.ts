@@ -60,15 +60,21 @@ test.describe("Brand profile curation", () => {
     expect(created.version).toBeGreaterThan(0);
     expect(created.profile_data.brand_name).toBe("Acme Corp");
 
-    const listResponse = await page.request.get(`/api/v1/brand-profile/versions`, {
-      headers: {
-        "X-CSRF-Token": csrf,
+    const listResponse = await page.request.get(
+      `/api/v1/brand-profile/versions`,
+      {
+        headers: {
+          "X-CSRF-Token": csrf,
+        },
       },
-    });
+    );
 
     expect(listResponse.status()).toBe(200);
 
-    const versions = (await listResponse.json()) as Array<{ id: number; version: number }>;
+    const versions = (await listResponse.json()) as Array<{
+      id: number;
+      version: number;
+    }>;
     const found = versions.find((v) => v.id === created.id);
     expect(found).toBeDefined();
     expect(found?.version).toBe(created.version);
@@ -81,7 +87,9 @@ test.describe("Brand profile curation", () => {
     );
   });
 
-  test("old version data is immutable after creating a new version", async ({ page }) => {
+  test("old version data is immutable after creating a new version", async ({
+    page,
+  }) => {
     await loginAs(page, "editor@example.com");
 
     const csrf = await getCsrf(page);
