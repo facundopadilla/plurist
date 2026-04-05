@@ -286,6 +286,9 @@ export function ChatSidebar() {
     setAttachments([]);
     setSpeechError(null);
 
+    const provider = activeProvider ?? "openai";
+    const modelId = config.selectedModels?.[provider] ?? null;
+
     const assistantMsg: ChatMessage = {
       id: `assistant-${Date.now()}`,
       role: "assistant",
@@ -293,6 +296,8 @@ export function ChatSidebar() {
       htmlBlocks: [],
       isStreaming: true,
       createdAt: new Date(),
+      provider,
+      modelId: modelId ?? undefined,
     };
     addMessage(assistantMsg);
     setIsStreaming(true);
@@ -312,9 +317,6 @@ export function ChatSidebar() {
         return true;
       })
       .map((m) => ({ role: m.role, content: m.content }));
-
-    const provider = activeProvider ?? "openai";
-    const modelId = config.selectedModels?.[provider] ?? null;
 
     void sendMessage(
       {

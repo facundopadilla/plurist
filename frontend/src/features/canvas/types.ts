@@ -1,13 +1,31 @@
 export type NetworkId = "instagram" | "linkedin" | "x";
 
-export type PanelId = "chat" | "resources" | "extensions";
+export type PanelId = "chat" | "resources" | "extensions" | "code";
+
+export interface VirtualFile {
+  id: string;
+  filename: string;
+  language: "css" | "html";
+  content: string;
+  slideId?: string;
+  variantId?: number;
+  readOnly: boolean;
+}
 
 export type ResponsiveVariantType = "mobile" | "tablet" | "desktop";
 export type VariantType = "default" | ResponsiveVariantType;
 export type ContextualAiMode =
   | "generate"
   | "regenerate"
+  | "generate-variants"
   | ResponsiveVariantType;
+
+export type CreativeRange = "refine" | "explore" | "reimagine";
+export type VariantAspect = "color" | "layout" | "typography" | "content";
+
+export interface GenerateVariantsTarget {
+  slideId: string;
+}
 
 export interface VariantGenerationMeta {
   sourcePrompt?: string;
@@ -18,6 +36,8 @@ export interface VariantGenerationMeta {
   variantType?: VariantType;
   derivedFromVariantId?: number | null;
   variantName?: string;
+  creativeRange?: CreativeRange;
+  aspects?: VariantAspect[];
 }
 
 export interface SlideVariant {
@@ -55,6 +75,8 @@ export interface ChatMessage {
   htmlBlocks: Array<{ slideIndex: number; html: string }>;
   createdAt: Date;
   isStreaming?: boolean;
+  provider?: string;
+  modelId?: string;
 }
 
 export interface ChatStreamEvent {
