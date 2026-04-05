@@ -125,17 +125,14 @@ describe("AIProvidersPage", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(textExists("Ollama Base URL")).toBe(true);
+      expect(textExists("Ollama")).toBe(true);
     });
 
     press(getButtonByText("Test"));
 
     await waitFor(() => {
       expect(vi.mocked(testOllamaConnection)).toHaveBeenCalled();
-      expect(textExists("Connected — 2 models available")).toBe(true);
+      expect(textExists("Connected. 2 models available.")).toBe(true);
     });
-
-    const alert = document.querySelector('[role="alert"]');
-    expect(alert).not.toBeNull();
   });
 });

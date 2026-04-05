@@ -1,5 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Check, FolderOpen, Cpu } from "lucide-react";
+import {
+  Bot,
+  ChevronDown,
+  Check,
+  ExternalLink,
+  FolderOpen,
+  Cpu,
+  KeyRound,
+  Search,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { cn } from "../../lib/utils";
 import {
   DropdownMenu,
@@ -14,9 +24,10 @@ import {
   fetchProviders,
   fetchOllamaModels,
 } from "../generation/api";
-import { fetchAISettings, saveAISettings } from "../settings/ai-providers/api";
+import { saveAISettings } from "../settings/ai-providers/api";
 import { useCanvasStore } from "./canvas-store";
 import type { NetworkId } from "./types";
+import { useActiveProvider, ALL_KNOWN_PROVIDERS } from "./use-active-provider";
 
 // Providers that are always shown even if the API hasn't loaded yet
 const STATIC_PROVIDERS = [
@@ -32,6 +43,9 @@ const NETWORKS: { id: NetworkId; label: string }[] = [
   { id: "linkedin", label: "LinkedIn" },
   { id: "x", label: "X / Twitter" },
 ];
+
+const triggerClassName =
+  "flex h-8 items-center gap-1.5 rounded-lg border border-zinc-800/70 bg-zinc-950/80 px-3 text-sm text-zinc-200 transition-colors hover:bg-white/[0.04] hover:text-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50";
 
 // ---- Project Dropdown ----
 
@@ -49,12 +63,12 @@ export function ProjectDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <FolderOpen size={13} className="text-muted-foreground" />
+        <button className={triggerClassName}>
+          <FolderOpen size={13} className="text-zinc-500" />
           <span className="max-w-[120px] truncate">
-            {selected ? selected.name : "Sin proyecto"}
+            {selected ? selected.name : "No project"}
           </span>
-          <ChevronDown size={12} className="text-muted-foreground" />
+          <ChevronDown size={12} className="text-zinc-500" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-[180px] max-h-64 overflow-y-auto">
@@ -65,8 +79,8 @@ export function ProjectDropdown() {
             projectId === null && "font-medium",
           )}
         >
-          <FolderOpen size={13} className="text-muted-foreground" />
-          <span className="flex-1">Sin proyecto</span>
+          <FolderOpen size={13} className="text-zinc-500" />
+          <span className="flex-1">No project</span>
           {projectId === null && <Check size={13} />}
         </DropdownMenuItem>
         {projects.map((p) => (
@@ -102,9 +116,9 @@ export function NetworkDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button className={triggerClassName}>
           <span>{selected ? selected.label : "Red social"}</span>
-          <ChevronDown size={12} className="text-muted-foreground" />
+          <ChevronDown size={12} className="text-zinc-500" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-[160px]">
@@ -152,18 +166,15 @@ export function FormatDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          disabled={!network}
-          className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span>{selected ? selected.label : "Formato"}</span>
-          <ChevronDown size={12} className="text-muted-foreground" />
+        <button disabled={!network} className={triggerClassName}>
+          <span>{selected ? selected.label : "Format"}</span>
+          <ChevronDown size={12} className="text-zinc-500" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-[200px] max-h-64 overflow-y-auto">
         {networkFormats.length === 0 && (
-          <div className="px-2 py-2 text-sm text-muted-foreground">
-            Seleccioná una red primero
+          <div className="px-2 py-2 text-sm text-zinc-500">
+            Select a network first
           </div>
         )}
         {networkFormats.map((fmt) => (
@@ -182,7 +193,7 @@ export function FormatDropdown() {
             )}
           >
             <span className="flex-1">{fmt.label}</span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-zinc-500">
               {fmt.width}×{fmt.height}
             </span>
             {formatKey === fmt.key && <Check size={13} />}
@@ -222,13 +233,13 @@ export function ProviderDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button className={triggerClassName}>
           <span>
             {selectedProviders.length === 0
-              ? "Proveedores"
+              ? "Providers"
               : `${selectedProviders.length} proveedor${selectedProviders.length > 1 ? "es" : ""}`}
           </span>
-          <ChevronDown size={12} className="text-muted-foreground" />
+          <ChevronDown size={12} className="text-zinc-500" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-[200px]">
@@ -243,15 +254,13 @@ export function ProviderDropdown() {
             >
               <span className="flex-1">{key}</span>
               {isOllama && ollamaModels.length > 0 && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-zinc-500">
                   {ollamaModels.length} model
                   {ollamaModels.length !== 1 ? "s" : ""}
                 </span>
               )}
               {isOllama && ollamaModels.length === 0 && (
-                <span className="text-xs text-muted-foreground/60">
-                  offline
-                </span>
+                <span className="text-xs text-zinc-600">offline</span>
               )}
             </DropdownMenuCheckboxItem>
           );
@@ -280,27 +289,173 @@ const STATIC_MODELS: Record<string, string[]> = {
   ],
   openrouter: [
     "openai/gpt-4o",
-    "anthropic/claude-3-5-sonnet",
+    "openai/gpt-4o-mini",
+    "openai/gpt-4-turbo",
+    "openai/gpt-3.5-turbo",
+    "openai/o1",
+    "openai/o1-mini",
+    "openai/o3-mini",
+    "anthropic/claude-3.5-sonnet",
+    "anthropic/claude-3.5-haiku",
+    "anthropic/claude-3-opus",
+    "anthropic/claude-3-sonnet",
+    "anthropic/claude-3-haiku",
+    "google/gemini-2.5-flash-preview",
+    "google/gemini-2.0-flash-001",
     "google/gemini-pro-1.5",
+    "google/gemini-flash-1.5",
+    "meta-llama/llama-3.3-70b-instruct",
+    "meta-llama/llama-3.1-405b-instruct",
     "meta-llama/llama-3.1-70b-instruct",
+    "meta-llama/llama-3.1-8b-instruct",
+    "mistralai/mistral-large-2411",
+    "mistralai/mistral-medium",
+    "mistralai/mistral-small-3.1-24b-instruct",
+    "mistralai/codestral-2501",
+    "deepseek/deepseek-chat-v3-0324",
+    "deepseek/deepseek-r1",
+    "qwen/qwen-2.5-72b-instruct",
+    "qwen/qwen-2.5-coder-32b-instruct",
+    "cohere/command-r-plus",
+    "cohere/command-r",
+    "perplexity/sonar-pro",
+    "perplexity/sonar",
+    "x-ai/grok-2-1212",
+    "microsoft/phi-4",
+    "nvidia/llama-3.1-nemotron-70b-instruct",
   ],
 };
 
+// ---- Provider icon helpers ----
+
+function providerIcon(provider: string, size = 16) {
+  const sizeClass = size === 16 ? "h-4 w-4" : "h-5 w-5";
+  const iconClass = cn(
+    "inline-flex items-center justify-center rounded-md text-[10px] font-bold",
+    sizeClass,
+  );
+
+  switch (provider) {
+    case "openai":
+      return (
+        <span className={cn(iconClass, "bg-emerald-500/20 text-emerald-400")}>
+          AI
+        </span>
+      );
+    case "anthropic":
+      return (
+        <span className={cn(iconClass, "bg-orange-500/20 text-orange-400")}>
+          A
+        </span>
+      );
+    case "gemini":
+      return (
+        <span className={cn(iconClass, "bg-blue-500/20 text-blue-400")}>G</span>
+      );
+    case "openrouter":
+      return (
+        <span className={cn(iconClass, "bg-purple-500/20 text-purple-400")}>
+          OR
+        </span>
+      );
+    case "ollama":
+      return (
+        <span className={cn(iconClass, "bg-zinc-500/20 text-zinc-400")}>
+          OL
+        </span>
+      );
+    default:
+      return (
+        <span className={cn(iconClass, "bg-zinc-500/20 text-zinc-400")}>?</span>
+      );
+  }
+}
+
+function modelProviderIcon(model: string, activeProvider: string) {
+  if (activeProvider !== "openrouter") return null;
+  const org = model.split("/")[0]?.toLowerCase() ?? "";
+  if (org.includes("openai")) return providerIcon("openai");
+  if (org.includes("anthropic")) return providerIcon("anthropic");
+  if (org.includes("google")) return providerIcon("gemini");
+  if (org.includes("meta") || org.includes("llama"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-blue-600/20 text-[10px] font-bold text-blue-300">
+        M
+      </span>
+    );
+  if (org.includes("mistral") || org.includes("mistralai"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-amber-500/20 text-[10px] font-bold text-amber-400">
+        Mi
+      </span>
+    );
+  if (org.includes("deepseek"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-cyan-500/20 text-[10px] font-bold text-cyan-400">
+        DS
+      </span>
+    );
+  if (org.includes("qwen"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-violet-500/20 text-[10px] font-bold text-violet-400">
+        Q
+      </span>
+    );
+  if (org.includes("cohere"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-rose-500/20 text-[10px] font-bold text-rose-400">
+        C
+      </span>
+    );
+  if (org.includes("perplexity"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-teal-500/20 text-[10px] font-bold text-teal-400">
+        P
+      </span>
+    );
+  if (org.includes("x-ai") || org.includes("grok"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-zinc-300/20 text-[10px] font-bold text-zinc-300">
+        X
+      </span>
+    );
+  if (org.includes("microsoft"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-sky-500/20 text-[10px] font-bold text-sky-400">
+        MS
+      </span>
+    );
+  if (org.includes("nvidia"))
+    return (
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-green-500/20 text-[10px] font-bold text-green-400">
+        NV
+      </span>
+    );
+  return (
+    <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-zinc-500/20 text-[10px] font-bold text-zinc-400">
+      {org.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
 // ---- Model Dropdown ----
 
-export function ModelDropdown() {
+interface ModelDropdownProps {
+  iconOnly?: boolean;
+  className?: string;
+}
+
+export function ModelDropdown({
+  iconOnly = false,
+  className,
+}: ModelDropdownProps = {}) {
   const selectedProviders = useCanvasStore((s) => s.config.selectedProviders);
   const selectedModels = useCanvasStore((s) => s.config.selectedModels);
   const setConfig = useCanvasStore((s) => s.setConfig);
   const queryClient = useQueryClient();
 
-  // Fetch Ollama models for dynamic list
-  const { data: ollamaModels = [] } = useQuery({
-    queryKey: ["ollama-models"],
-    queryFn: fetchOllamaModels,
-    staleTime: 30_000,
-    retry: false,
-  });
+  const { activeProvider, configuredProviders, aiSettings, ollamaModels } =
+    useActiveProvider();
 
   // Save preferred model mutation
   const saveMutation = useMutation({
@@ -311,13 +466,6 @@ export function ModelDropdown() {
         queryKey: ["workspace-ai-settings"],
       });
     },
-  });
-
-  // Rehydrate selectedModels from saved preferences on mount
-  const { data: aiSettings } = useQuery({
-    queryKey: ["workspace-ai-settings"],
-    queryFn: fetchAISettings,
-    staleTime: 60_000,
   });
 
   // Sync saved preferred_models into canvas config when they load
@@ -333,8 +481,6 @@ export function ModelDropdown() {
     }
   }
 
-  const activeProvider = selectedProviders[0] ?? "openai";
-
   const modelsForProvider = (provider: string): string[] => {
     if (provider === "ollama") {
       return ollamaModels.map((m) => m.name);
@@ -344,81 +490,235 @@ export function ModelDropdown() {
 
   const handleSelectModel = (provider: string, model: string) => {
     const updated = { ...selectedModels, [provider]: model };
-    setConfig({ selectedModels: updated });
+    setConfig({
+      selectedModels: updated,
+      selectedProviders: [
+        provider,
+        ...selectedProviders.filter((x) => x !== provider),
+      ],
+    });
     // Persist to workspace preferences
     saveMutation.mutate(updated);
   };
 
-  const currentModel = selectedModels[activeProvider] ?? "";
+  const currentModel = activeProvider
+    ? (selectedModels[activeProvider] ?? "")
+    : "";
 
-  const models = modelsForProvider(activeProvider);
+  const [modelSearch, setModelSearch] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [showProviderPicker, setShowProviderPicker] = useState(false);
+
+  const viewingProvider = selectedProvider ?? activeProvider;
+
+  const models = useMemo(
+    () => (viewingProvider ? modelsForProvider(viewingProvider) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- modelsForProvider is stable per viewingProvider+ollamaModels
+    [viewingProvider, ollamaModels],
+  );
+
+  const filteredModels = useMemo(() => {
+    const query = modelSearch.trim().toLowerCase();
+    if (!query) return models;
+    return models.filter((m) => m.toLowerCase().includes(query));
+  }, [models, modelSearch]);
 
   const displayLabel = currentModel
     ? (currentModel.split("/").pop() ?? currentModel)
-    : "Modelo";
+    : activeProvider
+      ? "Modelo"
+      : "Configurar AI";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           disabled={selectedProviders.length === 0}
-          className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+          className={cn(
+            triggerClassName,
+            iconOnly && "w-8 px-0 justify-center",
+            className,
+          )}
+          aria-label={iconOnly ? "Select models" : undefined}
         >
-          <Cpu size={13} className="text-muted-foreground" />
-          <span className="max-w-[160px] truncate">{displayLabel}</span>
-          <ChevronDown size={12} className="text-muted-foreground" />
+          {iconOnly ? (
+            <Bot size={14} className="text-zinc-50" />
+          ) : (
+            <>
+              <Cpu size={13} className="text-zinc-500" />
+              <span className="max-w-[160px] truncate">{displayLabel}</span>
+              <ChevronDown size={12} className="text-zinc-500" />
+            </>
+          )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-[220px] max-h-72 overflow-y-auto">
-        {selectedProviders.length > 1 && (
-          <div className="px-2 pt-1 pb-0.5">
-            {selectedProviders.map((p) => (
-              <button
-                key={p}
-                onClick={() =>
-                  setConfig({
-                    selectedProviders: [
-                      p,
-                      ...selectedProviders.filter((x) => x !== p),
-                    ],
-                  })
-                }
-                className={cn(
-                  "inline-flex items-center px-2 py-0.5 mr-1 mb-1 text-xs rounded-full border transition-colors",
-                  p === activeProvider
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:bg-accent",
-                )}
-              >
-                {p}
-              </button>
-            ))}
-            <div className="border-b border-border mt-1 mb-1" />
-          </div>
-        )}
-        {models.length === 0 && (
-          <div className="px-2 py-2 text-xs text-muted-foreground">
-            {activeProvider === "ollama"
-              ? "Ollama offline o sin modelos"
-              : "Sin modelos disponibles"}
-          </div>
-        )}
-        {models.map((model) => {
-          const isSelected = selectedModels[activeProvider] === model;
-          return (
-            <DropdownMenuItem
-              key={model}
-              onSelect={() => handleSelectModel(activeProvider, model)}
-              className={cn(
-                "flex items-center gap-2",
-                isSelected && "font-medium",
-              )}
+      <DropdownMenuContent className="min-w-[320px] max-h-[28rem] flex flex-col overflow-hidden">
+        {/* Top bar: provider selector + search */}
+        <div className="flex items-center gap-2 border-b border-zinc-800/70 px-3 py-2.5">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowProviderPicker(!showProviderPicker);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800/70 bg-zinc-900/80 px-2.5 py-1.5 text-[11px] text-zinc-200 transition-colors hover:border-zinc-700 hover:text-zinc-50"
             >
-              <span className="flex-1 truncate">{model}</span>
-              {isSelected && <Check size={13} />}
-            </DropdownMenuItem>
-          );
-        })}
+              {viewingProvider ? (
+                providerIcon(viewingProvider)
+              ) : (
+                <Bot size={12} />
+              )}
+              <span className="max-w-[80px] truncate capitalize">
+                {viewingProvider ?? "Provider"}
+              </span>
+              <ChevronDown size={10} className="text-zinc-500" />
+            </button>
+            {showProviderPicker && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-800/70 bg-zinc-950 py-1 shadow-xl">
+                {ALL_KNOWN_PROVIDERS.map((p) => {
+                  const isConfigured = configuredProviders.includes(p);
+                  const isActive = p === viewingProvider;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedProvider(p);
+                        setModelSearch("");
+                        setShowProviderPicker(false);
+                        if (isConfigured) {
+                          setConfig({
+                            selectedProviders: [
+                              p,
+                              ...selectedProviders.filter((x) => x !== p),
+                            ],
+                          });
+                        }
+                      }}
+                      className={cn(
+                        "flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors",
+                        isActive
+                          ? "bg-white/[0.06] text-zinc-50"
+                          : "text-zinc-300 hover:bg-white/[0.04] hover:text-zinc-100",
+                      )}
+                    >
+                      {providerIcon(p)}
+                      <span className="flex-1 text-left capitalize">{p}</span>
+                      {!isConfigured && (
+                        <span className="text-[10px] text-zinc-600">
+                          not configured
+                        </span>
+                      )}
+                      {isActive && (
+                        <Check size={12} className="text-zinc-400" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-500" />
+            <input
+              type="text"
+              value={modelSearch}
+              onChange={(e) => setModelSearch(e.target.value)}
+              placeholder="Search models..."
+              className="w-full rounded-md border border-zinc-800/70 bg-zinc-950/80 py-1.5 pl-8 pr-3 text-xs text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-zinc-700"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+
+        {/* Not configured message */}
+        {viewingProvider && !configuredProviders.includes(viewingProvider) && (
+          <div className="px-4 py-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-200">
+              <KeyRound size={16} className="text-amber-400" />
+              <span className="capitalize">
+                {viewingProvider} — API key not set
+              </span>
+            </div>
+            <p className="mb-3 text-xs leading-relaxed text-zinc-400">
+              Configure an API key for {viewingProvider} to use these models.
+            </p>
+            <a
+              href="/settings/ai-providers"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-900 transition-colors hover:bg-white"
+            >
+              <span>Go to settings</span>
+              <ExternalLink size={12} />
+            </a>
+          </div>
+        )}
+
+        {/* No provider selected at all */}
+        {!viewingProvider && (
+          <div className="px-4 py-4 text-center text-xs text-zinc-500">
+            Select a provider to see available models.
+          </div>
+        )}
+
+        {/* Model list — only when the viewed provider IS configured */}
+        {viewingProvider && configuredProviders.includes(viewingProvider) && (
+          <div className="flex-1 overflow-y-auto">
+            {models.length === 0 && (
+              <div className="px-3 py-3 text-xs text-zinc-500">
+                {viewingProvider === "ollama"
+                  ? "Ollama offline or no models pulled"
+                  : "No models available for this provider"}
+              </div>
+            )}
+            {models.length > 0 && filteredModels.length === 0 && (
+              <div className="px-3 py-3 text-xs text-zinc-500">
+                No models match &ldquo;{modelSearch.trim()}&rdquo;
+              </div>
+            )}
+            {filteredModels.map((model) => {
+              const isSelected =
+                viewingProvider !== null &&
+                selectedModels[viewingProvider] === model;
+              const icon = viewingProvider
+                ? modelProviderIcon(model, viewingProvider)
+                : null;
+              return (
+                <DropdownMenuItem
+                  key={model}
+                  onSelect={() =>
+                    viewingProvider && handleSelectModel(viewingProvider, model)
+                  }
+                  className={cn(
+                    "flex items-center gap-2",
+                    isSelected && "font-medium",
+                  )}
+                >
+                  {icon}
+                  <span className="flex-1 truncate">{model}</span>
+                  {isSelected && <Check size={13} />}
+                </DropdownMenuItem>
+              );
+            })}
+            {viewingProvider === "openrouter" &&
+              modelSearch.trim() &&
+              !models.includes(modelSearch.trim()) && (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    handleSelectModel("openrouter", modelSearch.trim());
+                    setModelSearch("");
+                  }}
+                  className="flex items-center gap-2 border-t border-zinc-800/70 text-zinc-300"
+                >
+                  <span className="flex-1 truncate">
+                    Use &ldquo;{modelSearch.trim()}&rdquo; as custom model
+                  </span>
+                </DropdownMenuItem>
+              )}
+          </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
