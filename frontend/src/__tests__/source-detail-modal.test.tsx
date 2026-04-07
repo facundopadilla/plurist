@@ -57,14 +57,13 @@ describe("SourceDetailModal managed artifacts", () => {
     expect(editButton).toBeDefined();
     editButton?.click();
 
-    let editor: HTMLTextAreaElement | null = null;
     await waitFor(() => {
-      editor = document.querySelector("textarea") as HTMLTextAreaElement | null;
-      expect(editor).not.toBeNull();
+      expect(document.querySelector("textarea")).not.toBeNull();
     });
-    expect(editor?.value).toContain("Old content");
+    const editor = document.querySelector("textarea") as HTMLTextAreaElement;
+    expect(editor.value).toContain("Old content");
 
-    typeIn(editor!, "# New manual content");
+    typeIn(editor, "# New manual content");
 
     const saveButton = Array.from(document.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Save"),

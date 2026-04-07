@@ -143,6 +143,7 @@ describe("canvas header dropdowns", () => {
   });
 
   it("shows fallback label when no provider key is configured", async () => {
+    vi.mocked(fetchOllamaModels).mockResolvedValue([]);
     useCanvasStore.setState({
       config: {
         ...useCanvasStore.getState().config,

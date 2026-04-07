@@ -47,8 +47,8 @@ describe("HtmlShapeUtil", () => {
   describe("capabilities", () => {
     const util = Object.create(HtmlShapeUtil.prototype) as HtmlShapeUtil;
 
-    it("canEdit returns false (editing handled by the side panel)", () => {
-      expect(util.canEdit()).toBe(false);
+    it("canEdit returns true (tldraw editing lifecycle + inline HTML edit)", () => {
+      expect(util.canEdit()).toBe(true);
     });
 
     it("canResize returns true", () => {
