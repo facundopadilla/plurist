@@ -145,3 +145,9 @@ ops/static-analysis/reports/
 
 # SonarScanner working directory (generated on each scan run)
 .scannerwork/
+
+# Sisyphus (local task evidence, screenshots, agent notepads — not product source)
+.sisyphus/
+
+# Accidental root path from mis-resolved installs (e.g. husky internals); never version
+--version/
