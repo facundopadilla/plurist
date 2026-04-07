@@ -12,6 +12,7 @@ from apps.meta.api import router as meta_router
 from apps.posts.api import router as posts_router
 from apps.projects.api import router as projects_router
 from apps.rendering.api import router as rendering_router
+from apps.skills.api import router as skills_router
 from apps.workspace.api import router as workspace_router
 
 api = NinjaAPI(version="1", docs_url="/docs", openapi_url="/openapi.json")
@@ -28,6 +29,7 @@ api.add_router("/posts/", posts_router, url_name_prefix="posts")  # compat alias
 api.add_router("/rendering/", rendering_router)
 api.add_router("/generation/", generation_router)
 api.add_router("/projects/", projects_router)
+api.add_router("/skills/", skills_router)
 
 
 @api.exception_handler(Http404)

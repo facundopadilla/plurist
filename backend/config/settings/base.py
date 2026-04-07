@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "apps.generation",
     "apps.analytics",
     "apps.projects",
+    "apps.skills",
 ]
 
 MIDDLEWARE = [
