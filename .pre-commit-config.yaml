@@ -81,7 +81,7 @@ repos:
             "--baseline",
             ".secrets.baseline",
             "--exclude-files",
-            "(^\\.env\\.example$|^\\.sisyphus/|^backend/\\.omc/|^frontend/pnpm-lock\\.yaml$|^pnpm-lock\\.yaml$|^package-lock\\.json$|^skills-lock\\.json$|^backend/tests/|^docker-compose\\.yml$)",
+            "(^\\.env\\.example$|^\\.sisyphus/|^backend/\\.omc/|^frontend/pnpm-lock\\.yaml$|^pnpm-lock\\.yaml$|^backend/tests/|^docker-compose\\.yml$)",
           ]
 
   - repo: local

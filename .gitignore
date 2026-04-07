@@ -55,6 +55,10 @@ env.bak/
 venv.bak/
 
 # Node
+# Root uses pnpm only (see package.json packageManager); ignore accidental npm lock
+/package-lock.json
+# Local Impeccable / agent skills pin — not product source
+/skills-lock.json
 node_modules/
 npm-debug.log*
 yarn-debug.log*
