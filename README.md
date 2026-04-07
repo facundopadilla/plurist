@@ -5,6 +5,7 @@
 ![Node](https://img.shields.io/badge/node-22-339933?logo=nodedotjs&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-9-F69220?logo=pnpm&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker%20compose-ready-2496ED?logo=docker&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 
 **Create and edit AI-generated content through code or visual tools—no coding required.**
 
@@ -122,4 +123,4 @@ scripts/        # CI / helper scripts
 
 ## License
 
-No root license file is shipped in this repository yet. Clarify terms before redistribution; third-party notices (e.g. canvas libraries) are discussed under [`docs/licenses/`](docs/licenses/).
+This project is licensed under the [MIT License](LICENSE.md). Third-party and library-specific notices (e.g. canvas components) are documented under [`docs/licenses/`](docs/licenses/).
