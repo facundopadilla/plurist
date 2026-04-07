@@ -4,7 +4,7 @@ from apps.accounts.models import Membership, RoleChoices, User, Workspace
 
 
 class Command(BaseCommand):
-    help = "Seed owner/editor/publisher test accounts"
+    help = "Seed owner/editor test accounts"
 
     def handle(self, *args, **options):
         workspace, _ = Workspace.objects.get_or_create(
@@ -16,6 +16,9 @@ class Command(BaseCommand):
             ("owner@example.com", "Owner", RoleChoices.OWNER),
             ("editor@example.com", "Editor", RoleChoices.EDITOR),
             ("publisher@example.com", "Publisher", RoleChoices.PUBLISHER),
+            ("owner@test.com", "Owner", RoleChoices.OWNER),
+            ("editor@test.com", "Editor", RoleChoices.EDITOR),
+            ("publisher@test.com", "Publisher", RoleChoices.PUBLISHER),
         ]
 
         for email, name, role in accounts:

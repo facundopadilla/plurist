@@ -376,6 +376,9 @@ def dev_seed(request):
         ("owner@example.com", "Owner", RoleChoices.OWNER),
         ("editor@example.com", "Editor", RoleChoices.EDITOR),
         ("publisher@example.com", "Publisher", RoleChoices.PUBLISHER),
+        ("owner@test.com", "Owner", RoleChoices.OWNER),
+        ("editor@test.com", "Editor", RoleChoices.EDITOR),
+        ("publisher@test.com", "Publisher", RoleChoices.PUBLISHER),
     ]
 
     for email, name, role in accounts:

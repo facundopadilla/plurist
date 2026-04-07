@@ -1,10 +1,14 @@
-.PHONY: up down lint test-backend test-frontend test-e2e
+.PHONY: up down lint test-backend test-frontend test-e2e seed-test-accounts
 
 up:
 	docker compose up -d --build --wait
+	$(MAKE) seed-test-accounts
+
+seed-test-accounts:
+	docker compose exec -T backend python manage.py seed_test_accounts
 
 down:
-	docker compose down
+	docker compose down -v --remove-orphans
 
 lint:
 	docker compose run --rm --build backend ruff check .
