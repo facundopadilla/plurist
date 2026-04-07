@@ -1,6 +1,14 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { request } from "@playwright/test";
 
 async function globalSetup() {
+  // E2E specs write optional artifacts under repo-root .sisyphus/evidence (gitignored).
+  mkdirSync(join(__dirname, "..", "..", ".sisyphus", "evidence"), {
+    recursive: true,
+  });
+
   const backendUrl = process.env.BACKEND_URL ?? "http://backend:8000";
   const context = await request.newContext();
   const meResponse = await context.get(`${backendUrl}/api/v1/auth/csrf`);
