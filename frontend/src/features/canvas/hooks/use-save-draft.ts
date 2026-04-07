@@ -15,6 +15,7 @@ export function useSaveDraft() {
   const draftPostId = useCanvasStore((s) => s.draftPostId);
   const slides = useCanvasStore((s) => s.slides);
   const config = useCanvasStore((s) => s.config);
+  const globalStyles = useCanvasStore((s) => s.globalStyles);
   const setDraftPostId = useCanvasStore((s) => s.setDraftPostId);
   const markSaved = useCanvasStore((s) => s.markSaved);
   const hydrateDraft = useCanvasStore((s) => s.hydrateDraft);
@@ -67,10 +68,10 @@ export function useSaveDraft() {
         // Create new DraftPost
         const post = await createContent({
           title: config.title || "Canvas Studio Draft",
-          target_networks: config.network ? [config.network] : [],
           project_id: config.projectId,
           format: config.formatKey,
           html_content: htmlContent,
+          global_styles: globalStyles,
         });
         postId = post.id;
         setDraftPostId(postId);
@@ -78,10 +79,10 @@ export function useSaveDraft() {
         // Update existing DraftPost
         const post = await updateContent(postId, {
           title: config.title || "Canvas Studio Draft",
-          target_networks: config.network ? [config.network] : [],
           project_id: config.projectId,
           format: config.formatKey,
           html_content: htmlContent,
+          global_styles: globalStyles,
           frame_metadata: frameMetadata,
           variants: variantsPayload,
         });
@@ -108,7 +109,15 @@ export function useSaveDraft() {
     } finally {
       isSavingRef.current = false;
     }
-  }, [slides, config, draftPostId, setDraftPostId, markSaved, hydrateDraft]);
+  }, [
+    slides,
+    config,
+    globalStyles,
+    draftPostId,
+    setDraftPostId,
+    markSaved,
+    hydrateDraft,
+  ]);
 
   // Debounced auto-save
   useEffect(() => {

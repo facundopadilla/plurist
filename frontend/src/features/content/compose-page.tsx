@@ -1,24 +1,22 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, Send, Loader2 } from "lucide-react";
+import { FileText, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "../auth/use-auth";
-import { createContent, submitContentForApproval } from "./api";
+import { createContent, completeContent } from "./api";
 import { startCompare, fetchProviders } from "../generation/api";
 import { ComparePanel } from "../generation/compare-panel";
 import {
   ProjectSearchInput,
-  NetworkFormatSelector,
+  FormatSelector,
   SlideCountInput,
   ProviderCard,
 } from "./components";
 import type { GenerationVariant } from "../generation/types";
 
 const DEFAULT_PROVIDERS = ["openai", "anthropic", "gemini", "openrouter"];
-
-type NetworkId = "instagram" | "linkedin" | "x";
 
 export function ComposePage() {
   const { isOwner, isEditor } = useAuth();
@@ -35,7 +33,6 @@ export function ComposePage() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
     defaultProjectId,
   );
-  const [network, setNetwork] = useState<NetworkId | null>(null);
   const [formatKey, setFormatKey] = useState("ig_square");
   const [formatWidth, setFormatWidth] = useState(1080);
   const [formatHeight, setFormatHeight] = useState(1080);
@@ -56,7 +53,7 @@ export function ComposePage() {
     mutationFn: () =>
       startCompare({
         campaign_brief: brief,
-        target_network: network ?? "",
+        target_network: "",
         providers: selectedProviders,
         project_id: selectedProjectId,
         format: formatKey,
@@ -70,7 +67,7 @@ export function ComposePage() {
     },
   });
 
-  const createAndSubmitMutation = useMutation({
+  const createAndCompleteMutation = useMutation({
     mutationFn: async () => {
       const primaryVariant = selectedVariants[0];
       const htmlContent = primaryVariant?.generated_html ?? "";
@@ -79,15 +76,14 @@ export function ComposePage() {
       const post = await createContent({
         title,
         body_text: bodyText,
-        target_networks: network ? [network] : [],
         project_id: selectedProjectId,
         format: formatKey,
         html_content: htmlContent,
       });
-      await submitContentForApproval(post.id);
+      await completeContent(post.id);
       return post;
     },
-    onSuccess: () => navigate("/contenido"),
+    onSuccess: () => navigate("/content"),
   });
 
   const toggleProvider = (p: string) => {
@@ -108,72 +104,60 @@ export function ComposePage() {
   if (!canCompose) {
     return (
       <div className="py-8 text-center text-muted-foreground">
-        Solo Owners y Editors pueden crear contenido.
+        Only Owners and Editors can create content.
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl space-y-6 animate-page-in">
-      <h1 className="text-[24px] font-semibold tracking-[-0.03em] flex items-center gap-2">
+    <div className="max-w-4xl animate-page-in space-y-6">
+      <h1 className="flex items-center gap-2 text-[24px] font-semibold tracking-[-0.03em]">
         <FileText size={20} />
-        Nuevo contenido
+        New content
       </h1>
 
-      {/* Título */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Título</label>
+        <label className="text-sm font-medium">Title</label>
         <Input
           data-testid="post-title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Título del contenido..."
+          placeholder="Content title..."
           className="w-full"
         />
       </div>
 
-      {/* Selector de proyecto */}
       <ProjectSearchInput
         value={selectedProjectId}
         onChange={setSelectedProjectId}
       />
 
-      {/* Selector de red + formato */}
-      <NetworkFormatSelector
+      <FormatSelector
         formatKey={formatKey}
-        network={network}
         onFormatChange={(key, w, h) => {
           setFormatKey(key);
           setFormatWidth(w);
           setFormatHeight(h);
         }}
-        onNetworkChange={(n) => {
-          setNetwork(n);
-          // Reset format to first available when network changes
-          setFormatKey("");
-        }}
       />
 
-      {/* Cantidad de slides */}
       <SlideCountInput value={slideCount} onChange={setSlideCount} />
 
-      {/* Brief */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Brief de campaña</label>
+        <label className="text-sm font-medium">Campaign brief</label>
         <textarea
           data-testid="campaign-brief"
           value={brief}
           onChange={(e) => setBrief(e.target.value)}
-          placeholder="Describe qué querés comunicar..."
+          placeholder="Describe what you want to communicate..."
           rows={4}
           className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
-      {/* Proveedores de IA */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Proveedores de IA</label>
+        <label className="text-sm font-medium">AI providers</label>
         <div className="flex flex-wrap gap-2">
           {(providers ?? DEFAULT_PROVIDERS).map((k) => (
             <ProviderCard
@@ -187,7 +171,6 @@ export function ComposePage() {
         </div>
       </div>
 
-      {/* Generar */}
       <Button
         onClick={() => compareMutation.mutate()}
         disabled={
@@ -199,18 +182,17 @@ export function ComposePage() {
         {compareMutation.isPending && (
           <Loader2 className="animate-spin" size={14} />
         )}
-        {compareRunId ? "Regenerar" : "Generar diseño"}
+        {compareRunId ? "Regenerate" : "Generate design"}
       </Button>
 
       {compareMutation.isError && (
         <p className="text-xs text-destructive">
           {compareMutation.error instanceof Error
             ? compareMutation.error.message
-            : "Error al generar"}
+            : "Error generating"}
         </p>
       )}
 
-      {/* Resultados del compare */}
       {compareRunId && (
         <ComparePanel
           compareRunId={compareRunId}
@@ -220,36 +202,34 @@ export function ComposePage() {
         />
       )}
 
-      {/* Enviar para aprobación */}
       <Button
-        data-testid="submit-for-approval"
-        onClick={() => createAndSubmitMutation.mutate()}
+        data-testid="complete-content"
+        onClick={() => createAndCompleteMutation.mutate()}
         disabled={
           !hasAnyVariantSelected ||
           !title.trim() ||
-          !network ||
-          createAndSubmitMutation.isPending
+          createAndCompleteMutation.isPending
         }
       >
-        {createAndSubmitMutation.isPending ? (
+        {createAndCompleteMutation.isPending ? (
           <Loader2 className="animate-spin" size={14} />
         ) : (
-          <Send size={14} />
+          <CheckCircle size={14} />
         )}
-        Enviar para aprobación
+        Create & complete
       </Button>
 
-      {createAndSubmitMutation.isError && (
+      {createAndCompleteMutation.isError && (
         <p className="text-xs text-destructive">
-          {createAndSubmitMutation.error instanceof Error
-            ? createAndSubmitMutation.error.message
-            : "Error al enviar"}
+          {createAndCompleteMutation.error instanceof Error
+            ? createAndCompleteMutation.error.message
+            : "Error creating content"}
         </p>
       )}
 
       {!hasAnyVariantSelected && compareRunId && (
         <p className="text-xs text-muted-foreground">
-          Seleccioná al menos una variante antes de enviar para aprobación.
+          Select at least one variant before completing.
         </p>
       )}
     </div>

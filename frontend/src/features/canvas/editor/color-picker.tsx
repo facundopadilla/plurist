@@ -51,11 +51,10 @@ export function ColorPicker({
   }
 
   return (
-    <div className="flex flex-col gap-2 p-2 bg-card border border-border rounded-md shadow-md w-48">
-      {/* Brand color swatches */}
+    <div className="flex w-48 flex-col gap-2 rounded-lg border border-zinc-800/70 bg-zinc-950 p-2 shadow-lg">
       {colorSources.length > 0 && (
         <div>
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+          <p className="mb-1 text-[10px] font-medium text-zinc-500">
             Brand Colors
           </p>
           <div className="flex flex-wrap gap-1">
@@ -67,10 +66,10 @@ export function ColorPicker({
                   title={s.name}
                   onClick={() => handleSwatchClick(hex)}
                   className={cn(
-                    "w-6 h-6 rounded border-2 transition-transform hover:scale-110",
+                    "h-6 w-6 rounded-md border-2 transition-transform hover:scale-110",
                     hexInput.toLowerCase() === hex.toLowerCase()
-                      ? "border-primary"
-                      : "border-border",
+                      ? "border-zinc-50"
+                      : "border-zinc-800",
                   )}
                   style={{ backgroundColor: hex }}
                 />
@@ -80,10 +79,9 @@ export function ColorPicker({
         </div>
       )}
 
-      {/* Hex input */}
       <div className="flex items-center gap-2">
         <div
-          className="w-6 h-6 rounded border border-border flex-shrink-0"
+          className="h-6 w-6 flex-shrink-0 rounded-md border border-zinc-800"
           style={{ backgroundColor: hexInput }}
         />
         <input
@@ -91,17 +89,16 @@ export function ColorPicker({
           value={hexInput}
           onChange={handleHexChange}
           placeholder="#000000"
-          className="flex-1 text-xs bg-background border border-border rounded px-1.5 py-1 font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+          className="flex-1 rounded-md border border-zinc-800/70 bg-zinc-950/80 px-1.5 py-1 font-mono text-xs text-zinc-100 outline-none focus:ring-1 focus:ring-white/[0.08]"
           maxLength={7}
         />
       </div>
 
-      {/* Native color picker */}
       <input
         type="color"
         value={hexInput.length === 7 ? hexInput : "#000000"}
         onChange={(e) => handleSwatchClick(e.target.value)}
-        className="w-full h-7 rounded border border-border cursor-pointer"
+        className="h-7 w-full cursor-pointer rounded-md border border-zinc-800"
         title="Pick custom color"
       />
     </div>

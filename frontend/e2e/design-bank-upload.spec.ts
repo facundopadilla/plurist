@@ -12,7 +12,7 @@ test.describe("Design bank upload", () => {
     page,
   }) => {
     await page.goto("/login");
-    await page.getByTestId("login-email").fill("owner@example.com");
+    await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
     await expect(page).toHaveURL("/");
@@ -57,7 +57,7 @@ test.describe("Design bank upload", () => {
     page,
   }) => {
     await page.goto("/login");
-    await page.getByTestId("login-email").fill("publisher@example.com");
+    await page.getByTestId("login-email").fill("publisher@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
     await expect(page).toHaveURL("/");

@@ -1,16 +1,8 @@
 import { FormEvent, useState } from "react";
-import {
-  ArrowRight,
-  CheckCircle2,
-  CircleAlert,
-  LogOut,
-  Mail,
-  LockKeyhole,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, CircleAlert, LogOut } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { loginWithPassword } from "./api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 
 export function LoginPage() {
   const [searchParams] = useSearchParams();
@@ -27,8 +19,7 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       await loginWithPassword(email, password);
-      // Full page reload so AuthContext re-initialises with the live session cookie.
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
       setIsSubmitting(false);
@@ -36,116 +27,101 @@ export function LoginPage() {
   };
 
   return (
-    <form
-      className="animate-page-in space-y-6"
-      data-testid="login-form"
-      onSubmit={onSubmit}
-    >
-      <div className="space-y-4 border-b border-border pb-5">
-        <div className="font-elegant-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-          Workspace sign-in
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-[32px] font-semibold leading-[1.05] tracking-[-0.04em] text-foreground">
-            Welcome back
-          </h1>
-          <p className="text-[16px] leading-7 text-muted-foreground">
-            Use your workspace account to continue into projects, approvals, and
-            publishing.
-          </p>
-        </div>
+    <form className="space-y-6" data-testid="login-form" onSubmit={onSubmit}>
+      <div className="space-y-2 text-center">
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-zinc-50">
+          Sign in
+        </h1>
+        <p className="text-[14px] text-zinc-300">
+          Enter your credentials to continue.
+        </p>
       </div>
 
-      <div className="space-y-3">
-        {inviteAccepted ? (
+      {/* Alerts */}
+      <div className="space-y-2">
+        {inviteAccepted && (
           <Alert variant="success">
-            <CheckCircle2 size={16} />
+            <CheckCircle2 size={14} />
             <AlertDescription>
               Account created. Sign in to continue.
             </AlertDescription>
           </Alert>
-        ) : null}
-        {loggedOut ? (
+        )}
+        {loggedOut && (
           <Alert variant="success">
-            <LogOut size={16} />
+            <LogOut size={14} />
             <AlertDescription>You have been signed out.</AlertDescription>
           </Alert>
-        ) : null}
-        {error ? (
+        )}
+        {error && (
           <Alert variant="destructive">
-            <CircleAlert size={16} />
+            <CircleAlert size={14} />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        ) : null}
+        )}
       </div>
 
+      {/* Fields */}
       <div className="space-y-4">
         <label className="block space-y-2" htmlFor="login-email">
-          <span className="font-elegant-mono text-[12px] uppercase tracking-[0.16em] text-muted-foreground">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-300">
             Email
           </span>
-          <span className="flex items-center gap-3 rounded-[14px] border border-input bg-background px-3 py-3 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15">
-            <Mail size={16} className="text-muted-foreground" />
-            <input
-              id="login-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              data-testid="login-email"
-              className="w-full bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground"
-              placeholder="name@workspace.com"
-              autoComplete="email"
-              required
-            />
-          </span>
+          <input
+            id="login-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            data-testid="login-email"
+            className="flex h-11 w-full rounded-xl border border-zinc-700/40 bg-zinc-900/40 px-4 text-[14px] text-zinc-50 outline-none transition-all placeholder:text-zinc-500 focus:border-zinc-500/60 focus:ring-2 focus:ring-white/[0.06]"
+            placeholder="name@company.com"
+            autoComplete="email"
+            required
+          />
         </label>
 
         <label className="block space-y-2" htmlFor="login-password">
-          <span className="font-elegant-mono text-[12px] uppercase tracking-[0.16em] text-muted-foreground">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-300">
             Password
           </span>
-          <span className="flex items-center gap-3 rounded-[14px] border border-input bg-background px-3 py-3 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15">
-            <LockKeyhole size={16} className="text-muted-foreground" />
-            <input
-              id="login-password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              data-testid="login-password"
-              className="w-full bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground"
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              required
-            />
-          </span>
+          <input
+            id="login-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            data-testid="login-password"
+            className="flex h-11 w-full rounded-xl border border-zinc-700/40 bg-zinc-900/40 px-4 text-[14px] text-zinc-50 outline-none transition-all placeholder:text-zinc-500 focus:border-zinc-500/60 focus:ring-2 focus:ring-white/[0.06]"
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            required
+          />
         </label>
       </div>
 
-      <div className="space-y-3 pt-2">
-        <Button
+      {/* Actions */}
+      <div className="space-y-3 pt-1">
+        <button
           type="submit"
           data-testid="login-submit"
-          className="w-full justify-center gap-2 rounded-[14px] px-3 py-3 text-[16px]"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-50 text-[14px] font-semibold text-zinc-900 transition-all duration-200 hover:bg-white hover:shadow-[0_0_20px_rgba(250,250,250,0.12)] disabled:opacity-50"
           disabled={isSubmitting}
         >
-          <span>{isSubmitting ? "Signing in..." : "Sign in"}</span>
-          {!isSubmitting ? <ArrowRight size={16} /> : null}
-        </Button>
+          {isSubmitting ? "Signing in..." : "Sign in"}
+          {!isSubmitting && <ArrowRight size={14} />}
+        </button>
 
-        <Button
-          variant="outline"
-          asChild
-          className="w-full justify-center rounded-[14px] px-3 py-3 text-[16px]"
+        <a
+          href="/api/v1/auth/google/start"
+          data-testid="login-google"
+          className="flex h-11 w-full items-center justify-center rounded-xl border border-zinc-700/40 bg-transparent text-[14px] font-medium text-zinc-200 transition-all duration-200 hover:border-zinc-600/50 hover:bg-zinc-800/30 hover:text-zinc-50"
         >
-          <a href="/api/v1/auth/google/start" data-testid="login-google">
-            Continue with Google
-          </a>
-        </Button>
+          Continue with Google
+        </a>
       </div>
 
-      <div className="font-elegant-mono border-t border-border pt-4 text-[12px] uppercase tracking-[0.16em] text-muted-foreground">
-        Need an invite first? Ask the workspace owner.
-      </div>
+      <p className="text-center text-[12px] text-zinc-400">
+        Need access? Ask the workspace owner for an invite.
+      </p>
     </form>
   );
 }

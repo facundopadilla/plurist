@@ -10,10 +10,6 @@ import { getExtensions, type CanvasExtension } from "../extensions";
 import { useCanvasStore } from "../canvas-store";
 import { HTML_SHAPE_TYPE, type HtmlShape } from "../shapes";
 
-/**
- * Get the first selected HTML shape from the tldraw editor.
- * Returns the slideId if found, null otherwise.
- */
 function useSelectedSlideId(): string | null {
   const editor = useCanvasStore((s) => s.editor);
   if (!editor) return null;
@@ -94,21 +90,19 @@ export function ExtensionsPanel() {
   if (activeExtension) {
     const { Panel } = activeExtension;
     return (
-      <div className="flex flex-col h-full">
-        {/* Header with back button */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+      <div className="flex h-full flex-col">
+        <div className="flex items-center gap-3 border-b border-zinc-800/60 px-4 py-4">
           <button
             onClick={() => setActiveExtId(null)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-zinc-500 transition-colors hover:text-zinc-100"
           >
-            &larr; Volver
+            &larr; Back
           </button>
-          <span className="text-sm font-medium text-foreground">
+          <span className="text-sm font-semibold tracking-[-0.02em] text-zinc-50">
             {activeExtension.meta.name}
           </span>
         </div>
-        {/* Extension panel content */}
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-4 text-zinc-100">
           <Panel
             selectedShapeId={selectedSlideId}
             onInjectImage={handleInjectImage}
@@ -120,27 +114,25 @@ export function ExtensionsPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-3 py-2 border-b border-border">
-        <h3 className="text-sm font-medium text-foreground">Extensiones</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Herramientas de IA para el canvas
-        </p>
+    <div className="flex h-full flex-col">
+      <div className="border-b border-zinc-800/60 px-4 py-4">
+        <h3 className="text-sm font-semibold tracking-[-0.02em] text-zinc-50">
+          Extensions
+        </h3>
+        <p className="mt-1 text-xs text-zinc-400">AI tools for the canvas</p>
       </div>
 
-      {/* Extension list */}
       <div className="flex-1 overflow-y-auto">
         {extensions.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <p className="text-xs text-muted-foreground text-center px-4">
-              No hay extensiones registradas.
+          <div className="flex h-32 items-center justify-center">
+            <p className="px-4 text-center text-xs text-zinc-500">
+              No extensions registered.
               <br />
-              Las extensiones de IA aparecerán aquí.
+              AI extensions will appear here.
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-zinc-900">
             {extensions.map((ext) => (
               <ExtensionListItem
                 key={ext.meta.id}
@@ -167,16 +159,16 @@ function ExtensionListItem({
     <li>
       <button
         onClick={onActivate}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent transition-colors"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
       >
-        <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-zinc-800/70 bg-zinc-900/80 text-zinc-400">
           {meta.icon}
         </span>
         <div className="min-w-0 flex-1">
-          <span className="text-sm font-medium text-foreground block truncate">
+          <span className="block truncate text-sm font-medium text-zinc-100">
             {meta.name}
           </span>
-          <span className="text-xs text-muted-foreground block truncate">
+          <span className="block truncate text-xs text-zinc-500">
             {meta.description}
           </span>
         </div>

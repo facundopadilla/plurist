@@ -9,7 +9,6 @@
 import { useState } from "react";
 import type { ExtensionPanelProps } from "../registry";
 
-/** Placeholder SVG encoded as a data URI — no network request needed. */
 const PLACEHOLDER_SVG = `data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
     <rect width="400" height="400" fill="#f0f0f0"/>
@@ -18,7 +17,6 @@ const PLACEHOLDER_SVG = `data:image/svg+xml,${encodeURIComponent(
   </svg>`,
 )}`;
 
-/** Placeholder HTML block injected as a new slide. */
 const PLACEHOLDER_HTML = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><style>
@@ -44,59 +42,53 @@ export function AiImagePanel({
 
   const handleInjectImage = () => {
     onInjectImage(PLACEHOLDER_SVG);
-    setLastAction("Imagen inyectada en el shape seleccionado");
+    setLastAction("Injected placeholder image into the selected shape");
   };
 
   const handleReplaceHtml = () => {
     onReplaceHtml(PLACEHOLDER_HTML);
-    setLastAction("HTML reemplazado con placeholder generado");
+    setLastAction("Replaced HTML with generated placeholder content");
   };
 
   return (
     <div className="space-y-4">
-      {/* Status: selected shape */}
-      <div className="rounded-md bg-muted px-3 py-2">
-        <span className="text-[11px] text-muted-foreground">
+      <div className="rounded-lg border border-zinc-800/70 bg-zinc-900/70 px-3 py-2">
+        <span className="text-[11px] text-zinc-400">
           {selectedShapeId
-            ? `Shape seleccionado: ${selectedShapeId}`
-            : "Seleccioná un shape en el canvas"}
+            ? `Selected shape: ${selectedShapeId}`
+            : "Select a shape in the canvas"}
         </span>
       </div>
 
-      {/* Actions */}
       <div className="space-y-2">
         <button
           onClick={handleInjectImage}
           disabled={!selectedShapeId}
-          className="w-full px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full rounded-lg bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           data-testid="ai-stub-inject-image"
         >
-          Inyectar imagen placeholder
+          Inject placeholder image
         </button>
 
         <button
           onClick={handleReplaceHtml}
           disabled={!selectedShapeId}
-          className="w-full px-3 py-2 text-sm font-medium rounded-md border border-border bg-background text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full rounded-lg border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:text-zinc-500"
           data-testid="ai-stub-replace-html"
         >
-          Reemplazar HTML completo
+          Replace full HTML
         </button>
       </div>
 
-      {/* Feedback */}
       {lastAction && (
-        <p className="text-xs text-muted-foreground italic">{lastAction}</p>
+        <p className="text-xs italic text-zinc-500">{lastAction}</p>
       )}
 
-      {/* Info */}
-      <div className="rounded-md border border-border p-3 space-y-1">
-        <p className="text-xs font-medium text-foreground">
-          Extensión de referencia
-        </p>
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Este es un stub de desarrollo. No se conecta a ningún proveedor de IA
-          real. Sirve para validar el pipeline de extensiones del canvas.
+      <div className="space-y-1 rounded-lg border border-zinc-800/70 p-3">
+        <p className="text-xs font-medium text-zinc-200">Reference extension</p>
+        <p className="text-[11px] leading-relaxed text-zinc-500">
+          This is a development stub. It does not connect to a real AI provider.
+          It exists to validate the canvas extension pipeline.
         </p>
       </div>
     </div>

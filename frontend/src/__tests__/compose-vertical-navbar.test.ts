@@ -30,6 +30,10 @@ describe("compose-vertical-navbar", () => {
       expect(useCanvasStore.getInitialState().activePanel).toBe("chat");
     });
 
+    it("default chatPanelSize is 'expanded'", () => {
+      expect(useCanvasStore.getInitialState().chatPanelSize).toBe("expanded");
+    });
+
     it("resetActivePanel restores the default chat panel", () => {
       useCanvasStore.setState({ activePanel: "resources" });
       useCanvasStore.getState().resetActivePanel();
@@ -52,6 +56,13 @@ describe("compose-vertical-navbar", () => {
       useCanvasStore.setState({ activePanel: null });
       useCanvasStore.getState().togglePanel("resources");
       expect(useCanvasStore.getState().activePanel).toBe("resources");
+    });
+
+    it("toggleChatPanelSize switches between expanded and compact", () => {
+      useCanvasStore.getState().toggleChatPanelSize();
+      expect(useCanvasStore.getState().chatPanelSize).toBe("compact");
+      useCanvasStore.getState().toggleChatPanelSize();
+      expect(useCanvasStore.getState().chatPanelSize).toBe("expanded");
     });
   });
 
@@ -77,17 +88,19 @@ describe("compose-vertical-navbar", () => {
 
       expect(html).toContain('data-testid="navbar-tool-chat"');
       expect(html).toContain('data-testid="navbar-tool-resources"');
+      expect(html).toContain('data-testid="navbar-toggle-panel"');
+      expect(html).toContain('data-testid="navbar-toggle-chat-size"');
       expect(html).toContain('aria-pressed="false"');
       expect(html).toContain('aria-pressed="true"');
     });
 
     it("SidePanel renders its shell test id", () => {
       const html = renderToStaticMarkup(
-        createElement(SidePanel, null, createElement("div", null, "contenido")),
+        createElement(SidePanel, null, createElement("div", null, "content")),
       );
 
       expect(html).toContain('data-testid="side-panel"');
-      expect(html).toContain("contenido");
+      expect(html).toContain("content");
     });
   });
 });

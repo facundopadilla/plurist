@@ -1,6 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  FileUp,
   FolderOpen,
   ImageIcon,
   Loader2,
@@ -10,23 +9,28 @@ import {
   Plus,
   Search,
   Send,
+  Sparkles,
   Type,
   X,
+  FileUp,
 } from "lucide-react";
 import {
-  useState,
-  useRef,
-  useEffect,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
+  useState,
   type ChangeEvent,
 } from "react";
+
 import { useCanvasStore } from "../canvas-store";
-import { useChatStream } from "./use-chat-stream";
-import { useChatToCanvas } from "../hooks/use-chat-to-canvas";
-import { ModelDropdown } from "../header-dropdowns";
-import { cn } from "../../../lib/utils";
-import type { ChatMessage } from "../types";
+import {
+  FormatDropdown,
+  ModelDropdown,
+  NetworkDropdown,
+} from "../header-dropdowns";
+import { cn } from "@/lib/utils";
+import type { ChatMessage, ElementReference, SlideData } from "../types";
 import { ChatMessageBubble } from "./chat-message";
 import {
   Dialog,
@@ -45,11 +49,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  fetchProjectDesignSystemStatus,
   fetchProjectSources,
   getSourceFileUrl,
+  syncProjectDesignSystem,
   uploadFile,
 } from "../../design-bank/api";
-import type { DesignBankSource } from "../../design-bank/types";
+import type {
+  DesignBankSource,
+  ProjectDesignSystemStatus,
+} from "../../design-bank/types";
 import { fetchProjects } from "../../projects/api";
 import type { Project } from "../../projects/types";
 
@@ -159,27 +168,176 @@ function projectTriggerLabel(projects: Project[], projectId: number | null) {
 function buildPromptWithAttachments(
   input: string,
   attachments: ChatAttachment[],
+  elementRef: ElementReference | null,
 ) {
   const trimmedInput = input.trim();
-  if (attachments.length === 0) return trimmedInput;
+  const parts: string[] = [trimmedInput];
 
-  const attachmentContext = attachments
-    .map(
-      (attachment, index) =>
-        `${index + 1}. ${attachment.name} [${attachment.sourceType}]${attachment.url ? ` URL: ${attachment.url}` : ""}${attachment.description ? ` Notes: ${attachment.description}` : ""}`,
-    )
-    .join("\n");
+  if (elementRef) {
+    parts.push(
+      [
+        `\n\n--- ELEMENT TO EDIT ---`,
+        `Slide: ${elementRef.slideIndex + 1}`,
+        `Element: <${elementRef.tag}> (${elementRef.label})`,
+        `CSS path: ${elementRef.cssPath}`,
+        `Content: "${elementRef.contentPreview}"`,
+        `Current HTML:\n${elementRef.outerHtml}`,
+        `---`,
+        `IMPORTANT: Apply the requested change ONLY to this specific element. Keep the rest of the slide HTML unchanged.`,
+        `Return ONLY a raw JSON object with this exact shape:`,
+        `{"type":"element_patch","slideIndex":${elementRef.slideIndex},"cssPath":"${elementRef.cssPath}","updatedOuterHtml":"<full updated outerHTML for the target element>"}`,
+        `Do not wrap the JSON in markdown. Do not return the full slide HTML. Do not modify any other element.`,
+      ].join("\n"),
+    );
+  }
 
-  return `${trimmedInput}\n\nReference context from attachments:\n${attachmentContext}`.trim();
+  if (attachments.length > 0) {
+    const attachmentContext = attachments
+      .map(
+        (attachment, index) =>
+          `${index + 1}. ${attachment.name} [${attachment.sourceType}]${attachment.url ? ` URL: ${attachment.url}` : ""}${attachment.description ? ` Notes: ${attachment.description}` : ""}`,
+      )
+      .join("\n");
+    parts.push(`\n\nReference context from attachments:\n${attachmentContext}`);
+  }
+
+  return parts.join("").trim();
+}
+
+function buildCurrentHtmlContext(
+  slides: Map<string, SlideData>,
+  globalStyles: string,
+  elementRef: ElementReference | null,
+  selectedSlideIds: string[],
+) {
+  const currentHtmlPieces: string[] = [];
+
+  if (globalStyles.trim()) {
+    currentHtmlPieces.push(
+      `<!-- GLOBAL STYLES -->\n<style>\n${globalStyles}\n</style>`,
+    );
+  }
+
+  if (elementRef) {
+    const slideData = slides.get(elementRef.slideId);
+    const activeVariant = slideData?.variants.find(
+      (variant) => variant.id === slideData.activeVariantId,
+    );
+
+    if (slideData && activeVariant) {
+      currentHtmlPieces.push(
+        `<!-- SLIDE ${slideData.slideIndex} -->\n${activeVariant.html}`,
+      );
+      return currentHtmlPieces.join("\n\n");
+    }
+  }
+
+  if (selectedSlideIds.length > 0) {
+    for (const slideId of selectedSlideIds) {
+      const slideData = slides.get(slideId);
+      if (!slideData) continue;
+      const activeVariant = slideData.variants.find(
+        (variant) => variant.id === slideData.activeVariantId,
+      );
+      if (activeVariant) {
+        currentHtmlPieces.push(
+          `<!-- SLIDE ${slideData.slideIndex} -->\n${activeVariant.html}`,
+        );
+      }
+    }
+    return currentHtmlPieces.join("\n\n");
+  }
+
+  const orderedSlides = Array.from(slides.values()).sort(
+    (a, b) => a.slideIndex - b.slideIndex,
+  );
+
+  for (const slideData of orderedSlides) {
+    const activeVariant = slideData.variants.find(
+      (variant) => variant.id === slideData.activeVariantId,
+    );
+    if (activeVariant) {
+      currentHtmlPieces.push(
+        `<!-- SLIDE ${slideData.slideIndex} -->\n${activeVariant.html}`,
+      );
+    }
+  }
+
+  return currentHtmlPieces.join("\n\n");
+}
+
+function buildSelectedSlideBadges(
+  slides: Map<string, SlideData>,
+  selectedSlideIds: string[],
+) {
+  return selectedSlideIds
+    .map((slideId) => {
+      const slide = slides.get(slideId);
+      if (!slide) return null;
+      return {
+        slideId,
+        label: `${slide.slideIndex + 1}`,
+        title: slide.name
+          ? `Slide ${slide.slideIndex + 1}: ${slide.name}`
+          : `Slide ${slide.slideIndex + 1}`,
+      };
+    })
+    .filter(
+      (slide): slide is { slideId: string; label: string; title: string } =>
+        Boolean(slide),
+    );
 }
 
 function containsHtmlLikeContent(content: string): boolean {
   return /<(html|body|div|section|p|h[1-6]|style|svg|figure)\b/i.test(content);
 }
 
+function getDesignSystemDismissKey(projectId: number) {
+  return `design-system-nudge:${projectId}`;
+}
+
+function readDismissedRevision(projectId: number | null): string | null {
+  if (projectId === null || typeof window === "undefined") return null;
+  return window.localStorage.getItem(getDesignSystemDismissKey(projectId));
+}
+
+function writeDismissedRevision(projectId: number, revision: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(getDesignSystemDismissKey(projectId), revision);
+}
+
+function currentStatusRevision(
+  status: ProjectDesignSystemStatus | undefined,
+): string {
+  if (!status) return "";
+  if (status.has_design_system) {
+    return (
+      status.last_relevant_source_at ??
+      status.artifact_revision ??
+      "has-artifacts"
+    );
+  }
+  return status.last_relevant_source_at ?? "missing-design-system";
+}
+
+function shouldShowDesignSystemPrompt(
+  dismissedRevision: string | null,
+  status: ProjectDesignSystemStatus | undefined,
+) {
+  if (!status) return false;
+  const activeRevision = currentStatusRevision(status);
+  if (dismissedRevision && dismissedRevision === activeRevision) {
+    return false;
+  }
+  return !status.has_design_system || status.is_outdated;
+}
+
+import { useChatStream } from "./use-chat-stream";
+import { useChatToCanvas } from "../hooks/use-chat-to-canvas";
 import { useActiveProvider } from "../use-active-provider";
 
 export function ChatSidebar() {
+  const queryClient = useQueryClient();
   const messages = useCanvasStore((s) => s.messages);
   const isStreaming = useCanvasStore((s) => s.isStreaming);
   const addMessage = useCanvasStore((s) => s.addMessage);
@@ -190,11 +348,15 @@ export function ChatSidebar() {
   const conversationId = useCanvasStore((s) => s.conversationId);
   const chatMode = useCanvasStore((s) => s.chatMode);
   const setChatMode = useCanvasStore((s) => s.setChatMode);
+  const elementReference = useCanvasStore((s) => s.elementReference);
+  const clearElementReference = useCanvasStore((s) => s.clearElementReference);
+  const selectedSlideIds = useCanvasStore((s) => s.selectedSlideIds);
+  const slides = useCanvasStore((s) => s.slides);
 
   const { activeProvider } = useActiveProvider();
 
   const { sendMessage } = useChatStream();
-  const { onHtmlBlock } = useChatToCanvas();
+  const { onHtmlBlock, onElementPatch } = useChatToCanvas();
 
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -203,6 +365,15 @@ export function ChatSidebar() {
   const [isListening, setIsListening] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [isDesignSystemWizardOpen, setIsDesignSystemWizardOpen] =
+    useState(false);
+  const [
+    isDesignSystemRefreshConfirmOpen,
+    setIsDesignSystemRefreshConfirmOpen,
+  ] = useState(false);
+  const [designSystemGuidance, setDesignSystemGuidance] = useState("");
+  const [dismissedDesignSystemRevision, setDismissedDesignSystemRevision] =
+    useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -220,6 +391,12 @@ export function ChatSidebar() {
       enabled: isDesignBankOpen && config.projectId !== null,
     });
 
+  const { data: designSystemStatus } = useQuery({
+    queryKey: ["project-design-system-status", config.projectId],
+    queryFn: () => fetchProjectDesignSystemStatus(config.projectId as number),
+    enabled: config.projectId !== null,
+  });
+
   const uploadMutation = useMutation({
     mutationFn: (file: File) => uploadFile(file, config.projectId ?? undefined),
     onSuccess: (source) => {
@@ -229,6 +406,52 @@ export function ChatSidebar() {
           ? prev
           : [...prev, attachment],
       );
+      if (config.projectId !== null) {
+        void queryClient.invalidateQueries({
+          queryKey: ["project-design-system-status", config.projectId],
+        });
+      }
+    },
+  });
+
+  const designSystemMutation = useMutation({
+    mutationFn: () => {
+      if (config.projectId === null) {
+        throw new Error("Project required");
+      }
+      const provider = activeProvider ?? "openai";
+      const modelId = config.selectedModels?.[provider] ?? null;
+      return syncProjectDesignSystem(config.projectId, {
+        provider,
+        model_id: modelId,
+        guidance: designSystemGuidance.trim(),
+      });
+    },
+    onSuccess: async (result) => {
+      if (config.projectId !== null) {
+        await queryClient.invalidateQueries({
+          queryKey: ["project-design-system-status", config.projectId],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["project-sources", config.projectId],
+        });
+        writeDismissedRevision(
+          config.projectId,
+          currentStatusRevision(result.status),
+        );
+        setDismissedDesignSystemRevision(currentStatusRevision(result.status));
+      }
+      addMessage({
+        id: `assistant-design-system-${Date.now()}`,
+        role: "assistant",
+        content: designSystemStatus?.has_design_system
+          ? "Updated the project design system and reference brief so future generations can reuse the latest design-bank context."
+          : "Created a project design system and reference brief. Future slide generations will reuse this compacted context automatically.",
+        htmlBlocks: [],
+        createdAt: new Date(),
+      });
+      setDesignSystemGuidance("");
+      setIsDesignSystemWizardOpen(false);
     },
   });
 
@@ -260,6 +483,24 @@ export function ChatSidebar() {
     typeof window !== "undefined" &&
     Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 
+  const selectedSlideBadges = useMemo(
+    () => buildSelectedSlideBadges(slides, selectedSlideIds),
+    [slides, selectedSlideIds],
+  );
+
+  const showDesignSystemPrompt = useMemo(
+    () =>
+      shouldShowDesignSystemPrompt(
+        dismissedDesignSystemRevision,
+        designSystemStatus,
+      ),
+    [dismissedDesignSystemRevision, designSystemStatus],
+  );
+
+  const designSystemPromptTone = designSystemStatus?.has_design_system
+    ? "refresh"
+    : "create";
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -270,24 +511,42 @@ export function ChatSidebar() {
     };
   }, []);
 
+  useEffect(() => {
+    setDismissedDesignSystemRevision(readDismissedRevision(config.projectId));
+  }, [config.projectId]);
+
   const handleSend = useCallback(() => {
-    const text = buildPromptWithAttachments(input, attachments);
-    if (!text || isStreaming) return;
+    const currentElementRef = useCanvasStore.getState().elementReference;
+    const visibleText = input.trim();
+    const promptText = buildPromptWithAttachments(
+      visibleText,
+      attachments,
+      currentElementRef,
+    );
+    if (!promptText || isStreaming) return;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: text,
+      content: visibleText,
       htmlBlocks: [],
       createdAt: new Date(),
     };
     addMessage(userMsg);
     setInput("");
     setAttachments([]);
+    clearElementReference();
     setSpeechError(null);
 
     const provider = activeProvider ?? "openai";
     const modelId = config.selectedModels?.[provider] ?? null;
+    const expectsElementPatch = Boolean(
+      currentElementRef && chatMode !== "plan",
+    );
+    const requestMode = expectsElementPatch ? "element-edit" : chatMode;
+    let patchApplied = false;
+    let patchHandled = false;
+    let rawPatchResponse = "";
 
     const assistantMsg: ChatMessage = {
       id: `assistant-${Date.now()}`,
@@ -303,8 +562,18 @@ export function ChatSidebar() {
     setIsStreaming(true);
     contentRef.current = "";
 
-    const storeMessages = useCanvasStore.getState().messages;
-    const apiMessages = storeMessages
+    const currentSlides = useCanvasStore.getState().slides;
+    const currentGlobalStyles = useCanvasStore.getState().globalStyles;
+    const currentSelectedSlideIds = useCanvasStore.getState().selectedSlideIds;
+
+    const currentHtmlStr = buildCurrentHtmlContext(
+      currentSlides,
+      currentGlobalStyles,
+      currentElementRef,
+      currentSelectedSlideIds,
+    );
+
+    const apiMessages = messages
       .filter((m) => {
         if (m.role === "user") return true;
         if (m.role !== "assistant" || !m.content) return false;
@@ -318,6 +587,8 @@ export function ChatSidebar() {
       })
       .map((m) => ({ role: m.role, content: m.content }));
 
+    apiMessages.push({ role: "user", content: promptText });
+
     void sendMessage(
       {
         conversationId,
@@ -327,10 +598,15 @@ export function ChatSidebar() {
         projectId: config.projectId,
         formatKey: config.formatKey,
         network: config.network,
-        mode: chatMode,
+        mode: requestMode,
+        currentHtml: currentHtmlStr,
       },
       {
         onToken: (token) => {
+          if (expectsElementPatch) {
+            rawPatchResponse += token;
+            return;
+          }
           contentRef.current += token;
           updateLastMessage({ content: contentRef.current });
         },
@@ -343,14 +619,51 @@ export function ChatSidebar() {
             ],
           });
         },
+        onElementPatch: (_slideIndex, cssPath, updatedOuterHtml) => {
+          if (!currentElementRef) return;
+          const result = onElementPatch(
+            currentElementRef.slideId,
+            currentElementRef.variantId,
+            cssPath,
+            updatedOuterHtml,
+          );
+          patchHandled = true;
+
+          if (result.applied) {
+            patchApplied = true;
+            updateLastMessage({
+              content: `Apliqué el cambio sobre ${currentElementRef.label.toLowerCase()} seleccionado.`,
+            });
+          } else {
+            updateLastMessage({
+              content:
+                result.error ??
+                "No pude aplicar el cambio sobre el elemento seleccionado.",
+            });
+          }
+        },
         onDone: () => {
+          if (
+            expectsElementPatch &&
+            !patchApplied &&
+            !patchHandled &&
+            rawPatchResponse.trim()
+          ) {
+            updateLastMessage({ content: rawPatchResponse.trim() });
+          }
           updateLastMessage({ isStreaming: false });
           setIsStreaming(false);
         },
-        onError: (message) => {
+        onError: (error) => {
           updateLastMessage({
-            content: contentRef.current || `Error: ${message}`,
+            content: contentRef.current || error.message,
             isStreaming: false,
+            error: {
+              code: error.code ?? "unknown",
+              category: error.category ?? "provider",
+              hint: error.hint ?? "",
+              retryable: error.retryable ?? false,
+            },
           });
           setIsStreaming(false);
         },
@@ -366,9 +679,12 @@ export function ChatSidebar() {
     conversationId,
     sendMessage,
     onHtmlBlock,
+    onElementPatch,
     chatMode,
     attachments,
     activeProvider,
+    clearElementReference,
+    messages,
   ]);
 
   const handleProjectChange = useCallback(
@@ -486,9 +802,67 @@ export function ChatSidebar() {
     [handleSend, input, chatMode, setChatMode],
   );
 
+  const handleDismissDesignSystemPrompt = useCallback(() => {
+    if (config.projectId === null || !designSystemStatus) return;
+    writeDismissedRevision(
+      config.projectId,
+      currentStatusRevision(designSystemStatus),
+    );
+    setDismissedDesignSystemRevision(currentStatusRevision(designSystemStatus));
+  }, [config.projectId, designSystemStatus]);
+
+  const handleOpenDesignSystemWizard = useCallback(() => {
+    if (
+      designSystemStatus?.has_design_system &&
+      designSystemStatus.has_manual_edits
+    ) {
+      setIsDesignSystemRefreshConfirmOpen(true);
+      return;
+    }
+    setIsDesignSystemWizardOpen(true);
+  }, [designSystemStatus]);
+
+  const designSystemPrompt = showDesignSystemPrompt ? (
+    <div className="rounded-xl border border-blue-500/25 bg-blue-500/[0.06] px-3 py-3 text-sm text-zinc-100">
+      <div className="flex items-start gap-3">
+        <Sparkles size={15} className="mt-0.5 shrink-0 text-blue-300" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-blue-200">
+            {designSystemPromptTone === "create"
+              ? "No design system yet"
+              : "New Design Bank context detected"}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-zinc-300">
+            {designSystemPromptTone === "create"
+              ? "You do not have a project design system yet. Create one now so the AI can reuse compact visual rules and a project reference brief instead of rereading the full Design Bank every time."
+              : "You added new textual Design Bank content. Refresh the project design system so future generations reuse the updated compacted context automatically."}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleOpenDesignSystemWizard}
+              className="rounded-md bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-white"
+            >
+              {designSystemPromptTone === "create"
+                ? "Yes, let's start"
+                : "Update now"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDismissDesignSystemPrompt}
+              className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/[0.04]"
+            >
+              {designSystemPromptTone === "create" ? "Not now" : "Later"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex-shrink-0 px-4 pb-2 pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 flex-shrink-0 px-4 pb-2 pt-3 border-b border-zinc-800/60 bg-zinc-950/50">
         <div
           className="inline-flex gap-1 rounded-lg border border-zinc-800/70 bg-zinc-900/70 p-1"
           role="group"
@@ -521,9 +895,15 @@ export function ChatSidebar() {
             Build
           </button>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <NetworkDropdown />
+          <FormatDropdown />
+        </div>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px,black_calc(100%-16px),transparent)]">
+        {messages.length === 0 && designSystemPrompt}
         {messages.length === 0 && (
           <p className="mt-4 text-center text-xs text-zinc-500">
             {chatMode === "plan"
@@ -569,20 +949,94 @@ export function ChatSidebar() {
           onDrop={handleDropUpload}
           data-testid="chat-composer"
         >
+          {messages.length > 0 && designSystemPrompt && (
+            <div className="border-b border-zinc-800/70 px-3 py-3">
+              {designSystemPrompt}
+            </div>
+          )}
+
+          {selectedSlideBadges.length > 0 && (
+            <div className="border-b border-zinc-800/70 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Working on
+                </span>
+                <div className="flex min-w-0 flex-wrap items-center gap-1">
+                  {selectedSlideBadges.slice(0, 5).map((slide) => (
+                    <span
+                      key={slide.slideId}
+                      title={slide.title}
+                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-zinc-800/70 bg-zinc-900/80 px-1.5 text-[10px] font-medium text-zinc-300"
+                    >
+                      {slide.label}
+                    </span>
+                  ))}
+                  {selectedSlideBadges.length > 5 && (
+                    <span className="inline-flex h-5 items-center justify-center rounded-md border border-zinc-800/70 bg-zinc-900/80 px-1.5 text-[10px] font-medium text-zinc-400">
+                      +{selectedSlideBadges.length - 5}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              chatMode === "plan"
-                ? "Describe your strategy..."
-                : "Write a prompt..."
+              elementReference
+                ? `Describe how to change this ${elementReference.label.toLowerCase()}...`
+                : selectedSlideBadges.length > 1
+                  ? `Describe changes for ${selectedSlideBadges.length} selected slides...`
+                  : selectedSlideBadges.length === 1
+                    ? `Describe changes for slide ${selectedSlideBadges[0].label}...`
+                    : chatMode === "plan"
+                      ? "Describe your strategy..."
+                      : "Write a prompt..."
             }
             aria-label="Message for AI assistant"
             disabled={isStreaming}
             rows={2}
             className="min-h-[88px] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 disabled:opacity-50"
           />
+
+          {elementReference && (
+            <div className="border-t border-zinc-800/70 px-3 py-2">
+              <div className="flex items-start gap-2 rounded-md border border-blue-500/30 bg-blue-500/[0.06] px-2.5 py-2 text-xs">
+                <Sparkles
+                  size={13}
+                  className="mt-0.5 flex-shrink-0 text-blue-400"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-blue-300">
+                      Editing {elementReference.label}
+                    </span>
+                    <span className="text-zinc-500">
+                      Slide {elementReference.slideIndex + 1}
+                    </span>
+                  </div>
+                  <p
+                    className="mt-0.5 truncate text-zinc-400"
+                    title={elementReference.contentPreview}
+                  >
+                    &lt;{elementReference.tag}&gt;{" "}
+                    {elementReference.contentPreview}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearElementReference}
+                  className="mt-0.5 flex-shrink-0 text-zinc-500 transition-colors hover:text-zinc-100"
+                  aria-label="Remove element reference"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {attachments.length > 0 && (
             <div className="grid grid-cols-2 gap-2 border-t border-zinc-800/70 px-3 py-2">
@@ -633,8 +1087,8 @@ export function ChatSidebar() {
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2 border-t border-zinc-800/70 px-3 py-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800/70 px-3 py-2">
+            <div className="flex flex-wrap items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -851,6 +1305,119 @@ export function ChatSidebar() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Dialog
+        open={isDesignSystemRefreshConfirmOpen}
+        onOpenChange={setIsDesignSystemRefreshConfirmOpen}
+      >
+        <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Replace manual edits?</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              You manually edited the project design system or reference brief.
+              Refreshing now may replace those edits with a newly synthesized
+              version based on the latest Design Bank content.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsDesignSystemRefreshConfirmOpen(false)}
+              className="rounded-md border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/[0.04]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsDesignSystemRefreshConfirmOpen(false);
+                setIsDesignSystemWizardOpen(true);
+              }}
+              className="rounded-md bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-white"
+            >
+              Yes, update
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isDesignSystemWizardOpen}
+        onOpenChange={(open) => {
+          if (!designSystemMutation.isPending) {
+            setIsDesignSystemWizardOpen(open);
+          }
+        }}
+      >
+        <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {designSystemPromptTone === "create"
+                ? "Create project design system"
+                : "Refresh project design system"}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              The AI will compress the textual Design Bank inputs into a
+              reusable design system and a reference brief, then use those
+              artifacts as the default project context for future slide
+              generation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="rounded-lg border border-zinc-800/70 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-400">
+              Relevant textual sources detected:{" "}
+              {designSystemStatus?.relevant_source_count ?? 0}
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-zinc-300">
+                Optional guidance
+              </label>
+              <textarea
+                value={designSystemGuidance}
+                onChange={(event) =>
+                  setDesignSystemGuidance(event.target.value)
+                }
+                placeholder="Example: prioritize a bold editorial system, structured hierarchy, and premium product storytelling."
+                className="min-h-[120px] w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-zinc-700"
+              />
+            </div>
+
+            {designSystemMutation.isError && (
+              <p className="text-xs text-red-400">
+                {designSystemMutation.error instanceof Error
+                  ? designSystemMutation.error.message
+                  : "Could not build the project design system."}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDesignSystemWizardOpen(false)}
+                disabled={designSystemMutation.isPending}
+                className="rounded-md border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/[0.04] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => designSystemMutation.mutate()}
+                disabled={designSystemMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-md bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-white disabled:opacity-50"
+              >
+                {designSystemMutation.isPending ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : null}
+                {designSystemPromptTone === "create"
+                  ? "Create design system"
+                  : "Refresh design system"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

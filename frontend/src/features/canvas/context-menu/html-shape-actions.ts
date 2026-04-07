@@ -40,7 +40,9 @@ export function openHtmlShapeEditor(
   shapeId: string | TLShapeId,
 ) {
   editor?.select(shapeId as TLShapeId);
-  useCanvasStore.getState().enterEditMode(String(shapeId));
+  const store = useCanvasStore.getState();
+  store.enterEditMode(String(shapeId));
+  store.setActivePanel("code");
 }
 
 export function duplicateHtmlShape(slideId: string) {
@@ -146,7 +148,7 @@ export function toggleHtmlShapeFavorite(slideId: string) {
 
 export function addHtmlShapeAnnotation(slideId: string) {
   const state = useCanvasStore.getState();
-  const note = window.prompt("Nueva anotación", "");
+  const note = window.prompt("New annotation", "");
   if (!note) {
     state.openAnnotationEditor(slideId);
     return null;

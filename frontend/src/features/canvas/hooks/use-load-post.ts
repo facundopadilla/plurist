@@ -14,15 +14,31 @@ export function useLoadPost() {
   const postIdParam = searchParams.get("postId");
   const postId = postIdParam ? parseInt(postIdParam, 10) : null;
 
+  const projectParam = searchParams.get("project");
+  const projectIdFromUrl = projectParam ? parseInt(projectParam, 10) : null;
+
   const hydrateDraft = useCanvasStore((s) => s.hydrateDraft);
   const setDraftPostId = useCanvasStore((s) => s.setDraftPostId);
   const setConfig = useCanvasStore((s) => s.setConfig);
+  const setGlobalStyles = useCanvasStore((s) => s.setGlobalStyles);
   const markSaved = useCanvasStore((s) => s.markSaved);
+  const currentProjectId = useCanvasStore((s) => s.config.projectId);
   const nodesCount = useCanvasStore((s) => s.slides.size);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedPostId, setLoadedPostId] = useState<number | null>(null);
+
+  // Seed projectId from ?project= URL param when the store has no project set
+  useEffect(() => {
+    if (
+      projectIdFromUrl &&
+      !Number.isNaN(projectIdFromUrl) &&
+      currentProjectId === null
+    ) {
+      setConfig({ projectId: projectIdFromUrl });
+    }
+  }, [projectIdFromUrl, currentProjectId, setConfig]);
 
   useEffect(() => {
     if (!postId || loadedPostId === postId || nodesCount > 0) return;
@@ -45,10 +61,13 @@ export function useLoadPost() {
           title: post.title,
           formatKey: post.format ?? "ig_square",
           projectId: post.project_id,
-          network: (post.target_networks?.[0] ?? null) as
-            | import("../types").NetworkId
-            | null,
+          network: null,
         });
+
+        // Restore global styles from backend
+        if (post.global_styles) {
+          setGlobalStyles(post.global_styles);
+        }
 
         hydrateDraft({
           frameMetadata: post.frame_metadata ?? [],
@@ -60,7 +79,7 @@ export function useLoadPost() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : "Error al cargar el contenido",
+            err instanceof Error ? err.message : "Failed to load content",
           );
         }
       } finally {
@@ -79,6 +98,7 @@ export function useLoadPost() {
     hydrateDraft,
     setDraftPostId,
     setConfig,
+    setGlobalStyles,
     markSaved,
   ]);
 

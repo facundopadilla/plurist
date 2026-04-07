@@ -62,7 +62,7 @@ export function ProjectDetailPage() {
     );
   }
 
-  const tabLabel = activeTab === "design-bank" ? "Design Bank" : "Contenido";
+  const tabLabel = activeTab === "design-bank" ? "Design Bank" : "Content";
   const accentBg = (project.color || "#6366f1") + "1a";
 
   return (
@@ -70,7 +70,7 @@ export function ProjectDetailPage() {
       {/* Breadcrumb */}
       <Breadcrumb
         crumbs={[
-          { label: "Proyectos", to: "/projects" },
+          { label: "Projects", to: "/projects" },
           { label: project.name, to: `/projects/${id}` },
           { label: tabLabel },
         ]}
@@ -137,7 +137,7 @@ export function ProjectDetailPage() {
               className="gap-1.5"
             >
               <Pencil size={12} />
-              Editar
+              Edit
             </Button>
           )}
           {isOwner && (
@@ -148,7 +148,7 @@ export function ProjectDetailPage() {
               className="gap-1.5 border-red-200 dark:border-red-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
             >
               <Trash2 size={12} />
-              Eliminar
+              Delete
             </Button>
           )}
         </div>
@@ -160,7 +160,7 @@ export function ProjectDetailPage() {
           {(
             [
               { key: "design-bank", label: "Design Bank", icon: ImageIcon },
-              { key: "content", label: "Contenido", icon: FileText },
+              { key: "content", label: "Content", icon: FileText },
             ] as const
           ).map(({ key, label, icon: Icon }) => {
             const isActive = activeTab === key;

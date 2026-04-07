@@ -10,18 +10,11 @@ import {
   Bot,
   Wifi,
   WifiOff,
+  ArrowRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "../../auth/use-auth";
 import { fetchAISettings, saveAISettings, testOllamaConnection } from "./api";
 import type { AISettingsOut } from "./api";
-
-// ---------------------------------------------------------------------------
-// ProviderKeyRow — single provider row with masked input + save/clear
-// ---------------------------------------------------------------------------
 
 interface ProviderKeyRowProps {
   label: string;
@@ -34,6 +27,19 @@ interface ProviderKeyRowProps {
     | "openrouter_api_key";
   onSave: (field: string, value: string) => Promise<void>;
   isSaving: boolean;
+}
+
+function StatusPill({ hasKey }: { hasKey: boolean }) {
+  return hasKey ? (
+    <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-400">
+      <Check size={10} />
+      Configured
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-lg border border-zinc-800/70 bg-zinc-900/80 px-2 py-1 text-[11px] font-medium text-zinc-500">
+      Not set
+    </span>
+  );
 }
 
 function ProviderKeyRow({
@@ -60,86 +66,75 @@ function ProviderKeyRow({
   };
 
   return (
-    <div className="flex flex-col gap-2 py-4 border-b border-border last:border-0">
-      <div className="flex items-center justify-between">
+    <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/25 p-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-foreground">{label}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Env var:{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+          <p className="text-sm font-medium text-zinc-100">{label}</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Environment variable:{" "}
+            <code className="rounded-md bg-zinc-950 px-1.5 py-0.5 text-zinc-300">
               {envVar}
             </code>
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          {hasKey ? (
-            <Badge variant="success" className="rounded-full px-2 py-0.5 gap-1">
-              <Check size={10} />
-              Configured
-            </Badge>
-          ) : (
-            <Badge variant="neutral" className="rounded-full px-2 py-0.5">
-              Not set
-            </Badge>
-          )}
-        </div>
+        <StatusPill hasKey={hasKey} />
       </div>
-      <div className="flex gap-2">
+
+      <div className="mt-4 flex flex-col gap-2 md:flex-row">
         <div className="relative flex-1">
-          <Input
+          <input
             type={visible ? "text" : "password"}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={
-              hasKey ? "Enter new key to replace…" : "Enter API key…"
+              hasKey
+                ? "Enter a new key to replace the current one"
+                : "Paste API key"
             }
-            className="w-full pr-9 font-mono text-sm"
+            className="h-11 w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 pr-10 font-mono text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-white/[0.04]"
             autoComplete="off"
             spellCheck={false}
           />
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-100"
             aria-label={visible ? "Hide key" : "Show key"}
           >
             {visible ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         </div>
-        <Button
-          onClick={() => void handleSave()}
-          disabled={isSaving || !value.trim()}
-          size="sm"
-          className="px-3 py-1.5 text-xs"
-        >
-          {isSaving ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : saved ? (
-            <Check size={13} />
-          ) : (
-            "Save"
-          )}
-        </Button>
-        {hasKey && (
-          <Button
-            onClick={() => void handleClear()}
-            disabled={isSaving}
-            variant="outline"
-            size="sm"
-            className="gap-1 text-muted-foreground hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-950 dark:hover:border-red-800"
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => void handleSave()}
+            disabled={isSaving || !value.trim()}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-50 px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           >
-            <X size={12} />
-            Clear
-          </Button>
-        )}
+            {isSaving ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : saved ? (
+              <Check size={14} />
+            ) : (
+              <ArrowRight size={14} />
+            )}
+            Save
+          </button>
+          {hasKey && (
+            <button
+              onClick={() => void handleClear()}
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-4 text-sm font-medium text-zinc-300 transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:text-zinc-600"
+            >
+              <X size={14} />
+              Clear
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// OllamaSection — URL input for Ollama base URL
-// ---------------------------------------------------------------------------
 
 interface OllamaSectionProps {
   currentUrl: string;
@@ -166,81 +161,84 @@ function OllamaSection({ currentUrl, onSave, isSaving }: OllamaSectionProps) {
       if (models.length > 0) {
         setTestStatus("ok");
         setTestMessage(
-          `Connected — ${models.length} model${models.length !== 1 ? "s" : ""} available`,
+          `Connected. ${models.length} model${models.length !== 1 ? "s" : ""} available.`,
         );
       } else {
         setTestStatus("ok");
-        setTestMessage("Connected — no models installed yet");
+        setTestMessage("Connected. No models installed yet.");
       }
     } catch {
       setTestStatus("error");
       setTestMessage(
-        "Could not reach Ollama server. Make sure it's running at the configured URL.",
+        "Could not reach Ollama. Make sure the server is running at the configured URL.",
       );
     }
   };
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/25 p-5">
       <div>
-        <p className="text-sm font-medium text-foreground">Ollama Base URL</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Self-hosted Ollama instance. Leave empty to use the default{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">
+        <p className="text-sm font-medium text-zinc-100">Ollama</p>
+        <p className="mt-1 text-xs text-zinc-500">
+          Self-hosted inference endpoint. Leave empty to use{" "}
+          <code className="rounded-md bg-zinc-950 px-1.5 py-0.5 text-zinc-300">
             http://localhost:11434
           </code>
           .
         </p>
       </div>
-      <div className="flex gap-2">
-        <Input
+
+      <div className="mt-4 flex flex-col gap-2 md:flex-row">
+        <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="http://localhost:11434"
-          className="flex-1 font-mono text-sm"
+          className="h-11 flex-1 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 font-mono text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-white/[0.04]"
         />
-        <Button
-          onClick={() => void handleSave()}
-          disabled={isSaving || url === currentUrl}
-          size="sm"
-          className="px-3 py-1.5 text-xs"
-        >
-          {isSaving ? <Loader2 size={13} className="animate-spin" /> : "Save"}
-        </Button>
-        <Button
-          onClick={() => void handleTest()}
-          disabled={testStatus === "testing"}
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-        >
-          {testStatus === "testing" ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Wifi size={13} />
-          )}
-          Test
-        </Button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => void handleSave()}
+            disabled={isSaving || url === currentUrl}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-50 px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+          >
+            {isSaving ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Check size={14} />
+            )}
+            Save
+          </button>
+          <button
+            onClick={() => void handleTest()}
+            disabled={testStatus === "testing"}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-4 text-sm font-medium text-zinc-300 transition-colors hover:bg-white/[0.04] hover:text-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-600"
+          >
+            {testStatus === "testing" ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Wifi size={14} />
+            )}
+            Test
+          </button>
+        </div>
       </div>
+
       {testStatus !== "idle" && testStatus !== "testing" && (
-        <Alert
-          variant={testStatus === "ok" ? "success" : "destructive"}
-          className="py-2"
+        <div
+          className={
+            testStatus === "ok"
+              ? "mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300"
+              : "mt-3 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+          }
         >
-          <AlertDescription className="flex items-center gap-1.5 text-xs">
-            {testStatus === "ok" ? <Check size={12} /> : <WifiOff size={12} />}
-            {testMessage}
-          </AlertDescription>
-        </Alert>
+          {testStatus === "ok" ? <Check size={12} /> : <WifiOff size={12} />}
+          {testMessage}
+        </div>
       )}
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
 
 const PROVIDERS: {
   label: string;
@@ -297,9 +295,9 @@ export function AIProvidersPage() {
 
   if (!isOwner) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-        <KeyRound size={32} className="text-muted-foreground opacity-40" />
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <KeyRound size={32} className="text-zinc-600" />
+        <p className="text-sm text-zinc-400">
           Only workspace owners can manage AI provider settings.
         </p>
       </div>
@@ -308,16 +306,16 @@ export function AIProvidersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
+      <div className="flex items-center gap-2 py-8 text-sm text-zinc-400">
         <Loader2 size={14} className="animate-spin" />
-        Loading AI settings…
+        Loading AI settings...
       </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <p className="text-sm text-destructive py-8">
+      <p className="py-8 text-sm text-red-300">
         Failed to load AI settings. Please refresh the page.
       </p>
     );
@@ -342,30 +340,34 @@ export function AIProvidersPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="paper-page-header">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Bot size={20} />
-          AI Providers
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Configure BYOK (Bring Your Own Key) API keys for AI providers. Keys
-          are encrypted at rest and take precedence over server environment
-          variables.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <section className="space-y-1">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-400">
+          Workspace settings
+        </span>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="flex items-center gap-3 text-[32px] font-semibold leading-[1.02] tracking-[-0.04em] text-zinc-50 sm:text-[40px]">
+              <Bot size={24} />
+              AI Providers
+            </h1>
+            <p className="mt-3 max-w-3xl text-[16px] leading-7 text-zinc-300">
+              Manage API keys, preferred providers, and your local Ollama
+              endpoint. Stored keys override server environment variables.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {mutation.isError && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {mutation.error instanceof Error
-              ? mutation.error.message
-              : "Failed to save settings."}
-          </AlertDescription>
-        </Alert>
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {mutation.error instanceof Error
+            ? mutation.error.message
+            : "Failed to save settings."}
+        </div>
       )}
 
-      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm px-5 py-1">
+      <section className="grid gap-3 xl:grid-cols-2">
         {PROVIDERS.map((p) => (
           <ProviderKeyRow
             key={p.fieldName}
@@ -377,15 +379,13 @@ export function AIProvidersPage() {
             isSaving={savingField === p.fieldName}
           />
         ))}
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm px-5 py-2">
-        <OllamaSection
-          currentUrl={data.ollama_base_url}
-          onSave={handleSaveOllamaUrl}
-          isSaving={savingField === "ollama_base_url"}
-        />
-      </div>
+      <OllamaSection
+        currentUrl={data.ollama_base_url}
+        onSave={handleSaveOllamaUrl}
+        isSaving={savingField === "ollama_base_url"}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ interface ExportOptions {
   height: number;
   format?: ExportFormat;
   quality?: number;
+  globalStyles?: string;
 }
 
 export async function exportSlideToBlob({
@@ -17,6 +18,7 @@ export async function exportSlideToBlob({
   height,
   format = "png",
   quality = 0.92,
+  globalStyles,
 }: ExportOptions): Promise<Blob> {
   const container = document.createElement("div");
   container.style.cssText = [
@@ -39,7 +41,15 @@ export async function exportSlideToBlob({
   document.body.appendChild(container);
 
   try {
-    renderHtmlIntoShadowHost(host, html, width, height);
+    renderHtmlIntoShadowHost(
+      host,
+      html,
+      width,
+      height,
+      width,
+      height,
+      globalStyles,
+    );
     await new Promise((resolve) => window.setTimeout(resolve, 120));
 
     return await snapdom.toBlob(host, {

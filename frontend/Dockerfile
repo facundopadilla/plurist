@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install
 COPY . .
+RUN chown -R node:node /app
 # Drop root privileges before running the dev server
 USER node
 EXPOSE 5173

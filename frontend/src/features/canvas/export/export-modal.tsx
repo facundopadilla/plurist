@@ -15,6 +15,7 @@ interface ExportModalProps {
 export function ExportModal({ onClose }: ExportModalProps) {
   const slides = useCanvasStore((s) => s.slides);
   const config = useCanvasStore((s) => s.config);
+  const globalStyles = useCanvasStore((s) => s.globalStyles);
 
   const [format, setFormat] = useState<ExportFormat>("png");
   const [quality, setQuality] = useState(0.92);
@@ -37,7 +38,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
         );
         if (!activeVariant) continue;
 
-        setProgress(`Exportando slide ${i + 1} de ${slideEntries.length}...`);
+        setProgress(`Exporting slide ${i + 1} of ${slideEntries.length}...`);
 
         const blob = await exportSlideToBlob({
           html: activeVariant.html,
@@ -45,6 +46,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
           height: config.formatHeight,
           format,
           quality,
+          globalStyles,
         });
 
         const ext = format === "jpeg" ? "jpg" : format;
@@ -56,56 +58,53 @@ export function ExportModal({ onClose }: ExportModalProps) {
         downloadBlob(blob, filename);
       }
 
-      setProgress("Exportacion completa.");
+      setProgress("Export complete.");
       setTimeout(onClose, 1000);
     } catch (err) {
       setProgress(
-        `Error: ${err instanceof Error ? err.message : "Error desconocido"}`,
+        `Error: ${err instanceof Error ? err.message : "Unknown error"}`,
       );
     } finally {
       setIsExporting(false);
     }
-  }, [slideEntries, config, format, quality, onClose]);
+  }, [slideEntries, config, format, quality, onClose, globalStyles]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-card border border-border rounded-lg shadow-xl w-80 p-5">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-foreground">
-            Exportar slides
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+      <div className="w-80 rounded-xl border border-zinc-800/70 bg-zinc-950/95 p-5 text-zinc-50 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-semibold tracking-[-0.02em] text-zinc-50">
+            Export slides
           </h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-8 w-8 text-muted-foreground"
+            className="h-8 w-8 rounded-lg text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100"
           >
             <X size={16} />
           </Button>
         </div>
 
-        {/* Slide count */}
-        <p className="text-xs text-muted-foreground mb-4">
-          {slideEntries.length} slide{slideEntries.length !== 1 ? "s" : ""} —{" "}
+        <p className="mb-4 text-xs text-zinc-400">
+          {slideEntries.length} slide{slideEntries.length !== 1 ? "s" : ""} -{" "}
           {config.formatWidth}x{config.formatHeight}px
         </p>
 
-        {/* Format */}
         <div className="mb-4">
-          <label className="text-xs font-medium text-foreground block mb-1.5">
-            Formato
+          <label className="mb-1.5 block text-xs font-medium text-zinc-200">
+            Format
           </label>
           <div className="flex gap-2">
             {(["png", "jpeg", "webp"] as ExportFormat[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFormat(f)}
-                className={`flex-1 py-1.5 text-xs font-medium rounded border transition-colors ${
+                className={
                   format === f
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:text-foreground hover:bg-accent"
-                }`}
+                    ? "flex-1 rounded-lg border border-zinc-700 bg-zinc-50 py-1.5 text-xs font-medium text-zinc-900 transition-colors"
+                    : "flex-1 rounded-lg border border-zinc-800/70 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
+                }
               >
                 {f.toUpperCase()}
               </button>
@@ -113,11 +112,10 @@ export function ExportModal({ onClose }: ExportModalProps) {
           </div>
         </div>
 
-        {/* Quality (for jpeg) */}
         {format === "jpeg" && (
           <div className="mb-4">
-            <label className="text-xs font-medium text-foreground block mb-1.5">
-              Calidad: {Math.round(quality * 100)}%
+            <label className="mb-1.5 block text-xs font-medium text-zinc-200">
+              Quality: {Math.round(quality * 100)}%
             </label>
             <input
               type="range"
@@ -126,24 +124,20 @@ export function ExportModal({ onClose }: ExportModalProps) {
               step={0.01}
               value={quality}
               onChange={(e) => setQuality(parseFloat(e.target.value))}
-              className="w-full"
+              className="w-full accent-zinc-200"
             />
           </div>
         )}
 
-        {/* Progress */}
-        {progress && (
-          <p className="text-xs text-muted-foreground mb-3">{progress}</p>
-        )}
+        {progress && <p className="mb-3 text-xs text-zinc-400">{progress}</p>}
 
-        {/* Actions */}
         <Button
           onClick={handleExport}
           disabled={isExporting || slideEntries.length === 0}
-          className="w-full justify-center gap-2"
+          className="w-full justify-center gap-2 rounded-lg bg-zinc-50 text-zinc-900 shadow-none hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500"
         >
           <Download size={15} />
-          {isExporting ? "Exportando..." : "Descargar"}
+          {isExporting ? "Exporting..." : "Download"}
         </Button>
       </div>
     </div>

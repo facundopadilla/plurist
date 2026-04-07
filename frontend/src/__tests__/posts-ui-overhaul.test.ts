@@ -7,10 +7,9 @@ describe("content feature components (was posts-ui-overhaul)", () => {
     expect(typeof mod.ProjectSearchInput).toBe("function");
   });
 
-  it("NetworkFormatSelector exports the component", async () => {
-    const mod =
-      await import("../features/content/components/NetworkFormatSelector");
-    expect(typeof mod.NetworkFormatSelector).toBe("function");
+  it("FormatSelector exports the component", async () => {
+    const mod = await import("../features/content/components/FormatSelector");
+    expect(typeof mod.FormatSelector).toBe("function");
   });
 
   it("SlideCountInput exports the component", async () => {
@@ -26,7 +25,7 @@ describe("content feature components (was posts-ui-overhaul)", () => {
   it("barrel index exports all new components", async () => {
     const mod = await import("../features/content/components");
     expect(typeof mod.ProjectSearchInput).toBe("function");
-    expect(typeof mod.NetworkFormatSelector).toBe("function");
+    expect(typeof mod.FormatSelector).toBe("function");
     expect(typeof mod.SlideCountInput).toBe("function");
     expect(typeof mod.ProviderCard).toBe("function");
   });

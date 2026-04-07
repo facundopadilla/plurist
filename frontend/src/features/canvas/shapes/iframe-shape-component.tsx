@@ -28,6 +28,7 @@ export function IframeShapeComponent({ shape }: IframeShapeComponentProps) {
   const slideData = useCanvasStore((s) => s.slides.get(slideId));
   const editingNodeId = useCanvasStore((s) => s.editingNodeId);
   const enterEditMode = useCanvasStore((s) => s.enterEditMode);
+  const setActivePanel = useCanvasStore((s) => s.setActivePanel);
   const exitEditMode = useCanvasStore((s) => s.exitEditMode);
   const setActiveVariant = useCanvasStore((s) => s.setActiveVariant);
   const updateSlideHtml = useCanvasStore((s) => s.updateSlideHtml);
@@ -52,9 +53,10 @@ export function IframeShapeComponent({ shape }: IframeShapeComponentProps) {
       e.stopPropagation();
       if (!isEditing) {
         enterEditMode(shape.id);
+        setActivePanel("code");
       }
     },
-    [shape.id, isEditing, enterEditMode],
+    [shape.id, isEditing, enterEditMode, setActivePanel],
   );
 
   const handleDone = useCallback(() => {
@@ -99,7 +101,7 @@ export function IframeShapeComponent({ shape }: IframeShapeComponentProps) {
           "relative w-full h-full flex flex-col",
           isEditing
             ? "ring-2 ring-primary ring-offset-1 rounded-md"
-            : "border border-border rounded-md",
+            : "rounded-md border border-zinc-800/70",
         )}
         onDoubleClick={handleDoubleClick}
       >

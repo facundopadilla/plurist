@@ -1,5 +1,9 @@
 import { apiRequest, apiUpload } from "../../lib/api/client";
-import type { DesignBankSource } from "./types";
+import type {
+  DesignBankSource,
+  ProjectDesignSystemStatus,
+  SyncProjectDesignSystemResult,
+} from "./types";
 
 export function fetchSources(): Promise<DesignBankSource[]> {
   return apiRequest<DesignBankSource[]>("/api/v1/design-bank/sources");
@@ -106,4 +110,29 @@ export function deleteSource(id: number): Promise<void> {
 
 export function getSourceFileUrl(id: number): string {
   return `/api/v1/design-bank/sources/${id}/file`;
+}
+
+export function fetchProjectDesignSystemStatus(
+  projectId: number,
+): Promise<ProjectDesignSystemStatus> {
+  return apiRequest<ProjectDesignSystemStatus>(
+    `/api/v1/design-bank/projects/${projectId}/design-system/status`,
+  );
+}
+
+export function syncProjectDesignSystem(
+  projectId: number,
+  data: {
+    provider: string;
+    model_id?: string | null;
+    guidance?: string;
+  },
+): Promise<SyncProjectDesignSystemResult> {
+  return apiRequest<SyncProjectDesignSystemResult>(
+    `/api/v1/design-bank/projects/${projectId}/design-system/sync`,
+    {
+      method: "POST",
+      body: data,
+    },
+  );
 }

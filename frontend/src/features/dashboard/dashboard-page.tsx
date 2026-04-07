@@ -3,15 +3,16 @@ import {
   LayoutDashboard,
   Loader2,
   FileText,
-  Clock,
   CheckCircle,
-  Send,
-  AlertCircle,
+  PenLine,
+  Sparkles,
+  FolderKanban,
+  Bot,
+  ArrowRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { fetchContent } from "../content/api";
-import { fetchEntries } from "../scheduler/api";
-import { fetchSummary } from "../analytics/api";
-import { Badge } from "@/components/ui/badge";
 
 function StatCard({
   label,
@@ -25,263 +26,198 @@ function StatCard({
   note: string;
 }) {
   return (
-    <div className="paper-stat">
+    <div className="rounded-2xl border border-zinc-800/50 bg-zinc-900/30 p-5 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3">
-        <div className="paper-stat-label">{label}</div>
-        <div className="text-muted-foreground">{icon}</div>
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-400">
+          {label}
+        </span>
+        <span className="text-zinc-500">{icon}</span>
       </div>
-      <p className="mt-4 text-[32px] font-semibold leading-none tracking-[-0.05em] text-foreground">
+      <p className="mt-4 text-[32px] font-semibold leading-none tracking-[-0.05em] text-zinc-50">
         {value}
       </p>
-      <p className="mt-2 text-sm text-muted-foreground">{note}</p>
+      <p className="mt-2 text-sm text-zinc-400">{note}</p>
     </div>
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const isCompleted = status === "completed";
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-lg border px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em]",
+        isCompleted
+          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+          : "border-zinc-700/50 bg-zinc-800/50 text-zinc-400",
+      )}
+    >
+      {status}
+    </span>
+  );
+}
+
+function QuickLink({
+  to,
+  title,
+  description,
+  icon,
+}: {
+  to: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center justify-between rounded-2xl border border-zinc-800/50 bg-zinc-900/30 p-4 transition-colors hover:bg-white/[0.04]"
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="mt-0.5 text-zinc-400">{icon}</span>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-zinc-100">{title}</p>
+          <p className="mt-1 text-sm text-zinc-400">{description}</p>
+        </div>
+      </div>
+      <ArrowRight
+        size={16}
+        className="shrink-0 text-zinc-500 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-200"
+      />
+    </Link>
+  );
+}
+
 export function DashboardPage() {
-  const { data: posts, isLoading: postsLoading } = useQuery({
+  const { data: posts, isLoading } = useQuery({
     queryKey: ["content"],
     queryFn: fetchContent,
   });
 
-  const { data: entries, isLoading: entriesLoading } = useQuery({
-    queryKey: ["schedule-entries"],
-    queryFn: fetchEntries,
-  });
+  const drafts = posts?.filter((p) => p.status === "draft") ?? [];
+  const completed = posts?.filter((p) => p.status === "completed") ?? [];
+  const latestPostTitle = posts?.[0]?.title ?? "No content yet";
 
-  const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ["analytics-summary"],
-    queryFn: fetchSummary,
-  });
-
-  const isLoading = postsLoading || entriesLoading || summaryLoading;
-
-  const pendingApproval =
-    posts?.filter((p) => p.status === "pending_approval") ?? [];
-  const approved = posts?.filter((p) => p.status === "approved") ?? [];
-  const published = posts?.filter((p) => p.status === "published") ?? [];
-  const failed = posts?.filter((p) => p.status === "failed") ?? [];
-  const upcomingScheduled =
-    entries?.filter((e) => e.status === "pending") ?? [];
-  const latestPostTitle = posts?.[0]?.title ?? "No hay contenido reciente";
+  const topStats = [
+    {
+      label: "Total content",
+      value: posts?.length ?? 0,
+      icon: <FileText size={16} />,
+      note: "Everything created in your workspace.",
+    },
+    {
+      label: "Drafts",
+      value: drafts.length,
+      icon: <PenLine size={16} />,
+      note: "Still being refined in Canvas Studio.",
+    },
+    {
+      label: "Completed",
+      value: completed.length,
+      icon: <CheckCircle size={16} />,
+      note: "Ready to export, share, or reuse.",
+    },
+  ];
 
   return (
-    <div className="animate-page-in paper-page">
-      <section className="paper-page-header">
-        <div className="paper-kicker">Dashboard snapshot</div>
+    <div className="animate-page-in mx-auto flex w-full max-w-7xl flex-col gap-6">
+      <section className="space-y-1">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-400">
+          Workspace overview
+        </span>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="paper-title flex items-center gap-3">
+            <h1 className="flex items-center gap-3 text-[32px] font-semibold leading-[1.02] tracking-[-0.04em] text-zinc-50 sm:text-[40px]">
               <LayoutDashboard size={24} />
               Dashboard
             </h1>
-            <p className="paper-lead">
-              Review approval pressure, scheduling load, and publishing outcomes
-              from a cleaner workspace overview.
+            <p className="mt-3 max-w-3xl text-[16px] leading-7 text-zinc-300">
+              A focused view of your AI content workflow: what is in progress,
+              what is done, and what to create next.
             </p>
           </div>
-          <div className="font-elegant-mono text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-            Último contenido · {latestPostTitle}
-          </div>
+          <span className="font-mono text-[12px] uppercase tracking-[0.18em] text-zinc-500">
+            Latest · {latestPostTitle}
+          </span>
         </div>
       </section>
 
       {isLoading && (
-        <div className="paper-panel paper-panel-body flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 rounded-2xl border border-zinc-800/50 bg-zinc-900/30 px-5 py-5 text-sm text-zinc-400 backdrop-blur-xl">
           <Loader2 size={14} className="animate-spin" />
           Loading dashboard...
         </div>
       )}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Pending approval"
-          value={pendingApproval.length}
-          icon={<Clock size={16} />}
-          note="Drafts waiting for owner review."
-        />
-        <StatCard
-          label="Approved"
-          value={approved.length}
-          icon={<CheckCircle size={16} />}
-          note="Ready for publisher action."
-        />
-        <StatCard
-          label="Published"
-          value={published.length}
-          icon={<Send size={16} />}
-          note="Completed output already delivered."
-        />
-        <StatCard
-          label="Scheduled"
-          value={upcomingScheduled.length}
-          icon={<Clock size={16} />}
-          note="Items still queued on the calendar."
-        />
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {topStats.map((card, i) => (
+          <div
+            key={card.label}
+            className="animate-page-in opacity-0 [animation-fill-mode:forwards]"
+            style={{ animationDelay: `${i * 80}ms` }}
+          >
+            <StatCard {...card} />
+          </div>
+        ))}
       </section>
 
-      {summary && (
-        <section className="paper-panel">
-          <div className="paper-panel-header">
-            <div className="paper-kicker">Operational metrics</div>
-            <h2 className="paper-section-title mt-3">Publishing throughput</h2>
-          </div>
-          <div className="grid gap-3 px-5 py-5 sm:grid-cols-3 sm:px-6">
-            <StatCard
-              label="Publish requested"
-              value={summary.publish_requested}
-              icon={<Send size={16} />}
-              note="Total outbound publish attempts."
-            />
-            <StatCard
-              label="Succeeded"
-              value={summary.publish_succeeded}
-              icon={<CheckCircle size={16} />}
-              note="Successfully delivered without operator action."
-            />
-            <StatCard
-              label="Failed"
-              value={summary.publish_failed}
-              icon={<AlertCircle size={16} />}
-              note="Failures requiring intervention."
-            />
-          </div>
-        </section>
-      )}
-
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="paper-panel">
-          <div className="paper-panel-header">
-            <div className="paper-kicker">Recent output</div>
-            <h2 className="paper-section-title mt-3">Contenido reciente</h2>
-          </div>
-          <div className="paper-panel-body">
-            {posts && posts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No hay contenido. Creá tu primer contenido desde Compose.
-              </p>
-            ) : (
-              <div>
-                {posts?.slice(0, 5).map((post) => (
-                  <div key={post.id} className="paper-list-row">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <FileText size={14} className="text-muted-foreground" />
-                        <p className="truncate text-[16px] font-medium text-foreground">
-                          {post.title}
-                        </p>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {post.target_networks.map((network) => (
-                          <Badge
-                            key={network}
-                            variant="neutral"
-                            className="font-mono uppercase tracking-[0.18em]"
-                          >
-                            {network}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-start justify-end">
-                      <Badge
-                        variant={
-                          post.status === "published"
-                            ? "success"
-                            : post.status === "pending_approval"
-                              ? "warning"
-                              : post.status === "failed"
-                                ? "danger"
-                                : "neutral"
-                        }
-                        className="font-mono uppercase tracking-[0.18em]"
-                      >
-                        {post.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="paper-panel">
-          <div className="paper-panel-header">
-            <div className="paper-kicker">Calendar pressure</div>
-            <h2 className="paper-section-title mt-3">
-              Upcoming scheduled items
+      <section className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-2xl border border-zinc-800/50 bg-zinc-900/30 backdrop-blur-xl">
+          <div className="border-b border-zinc-800/40 px-5 py-4 sm:px-6">
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-400">
+              Recent output
+            </span>
+            <h2 className="mt-3 text-[24px] font-semibold tracking-[-0.03em] text-zinc-50">
+              Recent content
             </h2>
           </div>
-          <div className="paper-panel-body">
-            {upcomingScheduled.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No hay contenido programado.
+          <div className="px-5 py-5 sm:px-6">
+            {posts && posts.length === 0 ? (
+              <p className="text-sm text-zinc-400">
+                No content yet. Start your first piece in Canvas Studio.
               </p>
             ) : (
               <div>
-                {upcomingScheduled.slice(0, 5).map((entry) => (
-                  <div key={entry.id} className="paper-list-row">
-                    <div className="min-w-0">
-                      <p className="text-[16px] font-medium text-foreground">
-                        Contenido #{entry.draft_post_id}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {new Date(entry.scheduled_for).toLocaleString()} ·{" "}
-                        {entry.network}
+                {posts?.slice(0, 8).map((post) => (
+                  <div
+                    key={post.id}
+                    className="flex flex-col gap-3 border-b border-zinc-800/30 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <FileText size={14} className="shrink-0 text-zinc-500" />
+                      <p className="truncate text-[16px] font-medium text-zinc-50">
+                        {post.title}
                       </p>
                     </div>
-                    <div className="flex items-start justify-end">
-                      <Badge
-                        variant="neutral"
-                        className="font-mono uppercase tracking-[0.18em]"
-                      >
-                        {entry.status}
-                      </Badge>
-                    </div>
+                    <StatusBadge status={post.status} />
                   </div>
                 ))}
               </div>
             )}
           </div>
         </div>
-      </section>
 
-      {failed.length > 0 && (
-        <section className="paper-panel">
-          <div className="paper-panel-header">
-            <div className="paper-kicker">Exceptions</div>
-            <h2 className="paper-section-title mt-3">Contenido fallido</h2>
-          </div>
-          <div className="paper-panel-body">
-            {failed.map((post) => (
-              <div key={post.id} className="paper-list-row">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle size={14} className="text-red-600" />
-                    <p className="truncate text-[16px] font-medium text-foreground">
-                      {post.title}
-                    </p>
-                  </div>
-                  {post.failure_message ? (
-                    <p className="mt-2 text-sm text-red-700">
-                      {post.failure_message}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex items-start justify-end">
-                  <Badge
-                    variant="danger"
-                    className="font-mono uppercase tracking-[0.18em]"
-                  >
-                    failed
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+        <div className="space-y-3">
+          <QuickLink
+            to="/compose"
+            title="Open Canvas Studio"
+            description="Create new AI-assisted content from scratch."
+            icon={<Sparkles size={16} />}
+          />
+          <QuickLink
+            to="/projects"
+            title="Browse projects"
+            description="Organize content and design references by workspace."
+            icon={<FolderKanban size={16} />}
+          />
+          <QuickLink
+            to="/settings/ai-providers"
+            title="Review AI providers"
+            description="Check keys, preferred models, and Ollama setup."
+            icon={<Bot size={16} />}
+          />
+        </div>
+      </section>
     </div>
   );
 }

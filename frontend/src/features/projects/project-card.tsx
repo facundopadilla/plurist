@@ -44,12 +44,12 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
     <div className="relative">
       <div
         onClick={() => navigate(`/projects/${project.id}`)}
-        className="rounded-xl border border-border bg-card text-card-foreground shadow-sm block p-5 transition-colors group cursor-pointer hover:border-primary/30"
+        className="group block cursor-pointer rounded-2xl border border-zinc-800/60 p-5 transition-colors hover:border-zinc-700/80"
         style={{ borderTopColor: projectColor, backgroundColor: cardBg }}
       >
         <div className="flex items-start gap-3">
           <div
-            className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-md shrink-0 overflow-hidden"
+            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg"
             style={{ backgroundColor: accentBg }}
           >
             {project.icon_url ? (
@@ -74,11 +74,11 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
             )}
           </div>
           <div className="min-w-0 flex-1 pr-6">
-            <p className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+            <p className="truncate font-semibold text-zinc-100">
               {project.name}
             </p>
             {project.description && (
-              <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+              <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
                 {project.description}
               </p>
             )}
@@ -87,7 +87,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                 {project.tags.map((tag) => (
                   <span
                     key={tag.name}
-                    className="inline-flex items-center gap-1 rounded-[12px] px-2.5 py-1 text-xs font-medium"
+                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium"
                     style={{
                       backgroundColor: tag.color + "20",
                       color: tag.color,
@@ -106,46 +106,44 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           </div>
         </div>
 
-        {/* Sub-folders */}
-        <div className="mt-4 flex gap-2 border-t border-border pt-3">
+        <div className="mt-4 flex gap-2 border-t border-zinc-800/50 pt-3">
           <Link
             to={`/design-bank?folder=${project.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800/70 bg-zinc-950/70 px-2.5 py-1 text-xs text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
           >
             <ImageIcon size={11} />
             Design Bank
           </Link>
           <Link
-            to={`/contenido?folder=${project.id}`}
+            to={`/content?folder=${project.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800/70 bg-zinc-950/70 px-2.5 py-1 text-xs text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
           >
             <FileText size={11} />
-            Contenido
+            Content
           </Link>
         </div>
 
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-zinc-500">
           Created {new Date(project.created_at).toLocaleDateString()}
         </p>
       </div>
 
-      {/* Dropdown menu — outside the Link to stop propagation */}
       {showMenu && (
-        <div ref={menuRef} className="absolute top-3 right-3 z-10">
+        <div ref={menuRef} className="absolute right-3 top-3 z-10">
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setMenuOpen((v) => !v);
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
           >
             <MoreHorizontal size={14} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-8 z-20 min-w-[130px] rounded-[14px] border border-border bg-popover py-1 shadow-lg">
+            <div className="absolute right-0 top-9 z-20 min-w-[130px] rounded-xl border border-zinc-800/70 bg-zinc-950 py-1 shadow-lg">
               {onEdit && (
                 <button
                   onClick={(e) => {
@@ -154,10 +152,10 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                     setMenuOpen(false);
                     onEdit(project);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/[0.04]"
                 >
                   <Pencil size={13} />
-                  Editar
+                  Edit
                 </button>
               )}
               {onDelete && (
@@ -168,10 +166,10 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                     setMenuOpen(false);
                     onDelete(project);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-accent transition-colors"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/10"
                 >
                   <Trash2 size={13} />
-                  Eliminar
+                  Delete
                 </button>
               )}
             </div>

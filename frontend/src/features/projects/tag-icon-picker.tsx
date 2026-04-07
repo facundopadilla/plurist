@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import * as LucideIcons from "lucide-react";
 import { Search, X } from "lucide-react";
 
-// Todos los exports PascalCase de lucide-react son componentes de íconos
+// All PascalCase exports from lucide-react are icon components
 const ALL_ICON_NAMES = Object.keys(LucideIcons).filter(
   (k) =>
     /^[A-Z]/.test(k) &&
@@ -66,7 +66,7 @@ export function TagIconPicker({ value, onChange }: TagIconPickerProps) {
             ? "border-primary/50 bg-primary/10 text-primary"
             : "border-input bg-background text-muted-foreground hover:bg-accent"
         }`}
-        title={value ? `Ícono: ${value}` : "Seleccionar ícono"}
+        title={value ? `Icon: ${value}` : "Select icon"}
       >
         {value ? (
           <DynamicIcon name={value} size={14} />
@@ -89,7 +89,7 @@ export function TagIconPicker({ value, onChange }: TagIconPickerProps) {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar ícono..."
+                placeholder="Search icon..."
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pl-7 py-1.5 text-xs"
               />
             </div>
@@ -97,11 +97,11 @@ export function TagIconPicker({ value, onChange }: TagIconPickerProps) {
 
           {/* Grid */}
           <div className="grid grid-cols-8 gap-0.5 p-2 max-h-56 overflow-y-auto">
-            {/* Botón quitar */}
+            {/* Clear button */}
             {value && (
               <button
                 type="button"
-                title="Sin ícono"
+                title="No icon"
                 onClick={() => {
                   onChange("");
                   setOpen(false);
@@ -135,7 +135,7 @@ export function TagIconPicker({ value, onChange }: TagIconPickerProps) {
 
             {filtered.length === 0 && (
               <p className="col-span-8 py-4 text-center text-xs text-muted-foreground">
-                Sin resultados para "{search}"
+                No results for "{search}"
               </p>
             )}
           </div>

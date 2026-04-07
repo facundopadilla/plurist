@@ -19,7 +19,7 @@ test.describe("Operational analytics", () => {
   test("owner receives workflow counters from analytics summary", async ({
     page,
   }) => {
-    await login(page, "owner@example.com");
+    await login(page, "owner@test.com");
     const csrf = await getCsrf(page);
 
     const resp = await page.request.get(`/api/v1/analytics/summary`, {
@@ -52,7 +52,7 @@ test.describe("Operational analytics", () => {
   test("analytics summary does NOT contain engagement metrics", async ({
     page,
   }) => {
-    await login(page, "owner@example.com");
+    await login(page, "owner@test.com");
     const csrf = await getCsrf(page);
 
     const resp = await page.request.get(`/api/v1/analytics/summary`, {

@@ -119,14 +119,14 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
     >
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Editar proyecto</DialogTitle>
+          <DialogTitle>Edit project</DialogTitle>
         </DialogHeader>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
-            <Label>Nombre *</Label>
+            <Label>Name *</Label>
             <Input
               type="text"
               value={name}
@@ -136,7 +136,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label>Descripción</Label>
+            <Label>Description</Label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -169,14 +169,14 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent"
-                title="Color personalizado"
+                title="Custom color"
               />
             </div>
           </div>
 
           {/* Icon */}
           <div className="space-y-2">
-            <Label>Ícono personalizado</Label>
+            <Label>Custom icon</Label>
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-xl border border-border overflow-hidden flex items-center justify-center bg-muted/30">
                 {iconPreview ? (
@@ -202,7 +202,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload size={12} />
-                  {currentIconUrl || iconPreview ? "Cambiar" : "Subir ícono"}
+                  {currentIconUrl || iconPreview ? "Replace" : "Upload icon"}
                 </Button>
                 {(iconPreview || currentIconUrl) && (
                   <button
@@ -212,11 +212,11 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
                     }}
                     className="block text-xs text-muted-foreground hover:text-red-500 transition-colors"
                   >
-                    Quitar preview
+                    Remove preview
                   </button>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  JPG, PNG, WEBP · Máx 2MB
+                  JPG, PNG, WEBP · Max 2MB
                 </p>
                 <input
                   ref={fileInputRef}
@@ -243,7 +243,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
                     type="text"
                     value={tag.name}
                     onChange={(e) => updateTag(i, "name", e.target.value)}
-                    placeholder="Nombre del tag"
+                    placeholder="Tag name"
                     className="flex-1 h-9"
                   />
                   <input
@@ -251,7 +251,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
                     value={tag.color}
                     onChange={(e) => updateTag(i, "color", e.target.value)}
                     className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent"
-                    title="Color del tag"
+                    title="Tag color"
                   />
                   <button
                     onClick={() => removeTag(i)}
@@ -268,7 +268,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
                 className="border-dashed text-muted-foreground"
               >
                 <Plus size={12} />
-                Agregar tag
+                Add tag
               </Button>
             </div>
           </div>
@@ -277,7 +277,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
             <p className="text-xs text-destructive">
               {saveMutation.error instanceof Error
                 ? saveMutation.error.message
-                : "Error al guardar"}
+                : "Failed to save project"}
             </p>
           )}
         </div>
@@ -285,7 +285,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
         {/* Footer */}
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
           <Button variant="outline" onClick={onClose}>
-            Cancelar
+            Cancel
           </Button>
           <Button
             onClick={() => saveMutation.mutate()}
@@ -294,7 +294,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
             {saveMutation.isPending ? (
               <Loader2 size={14} className="animate-spin" />
             ) : null}
-            Guardar
+            Save
           </Button>
         </div>
       </DialogContent>

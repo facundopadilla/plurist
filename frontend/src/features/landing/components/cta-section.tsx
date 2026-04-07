@@ -1,101 +1,64 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { ease } from "../lib/animations";
 
 export function CtaSection() {
   return (
-    <section className="relative py-32 sm:py-40 overflow-hidden bg-background">
-      {/* Ambient gradient orbs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[800px] rounded-full bg-primary/[0.07] blur-[120px]" />
-        <div className="absolute top-1/3 left-1/4 h-[300px] w-[400px] rounded-full bg-secondary/[0.06] blur-[100px]" />
-        <div className="absolute bottom-1/3 right-1/4 h-[250px] w-[350px] rounded-full bg-primary/[0.05] blur-[100px]" />
-      </div>
-
-      {/* Subtle grid pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-        }}
-      />
-
-      {/* Horizontal glow line */}
-      <motion.div
-        className="absolute top-0 left-1/2 -translate-x-1/2 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-        initial={{ width: "0%" }}
-        whileInView={{ width: "60%" }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-      />
-
+    <section className="relative py-36 sm:py-48 bg-brutal-yellow border-b-2 border-black brutal-grid-bg overflow-hidden">
       {/* Content */}
-      <div className="relative z-10 max-w-3xl mx-auto px-4 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+      <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
+        <motion.h2
+          className="font-display font-extrabold text-[40px] sm:text-[56px] lg:text-[72px] leading-[1] tracking-[-0.04em] text-black"
+          initial={{ opacity: 0, scale: 0.92 }}
+          whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.5, ease }}
         >
-          <h2 className="text-display text-foreground">
-            Ready to create content
-            <br />
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              from code?
-            </span>
-          </h2>
-        </motion.div>
+          <span>Ready to create</span>
+          <br />
+          <span className="text-[#333]">something great?</span>
+        </motion.h2>
 
         <motion.p
-          className="paper-lead mx-auto mt-6 max-w-xl text-lg"
-          initial={{ opacity: 0, y: 16 }}
+          className="mt-5 text-base text-[#333] max-w-md mx-auto leading-relaxed font-medium"
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.4, delay: 0.15, ease }}
         >
           Start building with Plurist today. No credit card required.
         </motion.p>
 
         <motion.div
-          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
-          initial={{ opacity: 0, y: 16 }}
+          className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.4, delay: 0.3, ease }}
         >
-          <Button
-            size="lg"
-            className="px-8 text-base font-semibold gap-2"
-            asChild
+          <motion.a
+            href="/login"
+            className="brutal-btn bg-black text-white rounded-lg px-8 py-3 text-sm inline-flex items-center gap-2"
+            whileHover={{ x: -2, y: -2 }}
+            whileTap={{ x: 2, y: 2 }}
+            transition={{ duration: 0.15 }}
           >
-            <a href="/login">
-              Get started free
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="px-8 text-base"
-            asChild
+            Get started free
+            <ArrowRight className="h-3.5 w-3.5" />
+          </motion.a>
+          <motion.a
+            href="#features"
+            className="brutal-btn bg-white text-black rounded-lg px-8 py-3 text-sm"
+            whileHover={{ x: -2, y: -2 }}
+            whileTap={{ x: 2, y: 2 }}
+            transition={{ duration: 0.15 }}
           >
-            <a href="#features">See the features</a>
-          </Button>
+            See the features
+          </motion.a>
         </motion.div>
       </div>
-
-      {/* Bottom glow line */}
-      <motion.div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-px bg-gradient-to-r from-transparent via-secondary/30 to-transparent"
-        initial={{ width: "0%" }}
-        whileInView={{ width: "40%" }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      />
     </section>
   );
 }

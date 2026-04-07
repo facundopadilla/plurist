@@ -48,7 +48,7 @@ export function DeleteConfirmModal({
     >
       <DialogContent className="max-w-sm">
         <DialogHeader className="sr-only">
-          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogTitle>Confirm deletion</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -61,16 +61,16 @@ export function DeleteConfirmModal({
             </div>
             <div>
               <h2 className="font-semibold text-foreground">
-                ¿Eliminar {project.name}?
+                Delete {project.name}?
               </h2>
               <DialogDescription className="text-xs mt-0.5">
-                Esta acción no se puede deshacer.
+                This action cannot be undone.
               </DialogDescription>
             </div>
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Los recursos del Design Bank se eliminarán automáticamente.
+            Design Bank resources will be removed automatically.
           </p>
 
           <label className="flex items-start gap-2 cursor-pointer">
@@ -81,7 +81,7 @@ export function DeleteConfirmModal({
               className="mt-0.5 rounded border-border"
             />
             <span className="text-sm text-muted-foreground">
-              También eliminar el contenido asociado a este proyecto
+              Also delete content associated with this project
             </span>
           </label>
 
@@ -89,7 +89,7 @@ export function DeleteConfirmModal({
             <p className="text-xs text-destructive">
               {deleteMutation.error instanceof Error
                 ? deleteMutation.error.message
-                : "Error al eliminar"}
+                : "Failed to delete project"}
             </p>
           )}
 
@@ -99,7 +99,7 @@ export function DeleteConfirmModal({
               onClick={onClose}
               disabled={deleteMutation.isPending}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="destructive"
@@ -111,7 +111,7 @@ export function DeleteConfirmModal({
               ) : (
                 <Trash2 size={14} />
               )}
-              Eliminar proyecto
+              Delete project
             </Button>
           </div>
         </div>

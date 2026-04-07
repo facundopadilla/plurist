@@ -16,7 +16,7 @@ test.describe("Google SSO linking", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          email: "editor@example.com",
+          email: "editor@test.com",
           name: "Editor",
           role: "editor",
           csrf_token: "csrf-token",

@@ -58,7 +58,7 @@ function HtmlShapeContextMenuContent() {
       <MenuGroup id="html-shape-primary">
         <TldrawUiMenuItem
           id="html-shape-edit-code"
-          label="Editar código"
+          label="Edit code"
           onSelect={() => {
             openHtmlShapeEditor(editor, shape.id);
           }}
@@ -70,107 +70,117 @@ function HtmlShapeContextMenuContent() {
             duplicateHtmlShape(shape.props.slideId);
           }}
         />
-        <MenuSubmenu id="html-shape-current-variant" label="Variant actual">
+        <MenuSubmenu id="html-shape-current-variant" label="Current variant">
           <MenuGroup id="html-shape-current-variant-group">
             <TldrawUiMenuItem
               id="html-shape-variant-rename"
-              label="Renombrar variant actual"
+              label="Rename current variant"
               onSelect={() => {
                 renameCurrentHtmlShapeVariant(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-variant-duplicate"
-              label="Duplicar variant actual"
+              label="Duplicate current variant"
               onSelect={() => {
                 duplicateCurrentHtmlShapeVariant(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-variant-delete"
-              label="Eliminar variant actual"
+              label="Delete current variant"
               onSelect={() => {
                 removeCurrentHtmlShapeVariant(shape.props.slideId);
               }}
             />
           </MenuGroup>
         </MenuSubmenu>
-        <MenuSubmenu id="html-shape-copy" label="Copiar">
+        <MenuSubmenu id="html-shape-copy" label="Copy">
           <MenuGroup id="html-shape-copy-group">
             <TldrawUiMenuItem
               id="html-shape-copy-html"
-              label="Copiar código HTML"
+              label="Copy HTML code"
               onSelect={() => {
                 void copyHtmlShapeCode(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-copy-png"
-              label="Copiar como PNG"
+              label="Copy as PNG"
               onSelect={() => {
                 void copyHtmlShapeAsPng(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-copy-jpg"
-              label="Copiar como JPG"
+              label="Copy as JPG"
               onSelect={() => {
                 void copyHtmlShapeAsJpg(shape.props.slideId);
               }}
             />
           </MenuGroup>
         </MenuSubmenu>
-        <MenuSubmenu id="html-shape-download" label="Descargar">
+        <MenuSubmenu id="html-shape-download" label="Download">
           <MenuGroup id="html-shape-download-group">
             <TldrawUiMenuItem
               id="html-shape-download-png"
-              label="Descargar PNG"
+              label="Download PNG"
               onSelect={() => {
                 void exportHtmlShapeToPng(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-jpg"
-              label="Descargar JPG"
+              label="Download JPG"
               onSelect={() => {
                 void exportHtmlShapeToJpg(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-html"
-              label="Descargar HTML"
+              label="Download HTML"
               onSelect={() => {
                 void downloadHtmlShapeCode(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-svg"
-              label="Descargar SVG"
+              label="Download SVG"
               onSelect={() => {
                 void exportHtmlShapeToSvg(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-bundle"
-              label="Descargar bundle"
+              label="Download bundle"
               onSelect={() => {
                 void downloadHtmlShapeExportBundle(shape.props.slideId);
               }}
             />
           </MenuGroup>
         </MenuSubmenu>
-        <MenuSubmenu id="html-shape-ai" label="IA">
+        <MenuSubmenu id="html-shape-ai" label="AI">
           <MenuGroup id="html-shape-ai-group">
             <TldrawUiMenuItem
               id="html-shape-ai-generate"
-              label="Generar variante"
+              label="Generate variant"
               onSelect={() => {
                 openHtmlShapeContextualAi(shape.props.slideId, "generate");
               }}
             />
             <TldrawUiMenuItem
+              id="html-shape-ai-generate-variants"
+              label="Generate variants (multi-provider)"
+              onSelect={() => {
+                openHtmlShapeContextualAi(
+                  shape.props.slideId,
+                  "generate-variants",
+                );
+              }}
+            />
+            <TldrawUiMenuItem
               id="html-shape-ai-regenerate"
-              label="Volver a generar"
+              label="Regenerate"
               onSelect={() => {
                 openHtmlShapeContextualAi(shape.props.slideId, "regenerate");
               }}
@@ -178,26 +188,26 @@ function HtmlShapeContextMenuContent() {
           </MenuGroup>
           <MenuSubmenu
             id="html-shape-ai-responsive"
-            label="Variantes responsive"
+            label="Responsive variants"
           >
             <MenuGroup id="html-shape-ai-responsive-group">
               <TldrawUiMenuItem
                 id="html-shape-ai-mobile"
-                label="Generar para mobile"
+                label="Generate for mobile"
                 onSelect={() => {
                   openHtmlShapeContextualAi(shape.props.slideId, "mobile");
                 }}
               />
               <TldrawUiMenuItem
                 id="html-shape-ai-tablet"
-                label="Generar para tablet"
+                label="Generate for tablet"
                 onSelect={() => {
                   openHtmlShapeContextualAi(shape.props.slideId, "tablet");
                 }}
               />
               <TldrawUiMenuItem
                 id="html-shape-ai-desktop"
-                label="Generar para desktop"
+                label="Generate for desktop"
                 onSelect={() => {
                   openHtmlShapeContextualAi(shape.props.slideId, "desktop");
                 }}
@@ -205,14 +215,12 @@ function HtmlShapeContextMenuContent() {
             </MenuGroup>
           </MenuSubmenu>
         </MenuSubmenu>
-        <MenuSubmenu id="html-shape-organization" label="Organización">
+        <MenuSubmenu id="html-shape-organization" label="Organization">
           <MenuGroup id="html-shape-organization-group">
             <TldrawUiMenuItem
               id="html-shape-toggle-favorite"
               label={
-                slide?.isFavorite
-                  ? "Quitar de favoritos"
-                  : "Marcar como favorito"
+                slide?.isFavorite ? "Remove from favorites" : "Mark as favorite"
               }
               onSelect={() => {
                 toggleHtmlShapeFavorite(shape.props.slideId);
@@ -220,14 +228,14 @@ function HtmlShapeContextMenuContent() {
             />
             <TldrawUiMenuItem
               id="html-shape-rename"
-              label="Renombrar frame"
+              label="Rename frame"
               onSelect={() => {
                 renameHtmlShape(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-add-annotation"
-              label="Agregar anotación"
+              label="Add annotation"
               onSelect={() => {
                 addHtmlShapeAnnotation(shape.props.slideId);
               }}
@@ -236,7 +244,7 @@ function HtmlShapeContextMenuContent() {
         </MenuSubmenu>
       </MenuGroup>
 
-      <div className="my-1 border-t border-border/60" />
+      <div className="my-1 border-t border-zinc-800/60" />
 
       <MenuGroup
         id="html-shape-destructive"
@@ -244,7 +252,7 @@ function HtmlShapeContextMenuContent() {
       >
         <TldrawUiMenuItem
           id="html-shape-delete"
-          label="Eliminar"
+          label="Delete"
           onSelect={() => {
             deleteHtmlShape(shape.props.slideId, shape.id);
           }}

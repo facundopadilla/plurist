@@ -13,35 +13,35 @@ function describeMode(
   switch (mode) {
     case "regenerate":
       return {
-        title: "Volver a generar",
-        action: "Volver a generar",
+        title: "Regenerate",
+        action: "Regenerate",
         summary:
-          "Crea una nueva variante del frame actual usando el provider y modelo elegidos.",
+          "Creates a new variant of the current frame using the selected provider and model.",
       };
     case "mobile":
       return {
-        title: "Generar para mobile",
-        action: "Generar variante mobile",
-        summary: "Adapta el frame actual a un layout responsive para mobile.",
+        title: "Generate for mobile",
+        action: "Generate mobile variant",
+        summary: "Adapts the current frame to a responsive mobile layout.",
       };
     case "tablet":
       return {
-        title: "Generar para tablet",
-        action: "Generar variante tablet",
-        summary: "Adapta el frame actual a un layout responsive para tablet.",
+        title: "Generate for tablet",
+        action: "Generate tablet variant",
+        summary: "Adapts the current frame to a responsive tablet layout.",
       };
     case "desktop":
       return {
-        title: "Generar para desktop",
-        action: "Generar variante desktop",
-        summary: "Adapta el frame actual a un layout responsive para desktop.",
+        title: "Generate for desktop",
+        action: "Generate desktop variant",
+        summary: "Adapts the current frame to a responsive desktop layout.",
       };
     default:
       return {
-        title: "Generar variante",
-        action: "Generar variante",
+        title: "Generate variant",
+        action: "Generate variant",
         summary:
-          "Crea una variante del frame actual usando el provider y modelo elegidos.",
+          "Creates a variant of the current frame using the selected provider and model.",
       };
   }
 }
@@ -106,7 +106,13 @@ export function ContextualAiPanel() {
     [slide],
   );
 
-  if (!target || !slide || !activeVariant) return null;
+  if (
+    !target ||
+    target.mode === "generate-variants" ||
+    !slide ||
+    !activeVariant
+  )
+    return null;
 
   const modeUi = describeMode(target.mode);
 
@@ -116,7 +122,12 @@ export function ContextualAiPanel() {
   async function handleGenerate() {
     const currentTarget = target;
     const sourceVariant = activeVariant;
-    if (!currentTarget || !sourceVariant) return;
+    if (
+      !currentTarget ||
+      currentTarget.mode === "generate-variants" ||
+      !sourceVariant
+    )
+      return;
 
     setError(null);
     setIsGenerating(true);
@@ -194,41 +205,52 @@ export function ContextualAiPanel() {
             metadata,
           );
         },
+        onElementPatch: () => {},
         onDone: () => {
           setIsGenerating(false);
           if (!inserted) {
-            setError("La IA no devolvió HTML utilizable para este frame.");
+            setError("The AI did not return usable HTML for this frame.");
             return;
           }
           closeContextualAi();
           setInstruction("");
         },
-        onError: (message) => {
+        onError: (error) => {
           setIsGenerating(false);
-          setError(message);
+          setError(error.hint || error.message);
         },
       },
     );
   }
 
   return (
-    <aside className="w-[360px] border-l border-border bg-card/95 backdrop-blur-sm">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+    <aside
+      className="w-[360px] border-l border-zinc-800/60 bg-zinc-950/92 backdrop-blur-xl"
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
+      }}
+      onKeyUp={(e) => {
+        e.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
+      }}
+    >
+      <div className="flex items-center justify-between border-b border-zinc-800/60 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-primary" />
+          <Sparkles size={16} className="text-zinc-300" />
           <div>
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-zinc-50">
               {modeUi.title}
             </h3>
-            <p className="text-xs text-muted-foreground">{modeUi.summary}</p>
+            <p className="text-xs text-zinc-400">{modeUi.summary}</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={closeContextualAi}
-          aria-label="Cerrar IA contextual"
-          className="h-8 w-8 text-muted-foreground"
+          aria-label="Close contextual AI"
+          className="h-8 w-8 rounded-lg text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100"
         >
           <X size={16} />
         </Button>
@@ -240,22 +262,20 @@ export function ContextualAiPanel() {
           <ModelDropdown />
         </div>
 
-        <div className="rounded-md border border-border bg-background/70 p-3 text-xs text-muted-foreground">
-          Variant activa:{" "}
-          <span className="font-medium text-foreground">
-            #{activeVariant.id}
-          </span>
+        <div className="rounded-lg border border-zinc-800/70 bg-zinc-900/70 p-3 text-xs text-zinc-400">
+          Active variant:{" "}
+          <span className="font-medium text-zinc-100">#{activeVariant.id}</span>
         </div>
 
         <textarea
           value={instruction}
           onChange={(event) => setInstruction(event.target.value)}
-          placeholder="Ej: hacelo más premium, menos texto, más minimalista..."
-          className="min-h-[140px] w-full resize-y rounded-md border border-border bg-background p-3 text-sm text-foreground outline-none"
+          placeholder="Example: make it more premium, reduce the text, make it more minimal..."
+          className="min-h-[140px] w-full resize-y rounded-lg border border-zinc-800/70 bg-zinc-950/80 p-3 text-sm text-zinc-100 outline-none"
         />
 
         {error && (
-          <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-300">
             {error}
           </div>
         )}
@@ -264,9 +284,9 @@ export function ContextualAiPanel() {
           type="button"
           onClick={() => void handleGenerate()}
           disabled={isGenerating}
-          className="w-full justify-center"
+          className="w-full justify-center rounded-lg bg-zinc-50 text-zinc-900 shadow-none hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500"
         >
-          {isGenerating ? "Generando..." : modeUi.action}
+          {isGenerating ? "Generating..." : modeUi.action}
         </Button>
       </div>
     </aside>

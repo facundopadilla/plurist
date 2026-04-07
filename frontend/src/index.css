@@ -1,31 +1,86 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap");
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "@heroui/styles";
+@import "tw-animate-css";
+@config "../tailwind.config.js";
+
+/* Tailwind v4: declarar tokens como CSS variables para que @apply los resuelva */
+@theme inline {
+  /* shadcn/ui semantic tokens */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  /* brutal-* palette */
+  --color-brutal-yellow: #ffd23f;
+  --color-brutal-coral: #ff6b6b;
+  --color-brutal-blue: #74b9ff;
+  --color-brutal-green: #88d498;
+  --color-brutal-lavender: #b8a9fa;
+  --color-brutal-orange: #ffa552;
+  --color-brutal-pastel-blue: #d5eaff;
+  --color-brutal-pastel-purple: #c3bafa;
+  --color-brutal-pastel-green: #c8daaa;
+  --color-brutal-pastel-yellow: #fddd9a;
+  --color-brutal-pastel-pink: #f6bdd9;
+  --color-brutal-bg: #fffdf5;
+
+  /* Border radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Shadows */
+  --shadow-brutal-sm: 3px 3px 0 0 #000;
+  --shadow-brutal: 5px 5px 0 0 #000;
+  --shadow-brutal-lg: 8px 8px 0 0 #000;
+  --shadow-brutal-xl: 12px 12px 0 0 #000;
+
+  /* Fonts */
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", monospace;
+  --font-display: "Space Grotesk", system-ui, -apple-system, sans-serif;
+}
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 267 82% 67%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --ring: 217 91% 60%;
-    --radius: 0.875rem;
+    --card-foreground: 0 0% 9%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 0 0% 9%;
+    --ring: 0 0% 9%;
+    --radius: 0.625rem;
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 9%;
 
     /* Status semantic tokens */
     --status-success: 142 76% 36%;
@@ -54,25 +109,30 @@
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 96%;
-    --card: 222 34% 11%;
-    --card-foreground: 210 40% 96%;
-    --border: 217 19% 20%;
-    --input: 217 19% 20%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 267 82% 67%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 223 29% 14%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 223 29% 14%;
-    --accent-foreground: 210 40% 96%;
-    --ring: 217 91% 60%;
+    --background: 240 6% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 5% 15%;
+    --card-foreground: 0 0% 98%;
+    --border: 240 4% 26%;
+    --input: 240 4% 26%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 6% 4%;
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 10%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 240 4% 10%;
+    --accent-foreground: 0 0% 98%;
+    --ring: 0 0% 98%;
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --popover: 222 34% 11%;
-    --popover-foreground: 210 40% 96%;
+    --destructive-foreground: 0 0% 98%;
+    --popover: 240 5% 15%;
+    --popover-foreground: 0 0% 98%;
+
+    ::selection {
+      background: hsl(0 0% 98%);
+      color: hsl(240 6% 4%);
+    }
 
     --status-success: 142 71% 45%;
     --status-success-bg: 143 64% 10%;
@@ -113,7 +173,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    font-family:
+      "Geist",
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 
   h1,
@@ -122,7 +186,11 @@
   h4,
   h5,
   h6 {
-    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    font-family:
+      "Geist",
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 }
 
@@ -136,7 +204,7 @@
   }
 
   .paper-kicker {
-    font-family: "Anonymous Pro", monospace;
+    font-family: "Geist Mono", ui-monospace, "SF Mono", monospace;
     @apply text-[11px] uppercase tracking-[0.22em] text-muted-foreground;
   }
 
@@ -169,7 +237,7 @@
   }
 
   .paper-stat-label {
-    font-family: "Anonymous Pro", monospace;
+    font-family: "Geist Mono", ui-monospace, "SF Mono", monospace;
     @apply text-[11px] uppercase tracking-[0.18em] text-muted-foreground;
   }
 
@@ -179,18 +247,34 @@
 
   /* Typography scale: 14/16/18/24/32/40/48/64/72 */
   .font-display {
-    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    font-family:
+      "Space Grotesk",
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
   .text-hero {
-    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    font-family:
+      "Geist",
+      system-ui,
+      -apple-system,
+      sans-serif;
     @apply text-[48px] font-bold leading-[1.02] tracking-[-0.04em] sm:text-[64px] lg:text-[72px];
   }
   .text-display {
-    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    font-family:
+      "Geist",
+      system-ui,
+      -apple-system,
+      sans-serif;
     @apply text-[40px] font-bold leading-[1.05] tracking-[-0.04em];
   }
   .text-title {
-    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    font-family:
+      "Geist",
+      system-ui,
+      -apple-system,
+      sans-serif;
     @apply text-[32px] font-bold leading-[1.05] tracking-[-0.04em];
   }
   .text-heading {
@@ -210,12 +294,51 @@
   }
 
   .text-section-headline {
-    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    font-family:
+      "Geist",
+      system-ui,
+      -apple-system,
+      sans-serif;
     @apply text-[32px] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[40px];
   }
 
   .font-elegant-mono {
-    font-family: "Anonymous Pro", monospace;
+    font-family: "Geist Mono", ui-monospace, "SF Mono", monospace;
+  }
+
+  /* Neo-brutalism utilities */
+  .brutal-card {
+    @apply bg-white border-2 border-black rounded-lg;
+    box-shadow: 5px 5px 0 0 #000;
+  }
+  .brutal-card-hover {
+    @apply transition-all duration-200 cursor-pointer;
+  }
+  .brutal-card-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 0 #000;
+  }
+  .brutal-card-hover:active {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+  }
+  .brutal-btn {
+    @apply inline-flex items-center justify-center border-2 border-black font-bold transition-all duration-200;
+    box-shadow: 3px 3px 0 0 #000;
+  }
+  .brutal-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 0 #000;
+  }
+  .brutal-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+  .brutal-grid-bg {
+    background-image:
+      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 70px 70px;
   }
 
   @keyframes fade-in-up {

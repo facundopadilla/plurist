@@ -33,7 +33,7 @@ test.describe("Brand profile curation", () => {
   test("editor creates a brand profile version and it appears in the version list", async ({
     page,
   }) => {
-    await loginAs(page, "editor@example.com");
+    await loginAs(page, "editor@test.com");
 
     const csrf = await getCsrf(page);
 
@@ -90,7 +90,7 @@ test.describe("Brand profile curation", () => {
   test("old version data is immutable after creating a new version", async ({
     page,
   }) => {
-    await loginAs(page, "editor@example.com");
+    await loginAs(page, "editor@test.com");
 
     const csrf = await getCsrf(page);
 

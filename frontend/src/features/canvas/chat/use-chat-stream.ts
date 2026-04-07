@@ -1,6 +1,10 @@
 import { useCallback, useRef } from "react";
 import { getCsrfToken, setCsrfToken } from "../../auth/csrf";
-import type { ChatStreamCallbacks, ChatStreamEvent } from "./chat-types";
+import type {
+  ChatStreamCallbacks,
+  ChatStreamErrorEvent,
+  ChatStreamEvent,
+} from "./chat-types";
 
 interface ChatStreamParams {
   conversationId: number | null;
@@ -10,7 +14,8 @@ interface ChatStreamParams {
   projectId: number | null;
   formatKey: string;
   network: string | null;
-  mode: "plan" | "build";
+  mode: "plan" | "build" | "element-edit";
+  currentHtml?: string;
 }
 
 async function ensureCsrf(): Promise<string> {
@@ -49,12 +54,24 @@ function parseSSEBlock(block: string): ChatStreamEvent | null {
           slide_index: Number(data.slide_index ?? 0),
           html: String(data.html ?? ""),
         };
+      case "element_patch":
+        return {
+          type: "element_patch",
+          slide_index: Number(data.slide_index ?? 0),
+          css_path: String(data.css_path ?? ""),
+          updated_outer_html: String(data.updated_outer_html ?? ""),
+        };
       case "done":
         return { type: "done" };
       case "error":
         return {
           type: "error",
           message: String(data.message ?? "Unknown error"),
+          code: data.code ? String(data.code) : undefined,
+          category: data.category ? String(data.category) : undefined,
+          hint: data.hint ? String(data.hint) : undefined,
+          retryable:
+            typeof data.retryable === "boolean" ? data.retryable : undefined,
         };
       default:
         return null;
@@ -96,18 +113,25 @@ export function useChatStream() {
             format: params.formatKey,
             network: params.network ?? "",
             mode: params.mode,
+            current_html: params.currentHtml ?? "",
           }),
           signal: controller.signal,
         });
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          callbacks.onError("Error de conexión al servidor");
+          callbacks.onError({
+            type: "error",
+            message: "Server connection error",
+          });
         }
         return;
       }
 
       if (!response.ok || !response.body) {
-        callbacks.onError(`Error del servidor: ${response.status}`);
+        callbacks.onError({
+          type: "error",
+          message: `Server error: ${response.status}`,
+        });
         return;
       }
 
@@ -145,11 +169,18 @@ export function useChatStream() {
               case "html_block":
                 callbacks.onHtmlBlock(event.slide_index, event.html);
                 break;
+              case "element_patch":
+                callbacks.onElementPatch(
+                  event.slide_index,
+                  event.css_path,
+                  event.updated_outer_html,
+                );
+                break;
               case "done":
                 callbacks.onDone();
                 return;
               case "error":
-                callbacks.onError(event.message);
+                callbacks.onError(event as ChatStreamErrorEvent);
                 return;
             }
           }
@@ -158,7 +189,10 @@ export function useChatStream() {
         callbacks.onDone();
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          callbacks.onError("Stream interrumpido");
+          callbacks.onError({
+            type: "error",
+            message: "Stream interrupted",
+          });
         }
       } finally {
         reader.releaseLock();
@@ -201,15 +235,22 @@ export async function streamChatMessage(
         format: params.formatKey,
         network: params.network ?? "",
         mode: params.mode,
+        current_html: params.currentHtml ?? "",
       }),
     });
   } catch {
-    callbacks.onError("Error de conexión al servidor");
+    callbacks.onError({
+      type: "error",
+      message: "Server connection error",
+    });
     return;
   }
 
   if (!response.ok || !response.body) {
-    callbacks.onError(`Error del servidor: ${response.status}`);
+    callbacks.onError({
+      type: "error",
+      message: `Server error: ${response.status}`,
+    });
     return;
   }
 
@@ -242,11 +283,18 @@ export async function streamChatMessage(
           case "html_block":
             callbacks.onHtmlBlock(event.slide_index, event.html);
             break;
+          case "element_patch":
+            callbacks.onElementPatch(
+              event.slide_index,
+              event.css_path,
+              event.updated_outer_html,
+            );
+            break;
           case "done":
             callbacks.onDone();
             return;
           case "error":
-            callbacks.onError(event.message);
+            callbacks.onError(event as ChatStreamErrorEvent);
             return;
         }
       }
@@ -254,7 +302,10 @@ export async function streamChatMessage(
 
     callbacks.onDone();
   } catch {
-    callbacks.onError("Stream interrumpido");
+    callbacks.onError({
+      type: "error",
+      message: "Stream interrupted",
+    });
   } finally {
     reader.releaseLock();
   }

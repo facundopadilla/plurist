@@ -9,7 +9,7 @@ import {
   KeyRound,
   Search,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { cn } from "../../lib/utils";
 import {
   DropdownMenu,
@@ -42,6 +42,9 @@ const NETWORKS: { id: NetworkId; label: string }[] = [
   { id: "instagram", label: "Instagram" },
   { id: "linkedin", label: "LinkedIn" },
   { id: "x", label: "X / Twitter" },
+  { id: "facebook", label: "Facebook" },
+  { id: "tiktok", label: "TikTok" },
+  { id: "pinterest", label: "Pinterest" },
 ];
 
 const triggerClassName =
@@ -474,12 +477,14 @@ export function ModelDropdown({
     (s) => Object.keys(s.config.selectedModels).length > 0,
   );
 
-  if (aiSettings?.preferred_models && !hasHydrated) {
-    const saved = aiSettings.preferred_models;
-    if (Object.keys(saved).length > 0) {
-      setConfig({ selectedModels: saved });
+  useEffect(() => {
+    if (aiSettings?.preferred_models && !hasHydrated) {
+      const saved = aiSettings.preferred_models;
+      if (Object.keys(saved).length > 0) {
+        setConfig({ selectedModels: saved });
+      }
     }
-  }
+  }, [aiSettings?.preferred_models, hasHydrated, setConfig]);
 
   const modelsForProvider = (provider: string): string[] => {
     if (provider === "ollama") {

@@ -1,6 +1,4 @@
 import { useMemo, useState } from "react";
-
-type SortKey = "name-asc" | "name-desc" | "date-desc" | "date-asc";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -18,7 +16,6 @@ import {
 import { DynamicIcon } from "./tag-icon-picker";
 import { cn } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "../auth/use-auth";
 import { fetchProjects, getProjectIconUrl } from "./api";
 import { ProjectCard } from "./project-card";
@@ -27,6 +24,11 @@ import { ProjectEditModal } from "./project-edit-modal";
 import { DeleteConfirmModal } from "./delete-confirm-modal";
 import { Breadcrumb } from "./breadcrumb";
 import type { Project } from "./types";
+
+type SortKey = "name-asc" | "name-desc" | "date-desc" | "date-asc";
+
+const inputClassName =
+  "h-11 w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-white/[0.04]";
 
 export function ProjectsListPage() {
   const { isOwner, isEditor } = useAuth();
@@ -106,106 +108,111 @@ export function ProjectsListPage() {
   const isFiltering = search.trim() !== "" || activeTag !== null;
 
   return (
-    <div className="space-y-6 animate-page-in">
-      <Breadcrumb crumbs={[{ label: "Proyectos" }]} />
-      <div className="paper-page-header flex items-center justify-between">
+    <div className="animate-page-in space-y-6">
+      <Breadcrumb crumbs={[{ label: "Projects" }]} />
+
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <FolderKanban size={20} />
+          <h1 className="flex items-center gap-2 text-[32px] font-semibold tracking-[-0.04em] text-zinc-50">
+            <FolderKanban size={22} />
             Projects
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Organize your design banks and contenido by project.
+          <p className="mt-2 text-sm text-zinc-400">
+            Organize your design references and content by workspace.
           </p>
         </div>
+
         <div className="flex items-center gap-2">
           {hasProjects && (
-            <div className="flex items-center rounded-[14px] border border-border bg-card p-1">
+            <div className="inline-flex items-center gap-1 rounded-xl border border-zinc-800/70 bg-zinc-950/80 p-1">
               <button
                 onClick={() => switchView("grid")}
                 className={cn(
-                  "rounded-[10px] p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08]",
                   viewMode === "grid"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    ? "bg-zinc-50 text-zinc-900"
+                    : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100",
                 )}
-                title="Vista cuadrícula"
+                title="Grid view"
               >
                 <LayoutGrid size={14} />
               </button>
               <button
                 onClick={() => switchView("list")}
                 className={cn(
-                  "rounded-[10px] p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08]",
                   viewMode === "list"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    ? "bg-zinc-50 text-zinc-900"
+                    : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100",
                 )}
-                title="Vista lista"
+                title="List view"
               >
                 <LayoutList size={14} />
               </button>
             </div>
           )}
           {canCreate && (
-            <Button onClick={() => setShowCreate(true)}>
+            <Button
+              onClick={() => setShowCreate(true)}
+              className="rounded-xl bg-zinc-50 text-zinc-900 shadow-none hover:bg-white"
+            >
               <Plus size={14} />
-              New Project
+              New project
             </Button>
           )}
         </div>
       </div>
 
-      {/* Search + tag filters */}
       {hasProjects && (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+        <div className="rounded-2xl border border-zinc-800/50 bg-zinc-900/30 p-4 backdrop-blur-xl">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
               />
-              <Input
+              <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar proyectos..."
-                className="w-full pl-8 pr-3"
+                placeholder="Search projects..."
+                className={`${inputClassName} pl-10 pr-3`}
               />
             </div>
             <select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              className={inputClassName}
             >
-              <option value="name-asc">A → Z</option>
-              <option value="name-desc">Z → A</option>
-              <option value="date-desc">Más reciente</option>
-              <option value="date-asc">Más antiguo</option>
+              <option value="name-asc">A to Z</option>
+              <option value="name-desc">Z to A</option>
+              <option value="date-desc">Newest first</option>
+              <option value="date-asc">Oldest first</option>
             </select>
           </div>
+
           {allTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveTag(null)}
                 className={cn(
-                  "rounded-[12px] px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                  "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08]",
                   activeTag === null
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-border bg-muted text-muted-foreground hover:bg-accent hover:text-foreground",
+                    ? "border-zinc-700 bg-zinc-50 text-zinc-900"
+                    : "border-zinc-800/70 bg-zinc-950/70 text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100",
                 )}
               >
-                Todos
+                All tags
               </button>
               {allTags.map((tag) => (
                 <button
                   key={tag}
                   onClick={() => setActiveTag(activeTag === tag ? null : tag)}
                   className={cn(
-                    "rounded-[12px] px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                    "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08]",
                     activeTag === tag
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-muted text-muted-foreground hover:bg-accent hover:text-foreground",
+                      ? "border-zinc-700 bg-zinc-50 text-zinc-900"
+                      : "border-zinc-800/70 bg-zinc-950/70 text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100",
                   )}
                 >
                   {tag}
@@ -217,43 +224,44 @@ export function ProjectsListPage() {
       )}
 
       {isLoading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
           <Loader2 size={14} className="animate-spin" />
           Loading projects...
         </div>
       )}
 
       {isError && (
-        <p className="text-sm text-destructive">
+        <p className="text-sm text-red-300">
           Failed to load projects. Please refresh.
         </p>
       )}
 
-      {/* Empty state — no projects at all */}
       {!isLoading && !hasProjects && (
-        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm flex flex-col items-center justify-center border-dashed py-16 text-center">
-          <FolderKanban size={32} className="text-muted-foreground mb-3" />
-          <p className="text-sm font-medium text-foreground">No projects yet</p>
-          <p className="text-xs text-muted-foreground mt-1">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800/70 bg-zinc-900/20 py-16 text-center">
+          <FolderKanban size={32} className="mb-3 text-zinc-500" />
+          <p className="text-sm font-medium text-zinc-100">No projects yet</p>
+          <p className="mt-1 text-xs text-zinc-500">
             {canCreate
               ? "Create your first project to get started."
               : "Projects will appear here once created."}
           </p>
           {canCreate && (
-            <Button onClick={() => setShowCreate(true)} className="mt-4">
+            <Button
+              onClick={() => setShowCreate(true)}
+              className="mt-4 rounded-xl bg-zinc-50 text-zinc-900 shadow-none hover:bg-white"
+            >
               <Plus size={14} />
-              New Project
+              New project
             </Button>
           )}
         </div>
       )}
 
-      {/* Empty state — filter has no results */}
       {!isLoading && hasProjects && sorted.length === 0 && (
-        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm flex flex-col items-center justify-center border-dashed py-12 text-center">
-          <Search size={24} className="text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">
-            Sin proyectos que coincidan con los filtros.
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800/70 bg-zinc-900/20 py-12 text-center">
+          <Search size={24} className="mb-2 text-zinc-500" />
+          <p className="text-sm text-zinc-400">
+            No projects match the current filters.
           </p>
           {isFiltering && (
             <button
@@ -261,15 +269,14 @@ export function ProjectsListPage() {
                 setSearch("");
                 setActiveTag(null);
               }}
-              className="mt-2 text-xs text-primary hover:underline"
+              className="mt-2 text-xs text-zinc-300 underline underline-offset-4"
             >
-              Limpiar filtros
+              Clear filters
             </button>
           )}
         </div>
       )}
 
-      {/* Grid view */}
       {!isLoading && sorted.length > 0 && viewMode === "grid" && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sorted.map((project) => (
@@ -283,15 +290,17 @@ export function ProjectsListPage() {
         </div>
       )}
 
-      {/* List view */}
       {!isLoading && sorted.length > 0 && viewMode === "list" && (
-        <div className="flex flex-col divide-y divide-border rounded-lg border border-border overflow-hidden">
-          {sorted.map((project) => {
+        <div className="overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/25">
+          {sorted.map((project, index) => {
             const color = project.color || "#6366f1";
             return (
               <div
                 key={project.id}
-                className="relative flex items-center group"
+                className={cn(
+                  "group relative flex items-center",
+                  index !== sorted.length - 1 && "border-b border-zinc-800/50",
+                )}
               >
                 <div
                   className="w-1 self-stretch shrink-0"
@@ -299,10 +308,10 @@ export function ProjectsListPage() {
                 />
                 <Link
                   to={`/projects/${project.id}`}
-                  className="flex flex-1 items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors min-w-0"
+                  className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03]"
                 >
                   <div
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md overflow-hidden"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg"
                     style={{ backgroundColor: color + "1a" }}
                   >
                     {project.icon_url ? (
@@ -316,21 +325,21 @@ export function ProjectsListPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm text-foreground truncate">
+                    <p className="truncate text-sm font-medium text-zinc-100">
                       {project.name}
                     </p>
                     {project.description && (
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="truncate text-xs text-zinc-500">
                         {project.description}
                       </p>
                     )}
                   </div>
                   {project.tags.length > 0 && (
-                    <div className="hidden sm:flex items-center gap-1 shrink-0">
+                    <div className="hidden shrink-0 items-center gap-1 sm:flex">
                       {project.tags.slice(0, 3).map((tag) => (
                         <span
                           key={tag.name}
-                          className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                          className="inline-flex items-center gap-0.5 rounded-lg px-2 py-0.5 text-xs font-medium"
                           style={{
                             backgroundColor: tag.color + "20",
                             color: tag.color,
@@ -348,13 +357,13 @@ export function ProjectsListPage() {
                   )}
                 </Link>
                 {(canEdit || isOwner) && (
-                  <div className="flex items-center gap-1 pr-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 pr-3 opacity-0 transition-opacity group-hover:opacity-100">
                     {canEdit && (
                       <button
                         onClick={() => setEditingProject(project)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        title="Editar"
-                        aria-label="Editar proyecto"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
+                        title="Edit"
+                        aria-label="Edit project"
                       >
                         <Pencil size={13} />
                       </button>
@@ -362,9 +371,9 @@ export function ProjectsListPage() {
                     {isOwner && (
                       <button
                         onClick={() => setDeletingProject(project)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        title="Eliminar"
-                        aria-label="Eliminar proyecto"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                        title="Delete"
+                        aria-label="Delete project"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -380,17 +389,18 @@ export function ProjectsListPage() {
       {showCreate && (
         <CreateProjectDialog onClose={() => setShowCreate(false)} />
       )}
-
       <ProjectEditModal
         project={editingProject}
-        open={editingProject !== null}
+        open={!!editingProject}
         onClose={() => setEditingProject(null)}
-        onSaved={() => setEditingProject(null)}
+        onSaved={() => {
+          void queryClient.invalidateQueries({ queryKey: ["projects"] });
+          setEditingProject(null);
+        }}
       />
-
       <DeleteConfirmModal
         project={deletingProject}
-        open={deletingProject !== null}
+        open={!!deletingProject}
         onClose={() => setDeletingProject(null)}
         onDeleted={() => {
           void queryClient.invalidateQueries({ queryKey: ["projects"] });

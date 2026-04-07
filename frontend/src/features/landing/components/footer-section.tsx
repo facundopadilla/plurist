@@ -1,3 +1,8 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { ease, fadeUp, staggerContainer } from "../lib/animations";
+
 const PRODUCT_LINKS = [
   { label: "Features", href: "#features" },
   { label: "How it Works", href: "#how-it-works" },
@@ -23,7 +28,7 @@ function LinkColumn({
 }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">
+      <p className="text-[11px] font-bold text-black uppercase tracking-widest mb-3">
         {heading}
       </p>
       <ul className="space-y-2 flex flex-col">
@@ -31,7 +36,7 @@ function LinkColumn({
           <li key={label}>
             <a
               href={href}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-[#555] font-medium hover:text-black hover:bg-brutal-yellow px-1 rounded transition-colors duration-150"
             >
               {label}
             </a>
@@ -44,35 +49,49 @@ function LinkColumn({
 
 export function FooterSection() {
   return (
-    <footer className="border-t border-border bg-card py-12">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Top row */}
-        <div className="flex flex-col sm:flex-row justify-between gap-8">
-          {/* Wordmark + tagline */}
+    <motion.footer
+      className="border-t-2 border-black py-14 bg-white"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, ease }}
+    >
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="flex flex-col sm:flex-row justify-between gap-10">
           <div>
-            <p className="text-lg font-semibold text-foreground">Plurist</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="font-display font-extrabold text-xl tracking-tight text-black">
+              Plurist
+            </p>
+            <p className="text-sm text-[#555] mt-1.5 font-medium">
               Content from code.
             </p>
           </div>
-
-          {/* Link columns */}
-          <div className="flex gap-12">
-            <LinkColumn heading="Product" links={PRODUCT_LINKS} />
-            <LinkColumn heading="Resources" links={RESOURCES_LINKS} />
-            <LinkColumn heading="Company" links={COMPANY_LINKS} />
-          </div>
+          <motion.div
+            className="flex gap-14"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            <motion.div variants={fadeUp}>
+              <LinkColumn heading="Product" links={PRODUCT_LINKS} />
+            </motion.div>
+            <motion.div variants={fadeUp}>
+              <LinkColumn heading="Resources" links={RESOURCES_LINKS} />
+            </motion.div>
+            <motion.div variants={fadeUp}>
+              <LinkColumn heading="Company" links={COMPANY_LINKS} />
+            </motion.div>
+          </motion.div>
         </div>
 
-        {/* Bottom row */}
-        <div className="mt-8 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-10 pt-6 border-t-2 border-black flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="text-xs text-[#555] font-medium">
             &copy; 2026 Plurist. All rights reserved.
           </p>
-          {/* Social links placeholder */}
           <div />
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }

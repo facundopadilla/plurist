@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 async function loginAsEditor(page: import("@playwright/test").Page) {
   await page.goto("/login");
-  await page.getByTestId("login-email").fill("editor@example.com");
+  await page.getByTestId("login-email").fill("editor@test.com");
   await page.getByTestId("login-password").fill("testpassword123");
   await page.getByTestId("login-submit").click();
   await expect(page).toHaveURL("/");

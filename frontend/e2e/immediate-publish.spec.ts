@@ -14,7 +14,7 @@ test.describe("Immediate publish flow", () => {
     page,
   }) => {
     // Step 1: editor creates a draft post
-    await login(page, "editor@example.com");
+    await login(page, "editor@test.com");
 
     const createResp = await page.request.post("/api/v1/content/", {
       data: {
@@ -35,7 +35,7 @@ test.describe("Immediate publish flow", () => {
     expect(submitResp.status()).toBe(200);
 
     // Step 3: owner approves the post
-    await login(page, "owner@example.com");
+    await login(page, "owner@test.com");
     const approveResp = await page.request.post(
       `/api/v1/content/${postId}/approve`,
       {
@@ -45,7 +45,7 @@ test.describe("Immediate publish flow", () => {
     expect(approveResp.status()).toBe(200);
 
     // Step 4: publisher publishes the post
-    await login(page, "publisher@example.com");
+    await login(page, "publisher@test.com");
     const idempotencyKey = `e2e-publish-${postId}-${Date.now()}`;
     const publishResp = await page.request.post(
       `/api/v1/publishing/publish-now/${postId}`,
@@ -75,7 +75,7 @@ test.describe("Immediate publish flow", () => {
   test("idempotency: same Idempotency-Key returns same attempt", async ({
     page,
   }) => {
-    await login(page, "editor@example.com");
+    await login(page, "editor@test.com");
 
     const createResp = await page.request.post("/api/v1/content/", {
       data: {
@@ -90,12 +90,12 @@ test.describe("Immediate publish flow", () => {
 
     await page.request.post(`/api/v1/content/${postId}/submit`);
 
-    await login(page, "owner@example.com");
+    await login(page, "owner@test.com");
     await page.request.post(`/api/v1/content/${postId}/approve`, {
       data: { reason: "" },
     });
 
-    await login(page, "publisher@example.com");
+    await login(page, "publisher@test.com");
     const idempotencyKey = `e2e-idem-${postId}`;
 
     const firstResp = await page.request.post(

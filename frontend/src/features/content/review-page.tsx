@@ -2,12 +2,8 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  CheckCircle,
-  XCircle,
   Loader2,
-  Send,
-  Clock,
-  AlertCircle,
+  PenLine,
   Folder,
   FolderOpen,
   FileText,
@@ -17,6 +13,9 @@ import {
   Search,
   ArrowLeft,
   Plus,
+  Trash2,
+  ShieldCheck,
+  Clock,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,13 +24,14 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "../auth/use-auth";
 import {
   fetchContent,
-  approveContent,
-  rejectContent,
-  publishContent,
+  completeContent,
+  revertContent,
+  deleteContent,
 } from "./api";
 import { fetchProjects, getProjectIconUrl } from "../projects/api";
+import { fetchFormats } from "../generation/api";
 import { FolderCard } from "../design-bank/folder-card";
-import type { DraftPost, PostStatus } from "./types";
+import type { DraftPost } from "./types";
 import type { Project } from "../projects/types";
 
 // ---------------------------------------------------------------------------
@@ -39,206 +39,350 @@ import type { Project } from "../projects/types";
 // ---------------------------------------------------------------------------
 
 type ViewMode = "folders" | "list";
+type ContentViewMode = "grid" | "list";
 type SortKey = "name-asc" | "name-desc" | "date-desc" | "date-asc";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getStoredView(key: string, fallback: ViewMode): ViewMode {
+function getStoredView(key: string, fallback: string): string {
   try {
     const v = localStorage.getItem(key);
-    if (v === "folders" || v === "list") return v;
+    if (v) return v;
   } catch {
     // ignore
   }
   return fallback;
 }
 
+function relativeTime(iso: string): string {
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diff = now - then;
+
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
 // ---------------------------------------------------------------------------
 // Badge helpers
 // ---------------------------------------------------------------------------
 
-const statusIcons: Record<string, React.ReactNode> = {
-  pending_approval: <Clock size={11} />,
-  approved: <CheckCircle size={11} />,
-  rejected: <XCircle size={11} />,
-  publishing: <Loader2 size={11} className="animate-spin" />,
-  published: <CheckCircle size={11} />,
-  failed: <AlertCircle size={11} />,
-};
-
-function mapStatusToTone(
-  status: PostStatus,
-): "success" | "warning" | "danger" | "info" | "neutral" {
-  switch (status) {
-    case "approved":
-    case "published":
-      return "success";
-    case "pending_approval":
-      return "warning";
-    case "rejected":
-    case "failed":
-      return "danger";
-    case "publishing":
-      return "info";
-    default:
-      return "neutral";
+const statusConfig: Record<
+  string,
+  {
+    icon: React.ReactNode;
+    label: string;
+    tone: "success" | "warning" | "danger" | "info" | "neutral";
   }
-}
-
-// ---------------------------------------------------------------------------
-// NetworkBadges
-// ---------------------------------------------------------------------------
-
-function NetworkBadges({ networks }: { networks: string[] }) {
-  return (
-    <div className="flex gap-1">
-      {networks.map((n) => (
-        <span
-          key={n}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-        >
-          {n}
-        </span>
-      ))}
-    </div>
-  );
-}
+> = {
+  draft: { icon: <PenLine size={11} />, label: "Draft", tone: "neutral" },
+  completed: {
+    icon: <ShieldCheck size={11} />,
+    label: "Verified",
+    tone: "success",
+  },
+};
 
 // ---------------------------------------------------------------------------
 // PostCard
 // ---------------------------------------------------------------------------
 
-function PostCard({ post }: { post: DraftPost }) {
-  const { isOwner, isPublisher } = useAuth();
+function PostCard({
+  post,
+  formatMap,
+  viewMode,
+}: {
+  post: DraftPost;
+  formatMap: Map<string, string>;
+  viewMode: ContentViewMode;
+}) {
+  const { isOwner, isEditor } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [rejectReason, setRejectReason] = useState("");
-  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const approveMutation = useMutation({
-    mutationFn: () => approveContent(post.id),
+  const completeMutation = useMutation({
+    mutationFn: () => completeContent(post.id),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: ["content"] }),
   });
 
-  const rejectMutation = useMutation({
-    mutationFn: () => rejectContent(post.id, rejectReason),
-    onSuccess: () => {
-      setShowRejectForm(false);
-      setRejectReason("");
-      void queryClient.invalidateQueries({ queryKey: ["content"] });
-    },
-  });
-
-  const publishMutation = useMutation({
-    mutationFn: () => publishContent(post.id),
+  const revertMutation = useMutation({
+    mutationFn: () => revertContent(post.id),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: ["content"] }),
   });
 
-  const canApprove = isOwner && post.status === "pending_approval";
-  const canPublish = (isOwner || isPublisher) && post.status === "approved";
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteContent(post.id),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ["content"] }),
+  });
 
+  const canEdit = isOwner || isEditor;
+  const cfg = statusConfig[post.status] ?? statusConfig.draft;
+  const formatLabel = post.format
+    ? (formatMap.get(post.format) ?? post.format)
+    : null;
+
+  function handleCardClick(e: React.MouseEvent) {
+    // Don't navigate if clicking on a button/interactive element
+    const target = e.target as HTMLElement;
+    if (target.closest("button")) return;
+    navigate(`/compose?postId=${post.id}`);
+  }
+
+  if (viewMode === "list") {
+    return (
+      <div
+        onClick={handleCardClick}
+        className="group flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 text-card-foreground transition-colors hover:bg-accent/30 cursor-pointer"
+      >
+        <div className="min-w-0 flex-1">
+          <span className="font-medium text-sm text-foreground truncate block">
+            {post.title}
+          </span>
+        </div>
+        {formatLabel && (
+          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+            {formatLabel}
+          </span>
+        )}
+        <Badge variant={cfg.tone} className="gap-1 shrink-0">
+          {cfg.icon}
+          {cfg.label}
+        </Badge>
+        <span
+          className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground"
+          title={`Updated ${post.updated_at}`}
+        >
+          <Clock size={11} />
+          {relativeTime(post.updated_at)}
+        </span>
+        {canEdit && (
+          <div className="shrink-0 flex items-center gap-1">
+            {post.status === "draft" && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  completeMutation.mutate();
+                }}
+                disabled={completeMutation.isPending}
+                size="sm"
+                variant="ghost"
+                className="gap-1 h-7 px-2 text-xs"
+              >
+                {completeMutation.isPending ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <ShieldCheck size={11} />
+                )}
+                Verify
+              </Button>
+            )}
+            {post.status === "completed" && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  revertMutation.mutate();
+                }}
+                disabled={revertMutation.isPending}
+                size="sm"
+                variant="ghost"
+                className="gap-1 h-7 px-2 text-xs"
+              >
+                {revertMutation.isPending ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <PenLine size={11} />
+                )}
+                Revert
+              </Button>
+            )}
+            {confirmDelete ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteMutation.mutate();
+                  }}
+                  disabled={deleteMutation.isPending}
+                  size="sm"
+                  variant="destructive"
+                  className="h-7 px-2 text-xs"
+                >
+                  {deleteMutation.isPending ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    "Delete"
+                  )}
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDelete(false);
+                  }}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDelete(true);
+                }}
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 size={12} />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Grid / card mode
   return (
-    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-4 space-y-3">
+    <div
+      onClick={handleCardClick}
+      className="group space-y-3 rounded-lg border border-border bg-card p-4 text-card-foreground transition-colors hover:bg-accent/30 cursor-pointer"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="font-medium text-foreground truncate">{post.title}</h3>
+          <h3 className="truncate font-medium text-foreground text-sm">
+            {post.title}
+          </h3>
           {post.body_text && (
-            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
               {post.body_text}
             </p>
           )}
         </div>
-        <Badge variant={mapStatusToTone(post.status)} className="gap-1">
-          {statusIcons[post.status]}
-          {post.status.replace("_", " ")}
+        <Badge variant={cfg.tone} className="gap-1 shrink-0">
+          {cfg.icon}
+          {cfg.label}
         </Badge>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-        <NetworkBadges networks={post.target_networks} />
-        {post.format && (
-          <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-            {post.format}
-          </span>
+      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        {formatLabel && (
+          <span className="rounded bg-muted px-1.5 py-0.5">{formatLabel}</span>
         )}
-        {post.submitted_at && (
-          <span>
-            Submitted {new Date(post.submitted_at).toLocaleDateString()}
+        <span
+          className="flex items-center gap-1"
+          title={`Updated ${post.updated_at}`}
+        >
+          <Clock size={11} />
+          {relativeTime(post.updated_at)}
+        </span>
+        {post.created_at && (
+          <span title={`Created ${post.created_at}`}>
+            Created {new Date(post.created_at).toLocaleDateString()}
           </span>
         )}
       </div>
 
-      {post.failure_message && (
-        <p className="text-xs text-destructive">{post.failure_message}</p>
-      )}
-
-      <div className="flex items-center gap-2">
-        {canApprove && (
-          <>
+      {canEdit && (
+        <div className="flex items-center gap-2">
+          {post.status === "draft" && (
             <Button
-              onClick={() => approveMutation.mutate()}
-              disabled={approveMutation.isPending}
+              onClick={(e) => {
+                e.stopPropagation();
+                completeMutation.mutate();
+              }}
+              disabled={completeMutation.isPending}
               size="sm"
-              className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+              className="gap-1.5"
             >
-              {approveMutation.isPending ? (
+              {completeMutation.isPending ? (
                 <Loader2 size={12} className="animate-spin" />
               ) : (
-                <CheckCircle size={12} />
+                <ShieldCheck size={12} />
               )}
-              Approve
+              Mark verified
             </Button>
+          )}
+          {post.status === "completed" && (
             <Button
-              onClick={() => setShowRejectForm(!showRejectForm)}
+              onClick={(e) => {
+                e.stopPropagation();
+                revertMutation.mutate();
+              }}
+              disabled={revertMutation.isPending}
               size="sm"
-              className="gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+              variant="outline"
+              className="gap-1.5"
             >
-              <XCircle size={12} />
-              Reject
+              {revertMutation.isPending ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <PenLine size={12} />
+              )}
+              Revert to draft
             </Button>
-          </>
-        )}
-        {canPublish && (
-          <Button
-            onClick={() => publishMutation.mutate()}
-            disabled={publishMutation.isPending}
-            size="sm"
-            className="gap-1.5"
-          >
-            {publishMutation.isPending ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : (
-              <Send size={12} />
-            )}
-            Publish Now
-          </Button>
-        )}
-      </div>
-
-      {showRejectForm && (
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Reason for rejection..."
-            className="flex-1"
-          />
-          <Button
-            onClick={() => rejectMutation.mutate()}
-            disabled={rejectMutation.isPending}
-            size="sm"
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            {rejectMutation.isPending ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : (
-              "Confirm"
-            )}
-          </Button>
+          )}
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteMutation.mutate();
+                }}
+                disabled={deleteMutation.isPending}
+                size="sm"
+                variant="destructive"
+                className="gap-1.5"
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Trash2 size={12} />
+                )}
+                Confirm delete
+              </Button>
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDelete(false);
+                }}
+                size="sm"
+                variant="ghost"
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDelete(true);
+              }}
+              size="sm"
+              variant="ghost"
+              className="ml-auto gap-1.5 text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 size={12} />
+              Delete
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -254,17 +398,21 @@ function ProjectSection({
   posts,
   open,
   onToggle,
+  formatMap,
+  contentViewMode,
 }: {
   project: Project | null;
   posts: DraftPost[];
   open: boolean;
   onToggle: () => void;
+  formatMap: Map<string, string>;
+  contentViewMode: ContentViewMode;
 }) {
-  const label = project ? project.name : "Sin proyecto";
+  const label = project ? project.name : "No project";
   const color = project?.color || "#6b7280";
 
   return (
-    <div className="rounded-[18px] border border-border overflow-hidden">
+    <div className="rounded-lg border border-border overflow-hidden">
       <button
         onClick={onToggle}
         className={cn(
@@ -293,7 +441,7 @@ function ProjectSection({
           {label}
         </span>
         <span className="text-xs text-muted-foreground shrink-0">
-          {posts.length} contenido{posts.length !== 1 ? "s" : ""}
+          {posts.length} item{posts.length !== 1 ? "s" : ""}
         </span>
         <ChevronRight
           size={14}
@@ -305,13 +453,33 @@ function ProjectSection({
       </button>
 
       {open && (
-        <div className="border-t border-border bg-background/50 p-4 space-y-3">
+        <div className="border-t border-border bg-background/50 p-4">
           {posts.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No hay contenido en esta sección.
+              No content in this section.
             </p>
+          ) : contentViewMode === "grid" ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  formatMap={formatMap}
+                  viewMode="grid"
+                />
+              ))}
+            </div>
           ) : (
-            posts.map((post) => <PostCard key={post.id} post={post} />)
+            <div className="space-y-2">
+              {posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  formatMap={formatMap}
+                  viewMode="list"
+                />
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -326,12 +494,14 @@ function ProjectSection({
 export function ReviewPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState<ViewMode>(() =>
-    getStoredView("review-global-view", "folders"),
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    () => getStoredView("review-global-view", "folders") as ViewMode,
+  );
+  const [contentViewMode, setContentViewMode] = useState<ContentViewMode>(
+    () => getStoredView("review-content-view", "grid") as ContentViewMode,
   );
   const [search, setSearch] = useState("");
-  const [activeNetwork, setActiveNetwork] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>("name-asc");
+  const [sortKey, setSortKey] = useState<SortKey>("date-desc");
 
   // Folder navigation: null = root, "unassigned" = no-project, "<id>" = project
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
@@ -361,16 +531,23 @@ export function ReviewPage() {
     }
   }
 
+  function switchContentView(mode: ContentViewMode) {
+    setContentViewMode(mode);
+    try {
+      localStorage.setItem("review-content-view", mode);
+    } catch {
+      // ignore
+    }
+  }
+
   function enterFolder(folderId: string) {
     setActiveFolder(folderId);
     setSearch("");
-    setActiveNetwork(null);
   }
 
   function exitFolder() {
     setActiveFolder(null);
     setSearch("");
-    setActiveNetwork(null);
   }
 
   const {
@@ -388,18 +565,24 @@ export function ReviewPage() {
     queryFn: fetchProjects,
   });
 
+  const { data: formats = [] } = useQuery({
+    queryKey: ["formats"],
+    queryFn: fetchFormats,
+    staleTime: 60_000,
+  });
+
+  // Build format key → label map
+  const formatMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const f of formats) {
+      m.set(f.key, f.label);
+    }
+    return m;
+  }, [formats]);
+
   const isLoading = postsLoading || projectsLoading;
 
-  // All networks across all (non-draft) posts
-  const allNetworks = useMemo(() => {
-    const nets = new Set<string>();
-    for (const p of posts ?? []) {
-      for (const n of p.target_networks) nets.add(n);
-    }
-    return Array.from(nets).sort();
-  }, [posts]);
-
-  // Todos los posts (sin filtro de estado)
+  // All posts (no status filter)
   const statusFiltered = useMemo(() => posts ?? [], [posts]);
 
   // Group status-filtered posts by project id
@@ -424,7 +607,7 @@ export function ReviewPage() {
   const folderLabel = activeFolderProject
     ? activeFolderProject.name
     : activeFolder === "unassigned"
-      ? "Sin proyecto"
+      ? "No project"
       : null;
 
   // Posts inside the active folder (unfiltered by search/network)
@@ -435,7 +618,7 @@ export function ReviewPage() {
     return postsByProject.get(id) ?? [];
   }, [activeFolder, postsByProject]);
 
-  // Apply search + network filter inside folder
+  // Apply search filter inside folder
   const folderPostsFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return folderPostsRaw.filter((p) => {
@@ -443,13 +626,11 @@ export function ReviewPage() {
         !q ||
         p.title.toLowerCase().includes(q) ||
         (p.body_text || "").toLowerCase().includes(q);
-      const matchNetwork =
-        !activeNetwork || p.target_networks.includes(activeNetwork);
-      return matchSearch && matchNetwork;
+      return matchSearch;
     });
-  }, [folderPostsRaw, search, activeNetwork]);
+  }, [folderPostsRaw, search]);
 
-  // Sort posts inside folder
+  // Sort posts inside folder — use actual timestamps
   const folderPostsSorted = useMemo(() => {
     const list = [...folderPostsFiltered];
     switch (sortKey) {
@@ -458,9 +639,15 @@ export function ReviewPage() {
       case "name-desc":
         return list.sort((a, b) => b.title.localeCompare(a.title));
       case "date-desc":
-        return list.sort((a, b) => b.id - a.id);
+        return list.sort(
+          (a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+        );
       case "date-asc":
-        return list.sort((a, b) => a.id - b.id);
+        return list.sort(
+          (a, b) =>
+            new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
+        );
     }
   }, [folderPostsFiltered, sortKey]);
 
@@ -487,7 +674,7 @@ export function ReviewPage() {
     const q = search.trim().toLowerCase();
     const list = q
       ? [...rootSections].filter(({ project }) =>
-          (project?.name ?? "Sin proyecto").toLowerCase().includes(q),
+          (project?.name ?? "No project").toLowerCase().includes(q),
         )
       : [...rootSections];
     switch (sortKey) {
@@ -528,33 +715,62 @@ export function ReviewPage() {
                 className="gap-1.5 text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft size={16} />
-                <span>Contenido</span>
+                <span>Content</span>
               </Button>
               <span className="text-muted-foreground">/</span>
               <span className="font-semibold text-foreground">
                 {folderLabel}
               </span>
             </div>
-            <Button
-              onClick={() =>
-                navigate(
-                  activeFolder !== "unassigned"
-                    ? `/compose?project=${activeFolder}`
-                    : "/compose",
-                )
-              }
-            >
-              <Plus size={14} />
-              Nuevo contenido
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Content view toggle inside folder */}
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
+                <button
+                  onClick={() => switchContentView("grid")}
+                  title="Grid view"
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    contentViewMode === "grid"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <LayoutGrid size={14} />
+                </button>
+                <button
+                  onClick={() => switchContentView("list")}
+                  title="List view"
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    contentViewMode === "list"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <LayoutList size={14} />
+                </button>
+              </div>
+              <Button
+                onClick={() =>
+                  navigate(
+                    activeFolder !== "unassigned"
+                      ? `/compose?project=${activeFolder}`
+                      : "/compose",
+                  )
+                }
+              >
+                <Plus size={14} />
+                New content
+              </Button>
+            </div>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">Contenido</h1>
+                <h1 className="text-2xl font-semibold">Content</h1>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  Revisá, aprobá y publicá contenido por proyecto.
+                  Review and manage content by project.
                 </p>
               </div>
               <Button
@@ -567,7 +783,7 @@ export function ReviewPage() {
                 }
               >
                 <Plus size={14} />
-                Nuevo contenido
+                New content
               </Button>
             </div>
           </>
@@ -581,7 +797,7 @@ export function ReviewPage() {
           <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5 ml-auto">
             <button
               onClick={() => switchView("folders")}
-              title="Vista carpetas"
+              title="Folder view"
               className={cn(
                 "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 viewMode === "folders"
@@ -593,7 +809,7 @@ export function ReviewPage() {
             </button>
             <button
               onClick={() => switchView("list")}
-              title="Vista lista"
+              title="List view"
               className={cn(
                 "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 viewMode === "list"
@@ -607,65 +823,32 @@ export function ReviewPage() {
         )}
       </div>
 
-      {/* Search + sort + network filters */}
+      {/* Search + sort */}
       {(posts?.length ?? 0) > 0 && (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-              />
-              <Input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar contenido..."
-                className="w-full pl-8"
-              />
-            </div>
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="name-asc">A → Z</option>
-              <option value="name-desc">Z → A</option>
-              <option value="date-desc">Más reciente</option>
-              <option value="date-asc">Más antiguo</option>
-            </select>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+            <Input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search content..."
+              className="w-full pl-8"
+            />
           </div>
-          {allNetworks.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setActiveNetwork(null)}
-                className={cn(
-                  "rounded-[12px] px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  activeNetwork === null
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                Todas las redes
-              </button>
-              {allNetworks.map((net) => (
-                <button
-                  key={net}
-                  onClick={() =>
-                    setActiveNetwork(activeNetwork === net ? null : net)
-                  }
-                  className={cn(
-                    "rounded-[12px] px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    activeNetwork === net
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                >
-                  {net}
-                </button>
-              ))}
-            </div>
-          )}
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="flex w-40 shrink-0 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="name-asc">A → Z</option>
+            <option value="name-desc">Z → A</option>
+          </select>
         </div>
       )}
 
@@ -673,33 +856,49 @@ export function ReviewPage() {
       {isLoading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 size={14} className="animate-spin" />
-          Cargando contenido...
+          Loading content...
         </div>
       )}
 
       {/* Error */}
       {isError && (
-        <p className="text-sm text-destructive">
-          No se pudo cargar el contenido.
-        </p>
+        <p className="text-sm text-destructive">Failed to load content.</p>
       )}
 
       {!isLoading && (
         <>
           {/* ── INSIDE A FOLDER ── */}
           {activeFolder != null && (
-            <div className="space-y-3">
+            <div>
               {folderPostsSorted.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12 text-center">
                   <FileText size={24} className="text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    No hay contenido en esta carpeta.
+                    No content in this folder.
                   </p>
                 </div>
+              ) : contentViewMode === "grid" ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {folderPostsSorted.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      formatMap={formatMap}
+                      viewMode="grid"
+                    />
+                  ))}
+                </div>
               ) : (
-                folderPostsSorted.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))
+                <div className="space-y-2">
+                  {folderPostsSorted.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      formatMap={formatMap}
+                      viewMode="list"
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -708,7 +907,7 @@ export function ReviewPage() {
           {isEmpty && (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12 text-center">
               <FileText size={24} className="text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No hay contenido.</p>
+              <p className="text-sm text-muted-foreground">No content yet.</p>
             </div>
           )}
 
@@ -717,7 +916,7 @@ export function ReviewPage() {
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12 text-center">
               <Search size={24} className="text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
-                Sin proyectos que coincidan con la búsqueda.
+                No projects match this search.
               </p>
               <Button
                 variant="link"
@@ -725,7 +924,7 @@ export function ReviewPage() {
                 onClick={() => setSearch("")}
                 className="mt-2"
               >
-                Limpiar búsqueda
+                Clear search
               </Button>
             </div>
           )}
@@ -742,7 +941,7 @@ export function ReviewPage() {
                       key={key}
                       project={project}
                       sourceCount={sectionPosts.length}
-                      countUnit="contenido"
+                      countUnit="items"
                       onClick={() => enterFolder(key)}
                     />
                   ),
@@ -764,6 +963,8 @@ export function ReviewPage() {
                       posts={sectionPosts}
                       open={sectionOpenMap[key] ?? false}
                       onToggle={() => toggleSection(key)}
+                      formatMap={formatMap}
+                      contentViewMode={contentViewMode}
                     />
                   ),
                 )}

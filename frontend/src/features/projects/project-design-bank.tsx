@@ -44,22 +44,19 @@ type ViewMode = "grid" | "list";
 function sourceIcon(type: string) {
   const t = type.toLowerCase();
   if (["image", "jpg", "jpeg", "png", "gif", "svg", "webp", "logo"].includes(t))
-    return <ImageIcon size={14} className="text-muted-foreground" />;
+    return <ImageIcon size={14} className="text-zinc-500" />;
   if (t === "pdf") return <FileText size={14} className="text-red-500" />;
-  if (t === "color")
-    return <Palette size={14} className="text-muted-foreground" />;
-  if (t === "font") return <Type size={14} className="text-muted-foreground" />;
-  if (t === "text")
-    return <AlignLeft size={14} className="text-muted-foreground" />;
-  if (t === "html") return <Code size={14} className="text-muted-foreground" />;
+  if (t === "color") return <Palette size={14} className="text-zinc-500" />;
+  if (t === "font") return <Type size={14} className="text-zinc-500" />;
+  if (t === "text") return <AlignLeft size={14} className="text-zinc-500" />;
+  if (t === "html") return <Code size={14} className="text-zinc-500" />;
   if (["css", "design_system"].includes(t))
-    return <Paintbrush size={14} className="text-muted-foreground" />;
+    return <Paintbrush size={14} className="text-zinc-500" />;
   if (["js", "javascript"].includes(t))
-    return <Braces size={14} className="text-muted-foreground" />;
-  if (t === "markdown")
-    return <FileCode size={14} className="text-muted-foreground" />;
-  if (t === "url") return <Globe size={14} className="text-muted-foreground" />;
-  return <File size={14} className="text-muted-foreground" />;
+    return <Braces size={14} className="text-zinc-500" />;
+  if (t === "markdown") return <FileCode size={14} className="text-zinc-500" />;
+  if (t === "url") return <Globe size={14} className="text-zinc-500" />;
+  return <File size={14} className="text-zinc-500" />;
 }
 
 function statusBadge(status: string) {
@@ -82,7 +79,7 @@ function statusBadge(status: string) {
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-muted text-muted-foreground">
+    <span className="inline-flex items-center gap-1 rounded-lg border border-zinc-800/70 bg-zinc-900/80 px-2 py-0.5 text-xs text-zinc-500">
       pending
     </span>
   );
@@ -120,19 +117,19 @@ function ResourceCard({
     <div
       onClick={onClick}
       className={cn(
-        "flex items-start gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm p-3",
-        onClick && "cursor-pointer hover:bg-accent/30 transition-colors",
+        "flex items-start gap-3 rounded-2xl border border-zinc-800/60 bg-zinc-900/25 p-3 text-zinc-100",
+        onClick && "cursor-pointer transition-colors hover:bg-white/[0.03]",
       )}
     >
       {showThumbnail ? (
         <img
           src={getSourceFileUrl(source.id)}
           alt={label}
-          className="h-12 w-12 rounded object-cover shrink-0 border border-border"
+          className="h-12 w-12 shrink-0 rounded-lg border border-zinc-800/70 object-cover"
         />
       ) : t === "color" && rd.hex ? (
         <div
-          className="h-8 w-8 rounded-lg border border-border shrink-0 mt-0.5"
+          className="mt-0.5 h-8 w-8 shrink-0 rounded-lg border border-zinc-800/70"
           style={{ background: rd.hex }}
         />
       ) : (
@@ -142,14 +139,14 @@ function ResourceCard({
         <p className="text-sm font-medium text-foreground truncate">{label}</p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           {statusBadge(source.status)}
-          <span className="text-xs text-muted-foreground uppercase tracking-wide">
+          <span className="text-xs uppercase tracking-wide text-zinc-500">
             {source.source_type}
           </span>
           {t === "color" && rd.role && (
-            <span className="text-xs text-muted-foreground">{rd.role}</span>
+            <span className="text-xs text-zinc-500">{rd.role}</span>
           )}
           {t === "font" && rd.family && (
-            <span className="text-xs text-muted-foreground">{rd.family}</span>
+            <span className="text-xs text-zinc-500">{rd.family}</span>
           )}
         </div>
       </div>
@@ -159,7 +156,7 @@ function ResourceCard({
             e.stopPropagation();
             onDelete();
           }}
-          className="shrink-0 rounded p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          className="shrink-0 rounded-lg p-1 text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
           title="Remove resource"
         >
           <Trash2 size={13} />
@@ -190,24 +187,26 @@ function ResourceRow({
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2.5 transition-colors",
-        onClick ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/40",
+        onClick
+          ? "cursor-pointer hover:bg-white/[0.03]"
+          : "hover:bg-white/[0.02]",
       )}
     >
       <div className="shrink-0">{sourceIcon(source.source_type)}</div>
       {t === "color" && rd.hex && (
         <span
-          className="inline-block h-4 w-4 rounded-full border border-border shrink-0"
+          className="inline-block h-4 w-4 shrink-0 rounded-full border border-zinc-800/70"
           style={{ background: rd.hex }}
         />
       )}
       <p className="text-sm text-foreground truncate flex-1">{label}</p>
       <div className="flex items-center gap-2 shrink-0">
         {statusBadge(source.status)}
-        <span className="text-xs text-muted-foreground uppercase tracking-wide hidden sm:inline">
+        <span className="hidden text-xs uppercase tracking-wide text-zinc-500 sm:inline">
           {source.source_type}
         </span>
         {t === "font" && rd.family && (
-          <span className="text-xs text-muted-foreground hidden sm:inline">
+          <span className="hidden text-xs text-zinc-500 sm:inline">
             {rd.family}
           </span>
         )}
@@ -217,7 +216,7 @@ function ResourceRow({
               e.stopPropagation();
               onDelete();
             }}
-            className="rounded p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="rounded-lg p-1 text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
             title="Remove resource"
           >
             <Trash2 size={13} />
@@ -305,16 +304,16 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
   });
 
   const tabs: { key: AddTab; label: string; icon: React.ReactNode }[] = [
-    { key: "upload", label: "Archivo", icon: <Upload size={13} /> },
+    { key: "upload", label: "Upload", icon: <Upload size={13} /> },
     { key: "url", label: "URL", icon: <Globe size={13} /> },
     { key: "color", label: "Color", icon: <Palette size={13} /> },
-    { key: "font", label: "Fuente", icon: <Type size={13} /> },
-    { key: "text", label: "Texto", icon: <FileText size={13} /> },
+    { key: "font", label: "Font", icon: <Type size={13} /> },
+    { key: "text", label: "Text", icon: <FileText size={13} /> },
   ];
 
   return (
-    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
-      <div className="flex border-b border-border">
+    <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/25 backdrop-blur-xl">
+      <div className="flex border-b border-zinc-800/60">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -322,8 +321,8 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
             className={cn(
               "flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors",
               activeTab === t.key
-                ? "border-b-2 border-primary text-foreground -mb-px"
-                : "text-muted-foreground hover:text-foreground",
+                ? "-mb-px border-b-2 border-zinc-50 text-zinc-50"
+                : "text-zinc-500 hover:text-zinc-100",
             )}
           >
             {t.icon}
@@ -335,15 +334,15 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
       <div className="p-4">
         {activeTab === "upload" && (
           <div>
-            <label className="flex cursor-pointer items-center gap-2 rounded-[14px] border border-dashed border-border px-3 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors">
+            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-zinc-800/70 px-3 py-3 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100">
               {fileMutation.isPending ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <Upload size={16} />
               )}
               {fileMutation.isPending
-                ? "Subiendo..."
-                : "Elegir archivo (imagen, PDF, etc.)"}
+                ? "Uploading..."
+                : "Choose a file (image, PDF, and more)"}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -359,7 +358,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               <p className="mt-1 text-xs text-destructive">
                 {fileMutation.error instanceof Error
                   ? fileMutation.error.message
-                  : "Upload fallido"}
+                  : "Upload failed"}
               </p>
             )}
           </div>
@@ -383,7 +382,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               ) : (
                 <Plus size={13} />
               )}
-              Agregar
+              Add
             </Button>
           </div>
         )}
@@ -394,17 +393,17 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               type="text"
               value={colorName}
               onChange={(e) => setColorName(e.target.value)}
-              placeholder="Nombre (ej. Primario)"
+              placeholder="Name (e.g. Primary)"
               className="flex-1 min-w-[120px]"
             />
-            <div className="flex items-center gap-1.5 rounded-[14px] border border-input bg-background px-2 py-1">
+            <div className="flex items-center gap-1.5 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-2 py-1">
               <input
                 type="color"
                 value={colorHex}
                 onChange={(e) => setColorHex(e.target.value)}
                 className="h-7 w-7 cursor-pointer rounded border-none bg-transparent p-0"
               />
-              <span className="text-xs text-muted-foreground font-mono">
+              <span className="font-mono text-xs text-zinc-500">
                 {colorHex}
               </span>
             </div>
@@ -412,7 +411,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               type="text"
               value={colorRole}
               onChange={(e) => setColorRole(e.target.value)}
-              placeholder="Rol (opcional)"
+              placeholder="Role (optional)"
               className="w-28"
             />
             <Button
@@ -424,7 +423,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               ) : (
                 <Plus size={13} />
               )}
-              Agregar
+              Add
             </Button>
           </div>
         )}
@@ -435,14 +434,14 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               type="text"
               value={fontName}
               onChange={(e) => setFontName(e.target.value)}
-              placeholder="Nombre (ej. Fuente titular)"
+              placeholder="Name (e.g. Display font)"
               className="flex-1 min-w-[140px]"
             />
             <Input
               type="text"
               value={fontFamily}
               onChange={(e) => setFontFamily(e.target.value)}
-              placeholder="Familia (ej. Inter)"
+              placeholder="Family (e.g. Inter)"
               className="flex-1 min-w-[120px]"
             />
             <Button
@@ -456,7 +455,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               ) : (
                 <Plus size={13} />
               )}
-              Agregar
+              Add
             </Button>
           </div>
         )}
@@ -468,27 +467,27 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 type="text"
                 value={textName}
                 onChange={(e) => setTextName(e.target.value)}
-                placeholder="Nombre (ej. Tagline)"
+                placeholder="Name (e.g. Tagline)"
                 className="flex-1"
               />
               <select
                 value={textKind}
                 onChange={(e) => setTextKind(e.target.value)}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 shadow-none transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="copy">Copy</option>
                 <option value="tagline">Tagline</option>
                 <option value="slogan">Slogan</option>
-                <option value="voice_notes">Notas de voz</option>
+                <option value="voice_notes">Voice notes</option>
               </select>
             </div>
             <div className="flex gap-2">
               <textarea
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
-                placeholder="Escribí tu copy de marca aquí..."
+                placeholder="Write your brand copy here..."
                 rows={2}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 flex-1 resize-none"
+                className="flex w-full flex-1 resize-none rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 shadow-none transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
               />
               <Button
                 onClick={() => textMutation.mutate()}
@@ -504,7 +503,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 ) : (
                   <Plus size={13} />
                 )}
-                Agregar
+                Add
               </Button>
             </div>
           </div>
@@ -563,48 +562,46 @@ export function ProjectDesignBank({ projectId }: { projectId: number }) {
       {canEdit && <AddResourcePanel projectId={projectId} />}
 
       {isLoading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
           <Loader2 size={14} className="animate-spin" />
-          Cargando recursos...
+          Loading resources...
         </div>
       )}
 
       {isError && (
-        <p className="text-sm text-destructive">
-          No se pudo cargar el design bank.
-        </p>
+        <p className="text-sm text-destructive">Failed to load Design Bank.</p>
       )}
 
       {sources && (
         <>
           {/* Toolbar */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-zinc-400">
               {sources.length === 0
-                ? "Sin recursos"
-                : `${sources.length} recurso${sources.length !== 1 ? "s" : ""}`}
+                ? "No resources"
+                : `${sources.length} resource${sources.length !== 1 ? "s" : ""}`}
             </span>
-            <div className="flex gap-0.5 rounded-[14px] border border-border overflow-hidden">
+            <div className="flex gap-0.5 overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-950/80 p-0.5">
               <button
                 onClick={() => setView("grid")}
-                title="Vista grid"
+                title="Grid view"
                 className={cn(
                   "p-1.5 transition-colors",
                   viewMode === "grid"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent",
+                    ? "bg-zinc-50 text-zinc-900"
+                    : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100",
                 )}
               >
                 <LayoutGrid size={14} />
               </button>
               <button
                 onClick={() => setView("list")}
-                title="Vista lista"
+                title="List view"
                 className={cn(
                   "p-1.5 transition-colors",
                   viewMode === "list"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent",
+                    ? "bg-zinc-50 text-zinc-900"
+                    : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100",
                 )}
               >
                 <List size={14} />
@@ -613,10 +610,10 @@ export function ProjectDesignBank({ projectId }: { projectId: number }) {
           </div>
 
           {sources.length === 0 && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-zinc-400">
               {canEdit
-                ? "Agregá colores, fuentes, imágenes y copy arriba."
-                : "No hay recursos todavía."}
+                ? "Add colors, fonts, images, and brand copy above."
+                : "No resources yet."}
             </p>
           )}
 
@@ -635,7 +632,7 @@ export function ProjectDesignBank({ projectId }: { projectId: number }) {
           )}
 
           {sources.length > 0 && viewMode === "list" && (
-            <div className="rounded-[18px] border border-border overflow-hidden divide-y divide-border">
+            <div className="overflow-hidden rounded-2xl border border-zinc-800/60 divide-y divide-zinc-800/60 bg-zinc-900/20">
               {sources.map((source) => (
                 <ResourceRow
                   key={source.id}

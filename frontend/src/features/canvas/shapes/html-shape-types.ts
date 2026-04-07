@@ -15,6 +15,10 @@ export interface HtmlShapeProps {
   html: string;
   slideId: string;
   slideIndex: number;
+  /** Original format width the AI designed the HTML for (e.g. 1080). */
+  formatWidth: number;
+  /** Original format height the AI designed the HTML for (e.g. 1080). */
+  formatHeight: number;
 }
 
 export const htmlShapeProps: RecordProps<TLShape<typeof HTML_SHAPE_TYPE>> = {
@@ -23,6 +27,8 @@ export const htmlShapeProps: RecordProps<TLShape<typeof HTML_SHAPE_TYPE>> = {
   html: T.string,
   slideId: T.string,
   slideIndex: T.number,
+  formatWidth: T.number,
+  formatHeight: T.number,
 };
 
 export type HtmlShape = TLShape<typeof HTML_SHAPE_TYPE>;

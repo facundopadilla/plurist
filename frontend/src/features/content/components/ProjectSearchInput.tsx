@@ -49,9 +49,9 @@ export function ProjectSearchInput({
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">
-        Proyecto
+        Project
         <span className="ml-1 text-xs font-normal text-muted-foreground">
-          (opcional)
+          (optional)
         </span>
       </label>
 
@@ -63,7 +63,7 @@ export function ProjectSearchInput({
             style={{ backgroundColor: selectedProject.color || "#6366f1" }}
           />
           <span className="font-medium text-foreground">
-            usando Design Bank de {selectedProject.name}
+            using Design Bank from {selectedProject.name}
           </span>
         </div>
       )}
@@ -80,7 +80,7 @@ export function ProjectSearchInput({
           }}
           onFocus={() => setOpen(true)}
           placeholder={
-            selectedProject ? selectedProject.name : "Buscar proyecto..."
+            selectedProject ? selectedProject.name : "Search project..."
           }
           className="w-full pl-8 pr-3 py-2 border border-border rounded-md bg-background text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
         />
@@ -89,7 +89,7 @@ export function ProjectSearchInput({
       {/* Dropdown results */}
       {open && (
         <div className="border border-border rounded-md bg-background shadow-md max-h-48 overflow-y-auto">
-          {/* Sin proyecto option */}
+          {/* No project option */}
           <button
             onClick={() => handleSelect(null)}
             className={cn(
@@ -101,7 +101,7 @@ export function ProjectSearchInput({
               size={14}
               className="text-muted-foreground flex-shrink-0"
             />
-            <span className="flex-1">Sin proyecto</span>
+            <span className="flex-1">No project</span>
             {value === null && <Check size={14} className="text-foreground" />}
           </button>
 
@@ -116,7 +116,7 @@ export function ProjectSearchInput({
 
           {filtered.length === 0 && debouncedQuery && (
             <p className="px-3 py-2 text-sm text-muted-foreground">
-              No se encontraron proyectos
+              No projects found
             </p>
           )}
         </div>

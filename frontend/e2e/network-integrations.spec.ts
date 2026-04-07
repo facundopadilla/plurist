@@ -19,7 +19,7 @@ test.describe("Network integrations (Task 13)", () => {
   test("owner navigates to /settings/integrations and the page loads", async ({
     page,
   }) => {
-    await loginAs(page, "owner@example.com");
+    await loginAs(page, "owner@test.com");
     await page.goto("/settings/integrations");
     await expect(page).toHaveURL("/settings/integrations");
     await page.screenshot({
@@ -30,7 +30,7 @@ test.describe("Network integrations (Task 13)", () => {
   test("owner creates a connection via API and verifies it exists", async ({
     page,
   }) => {
-    await loginAs(page, "owner@example.com");
+    await loginAs(page, "owner@test.com");
 
     const csrf = await getCsrf(page);
 
@@ -90,7 +90,7 @@ test.describe("Network integrations (Task 13)", () => {
   test("editor gets 403 when attempting to create a connection via API", async ({
     page,
   }) => {
-    await loginAs(page, "editor@example.com");
+    await loginAs(page, "editor@test.com");
 
     const csrf = await getCsrf(page);
 

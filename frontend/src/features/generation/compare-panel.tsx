@@ -61,7 +61,7 @@ export function ComparePanel({
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
         <Loader2 className="animate-spin" size={16} />
-        Cargando resultados...
+        Loading results...
       </div>
     );
   }
@@ -97,11 +97,11 @@ export function ComparePanel({
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         {isRunning && <Loader2 className="animate-spin" size={14} />}
         <span>
-          Estado:{" "}
+          Status:{" "}
           <span className="font-medium text-foreground">{run.status}</span>
         </span>
         <span>·</span>
-        <span>{run.variants.length} variante(s)</span>
+        <span>{run.variants.length} variant(s)</span>
         {totalSlides > 1 && (
           <>
             <span>·</span>
@@ -160,13 +160,13 @@ export function ComparePanel({
       {isRunning && currentVariants.length === 0 && (
         <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
           <Loader2 className="animate-spin" size={14} />
-          Generando slide {currentSlide + 1}...
+          Generating slide {currentSlide + 1}...
         </div>
       )}
 
       {!isRunning && run.variants.length === 0 && (
         <p className="text-muted-foreground text-sm py-4 text-center">
-          No se generaron variantes. Todos los proveedores fallaron.
+          No variants were generated. All providers failed.
         </p>
       )}
     </div>
@@ -232,7 +232,7 @@ function VariantCard({
                     : "hover:bg-accent",
                 )}
               >
-                <Code size={11} /> Código
+                <Code size={11} /> Code
               </button>
             </div>
           )}
@@ -266,7 +266,7 @@ function VariantCard({
               : "border border-border hover:bg-accent",
           )}
         >
-          {isSelected ? "Seleccionado" : "Seleccionar variante"}
+          {isSelected ? "Selected" : "Select variant"}
         </button>
       </div>
     </div>

@@ -6,7 +6,7 @@ const backendUrl = process.env.BACKEND_URL ?? "http://backend:8000";
 test.describe("Auth invite login flow", () => {
   test("owner boots workspace and invites an editor", async ({ page }) => {
     await page.goto("/login");
-    await page.getByTestId("login-email").fill("owner@example.com");
+    await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
     await expect(page).toHaveURL("/");
@@ -17,7 +17,7 @@ test.describe("Auth invite login flow", () => {
 
   test("editor cannot see invite management", async ({ page }) => {
     await page.goto("/login");
-    await page.getByTestId("login-email").fill("editor@example.com");
+    await page.getByTestId("login-email").fill("editor@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
     await expect(page).toHaveURL("/");
@@ -32,7 +32,7 @@ test.describe("Auth invite login flow", () => {
       `${backendUrl}/api/v1/auth/invites`,
       {
         data: {
-          email: "blocked@example.com",
+          email: "blocked@test.com",
           role: "editor",
         },
         headers: {
@@ -61,7 +61,7 @@ test.describe("Auth invite login flow", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          email: "owner@example.com",
+          email: "owner@test.com",
           name: "Owner",
           role: "owner",
           csrf_token: "csrf-token",

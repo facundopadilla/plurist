@@ -48,20 +48,36 @@ export function renderHtmlIntoShadowHost(
   html: string,
   width: number,
   height: number,
+  formatWidth: number,
+  formatHeight: number,
+  globalStyles?: string,
 ) {
   const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
   const { headMarkup, bodyMarkup } = extractHtmlDocument(html);
+
+  const globalStyleBlock = globalStyles
+    ? `<style data-global-styles>${globalStyles}</style>`
+    : "";
+
+  // The AI generates HTML designed for the format dimensions (e.g. 1080×1080),
+  // but the shape on canvas is much smaller (e.g. 400×400). We render the body
+  // at the full format size, then CSS-transform scale it down to fit the shape.
+  const scaleX = width / formatWidth;
+  const scaleY = height / formatHeight;
+  const scale = Math.min(scaleX, scaleY);
 
   // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method
   // Intentional: this is the canvas HTML renderer. The Shadow DOM provides style isolation.
   // Content is workspace-owned HTML (not raw user input) rendered in a sandboxed tldraw shape.
   root.innerHTML = `
+    ${globalStyleBlock}
     ${headMarkup}
     <style>
       :host {
         display: block;
         width: 100%;
         height: 100%;
+        overflow: hidden;
       }
 
       *, *::before, *::after {
@@ -71,20 +87,20 @@ export function renderHtmlIntoShadowHost(
       html, body {
         margin: 0;
         padding: 0;
-        width: 100%;
-        height: 100%;
         overflow: hidden;
       }
 
       body {
-        width: ${width}px;
-        height: ${height}px;
+        width: ${formatWidth}px;
+        height: ${formatHeight}px;
       }
 
       #socialclaw-html-shape-root {
-        width: 100%;
-        height: 100%;
+        width: ${formatWidth}px;
+        height: ${formatHeight}px;
         overflow: hidden;
+        transform: scale(${scale});
+        transform-origin: top left;
       }
     </style>
     <div id="socialclaw-html-shape-root">${bodyMarkup}</div>

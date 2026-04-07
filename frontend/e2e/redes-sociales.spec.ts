@@ -6,7 +6,7 @@ test.describe("Redes Sociales page", () => {
   }) => {
     // Login as owner
     await page.goto("/login");
-    await page.getByTestId("login-email").fill("owner@example.com");
+    await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
     await expect(page).toHaveURL("/");
@@ -23,7 +23,7 @@ test.describe("Redes Sociales page", () => {
 
   test("nav Settings link goes to redes-sociales", async ({ page }) => {
     await page.goto("/login");
-    await page.getByTestId("login-email").fill("owner@example.com");
+    await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
     await expect(page).toHaveURL("/");
@@ -36,7 +36,7 @@ test.describe("Redes Sociales page", () => {
     page,
   }) => {
     await page.goto("/login");
-    await page.getByTestId("login-email").fill("owner@example.com");
+    await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
 

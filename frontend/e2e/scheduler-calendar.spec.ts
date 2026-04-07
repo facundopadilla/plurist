@@ -13,7 +13,7 @@ async function createDraftPost(
   page: import("@playwright/test").Page,
   title: string,
 ): Promise<number> {
-  await login(page, "editor@example.com");
+  await login(page, "editor@test.com");
   const resp = await page.request.post("/api/v1/content/", {
     data: {
       title,
@@ -30,13 +30,13 @@ async function submitAndApprove(
   page: import("@playwright/test").Page,
   postId: number,
 ) {
-  await login(page, "editor@example.com");
+  await login(page, "editor@test.com");
   const submitResp = await page.request.post(
     `/api/v1/content/${postId}/submit`,
   );
   expect(submitResp.status()).toBe(200);
 
-  await login(page, "owner@example.com");
+  await login(page, "owner@test.com");
   const approveResp = await page.request.post(
     `/api/v1/content/${postId}/approve`,
     {
@@ -83,7 +83,7 @@ test.describe("Scheduler calendar", () => {
     const postId = await createDraftPost(page, "E2E Editor Schedule Forbidden");
     await submitAndApprove(page, postId);
 
-    await login(page, "editor@example.com");
+    await login(page, "editor@test.com");
     const scheduledAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000,
     ).toISOString();
@@ -107,7 +107,7 @@ test.describe("Scheduler calendar", () => {
   test("scheduling a non-approved post fails (400)", async ({ page }) => {
     const postId = await createDraftPost(page, "E2E Non-Approved Schedule");
 
-    await login(page, "owner@example.com");
+    await login(page, "owner@test.com");
     const scheduledAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000,
     ).toISOString();

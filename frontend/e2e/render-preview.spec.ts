@@ -38,7 +38,7 @@ test.describe("Render preview", () => {
   test("create a render job with a trusted template key and poll until resolved", async ({
     page,
   }) => {
-    await loginAs(page, "editor@example.com");
+    await loginAs(page, "editor@test.com");
 
     const csrf = await getCsrf(page);
 
@@ -116,7 +116,7 @@ test.describe("Render preview", () => {
   test("create render job with invalid template key returns 400 or 422", async ({
     page,
   }) => {
-    await loginAs(page, "editor@example.com");
+    await loginAs(page, "editor@test.com");
 
     const csrf = await getCsrf(page);
 

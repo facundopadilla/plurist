@@ -24,29 +24,21 @@ export interface DraftFrameMetadata {
   annotations: Annotation[];
 }
 
-export type PostStatus =
-  | "draft"
-  | "pending_approval"
-  | "approved"
-  | "rejected"
-  | "publishing"
-  | "published"
-  | "failed";
+export type PostStatus = "draft" | "completed";
 
 export interface DraftPost {
   id: number;
   title: string;
   body_text: string;
   status: PostStatus;
-  target_networks: string[];
   render_asset_key: string;
   project_id: number | null;
   format: string;
   html_content: string;
-  submitted_at: string | null;
-  approved_at: string | null;
-  published_at: string | null;
-  failure_message: string;
+  global_styles: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
   frame_metadata?: DraftFrameMetadata[];
   variants?: DraftVariant[];
 }

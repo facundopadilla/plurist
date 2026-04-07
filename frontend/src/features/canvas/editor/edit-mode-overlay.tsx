@@ -34,7 +34,6 @@ export function EditModeOverlay({
   const [selectedIsImg, setSelectedIsImg] = useState(false);
   const cleanupClickRef = useRef<(() => void) | null>(null);
 
-  // Enable editing when overlay mounts
   useEffect(() => {
     const iframe = iframeRef.current?.getIframe();
     if (!iframe) return;
@@ -43,7 +42,6 @@ export function EditModeOverlay({
       markDirty();
     });
 
-    // Attach click listener for element selection
     const cleanup = attachClickListener(iframe, (el, selector) => {
       setSelectedSelector(selector);
       setSelectedIsImg(el.tagName.toLowerCase() === "img");
@@ -88,22 +86,20 @@ export function EditModeOverlay({
 
   return (
     <>
-      {/* Toolbar — positioned above the node */}
       <div
-        className="absolute top-0 left-0 right-0 z-10 flex items-center gap-1 px-2 py-1 bg-card/95 border-b border-primary backdrop-blur-sm"
+        className="absolute left-0 right-0 top-0 z-10 flex items-center gap-1 border-b border-zinc-800/70 bg-zinc-950/92 px-2 py-1.5 text-zinc-100 backdrop-blur-xl"
         data-testid="edit-mode-toolbar"
       >
-        {/* Text color */}
         <div className="relative">
           <button
             onClick={() =>
               setShowColorPicker(showColorPicker === "color" ? null : "color")
             }
             className={cn(
-              "flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded transition-colors",
+              "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
               showColorPicker === "color"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                ? "bg-zinc-50 text-zinc-900"
+                : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100",
             )}
             title="Text color"
           >
@@ -111,7 +107,7 @@ export function EditModeOverlay({
             <span>Color</span>
           </button>
           {showColorPicker === "color" && (
-            <div className="absolute top-full left-0 mt-1 z-20">
+            <div className="absolute left-0 top-full z-20 mt-1">
               <ColorPicker
                 projectId={projectId}
                 onColorSelect={(hex) => handleColorSelect(hex, "color")}
@@ -120,7 +116,6 @@ export function EditModeOverlay({
           )}
         </div>
 
-        {/* Background color */}
         <div className="relative">
           <button
             onClick={() =>
@@ -129,10 +124,10 @@ export function EditModeOverlay({
               )
             }
             className={cn(
-              "flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded transition-colors",
+              "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
               showColorPicker === "background"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                ? "bg-zinc-50 text-zinc-900"
+                : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100",
             )}
             title="Background color"
           >
@@ -140,7 +135,7 @@ export function EditModeOverlay({
             <span>Fondo</span>
           </button>
           {showColorPicker === "background" && (
-            <div className="absolute top-full left-0 mt-1 z-20">
+            <div className="absolute left-0 top-full z-20 mt-1">
               <ColorPicker
                 projectId={projectId}
                 onColorSelect={(hex) => handleColorSelect(hex, "background")}
@@ -149,15 +144,14 @@ export function EditModeOverlay({
           )}
         </div>
 
-        {/* Image replace */}
         <div className="relative">
           <button
             onClick={() => setShowImageInput(!showImageInput)}
             className={cn(
-              "flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded transition-colors",
+              "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
               showImageInput
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                ? "bg-zinc-50 text-zinc-900"
+                : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-100",
             )}
             title={
               selectedIsImg
@@ -166,16 +160,16 @@ export function EditModeOverlay({
             }
           >
             <ImageIcon size={12} />
-            <span>Imagen</span>
+            <span>Image</span>
           </button>
           {showImageInput && (
-            <div className="absolute top-full left-0 mt-1 z-20 bg-card border border-border rounded-md shadow-md p-2 w-56">
+            <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border border-zinc-800/70 bg-zinc-950 p-2 shadow-lg">
               <input
                 type="url"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring mb-2"
+                className="mb-2 w-full rounded-md border border-zinc-800/70 bg-zinc-950/80 px-2 py-1 text-xs text-zinc-100 outline-none focus:ring-1 focus:ring-white/[0.08]"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleImageReplace();
@@ -184,28 +178,25 @@ export function EditModeOverlay({
               />
               <button
                 onClick={handleImageReplace}
-                className="w-full px-2 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                className="w-full rounded-md bg-zinc-50 px-2 py-1 text-xs text-zinc-900 transition-colors hover:bg-white"
               >
-                Reemplazar
+                Replace
               </button>
             </div>
           )}
         </div>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Element selector info */}
         {selectedSelector && (
-          <span className="text-[10px] text-muted-foreground font-mono truncate max-w-24">
+          <span className="max-w-24 truncate font-mono text-[10px] text-zinc-500">
             {selectedSelector}
           </span>
         )}
 
-        {/* Done button */}
         <button
           onClick={handleDone}
-          className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1 rounded-md bg-zinc-50 px-2.5 py-1 text-[11px] font-semibold text-zinc-900 transition-colors hover:bg-white"
           data-testid="edit-done-button"
         >
           <Check size={12} />
@@ -213,7 +204,6 @@ export function EditModeOverlay({
         </button>
       </div>
 
-      {/* Click-outside overlay to close pickers (not the entire node) */}
       {(showColorPicker || showImageInput) && (
         <div
           className="fixed inset-0 z-10"

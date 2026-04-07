@@ -1,6 +1,12 @@
-export type NetworkId = "instagram" | "linkedin" | "x";
+export type NetworkId =
+  | "instagram"
+  | "linkedin"
+  | "x"
+  | "facebook"
+  | "tiktok"
+  | "pinterest";
 
-export type PanelId = "chat" | "resources" | "extensions" | "code";
+export type PanelId = "chat" | "resources" | "skills" | "extensions" | "code";
 
 export interface VirtualFile {
   id: string;
@@ -77,6 +83,12 @@ export interface ChatMessage {
   isStreaming?: boolean;
   provider?: string;
   modelId?: string;
+  error?: {
+    code: string;
+    category: string;
+    hint: string;
+    retryable: boolean;
+  };
 }
 
 export interface ChatStreamEvent {
@@ -96,6 +108,31 @@ export interface CanvasConfig {
   title: string;
 }
 
+/**
+ * A reference to a specific element inside an AI-generated HTML shape.
+ * Created when the user clicks "Edit with AI" in the inline editing toolbar.
+ * The chat sidebar displays this as a chip and injects it into the prompt
+ * so the AI knows exactly which element to modify.
+ */
+export interface ElementReference {
+  /** The slide containing the element */
+  slideId: string;
+  /** Which variant is being edited */
+  variantId: number;
+  /** CSS selector path from the content root to the element (e.g. "body > div > h1:nth-child(2)") */
+  cssPath: string;
+  /** The element's tag name (e.g. "h1", "p", "img") */
+  tag: string;
+  /** Human-readable label (e.g. "Heading", "Text", "Image") — same as hover pill */
+  label: string;
+  /** Preview of the element's text content (truncated) or src for images */
+  contentPreview: string;
+  /** The element's current outerHTML (for precise AI context) */
+  outerHtml: string;
+  /** Slide index for display purposes */
+  slideIndex: number;
+}
+
 export interface CanvasState {
   // Config (header bar)
   config: CanvasConfig;
@@ -110,6 +147,9 @@ export interface CanvasState {
 
   // Edit state
   editingNodeId: string | null;
+
+  // Element reference for "Edit with AI"
+  elementReference: ElementReference | null;
 
   // Persistence
   draftPostId: number | null;

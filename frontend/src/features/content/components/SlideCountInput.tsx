@@ -21,7 +21,7 @@ export function SlideCountInput({ value, onChange }: SlideCountInputProps) {
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Cantidad de slides</label>
+      <label className="text-sm font-medium">Slide count</label>
 
       <div className="flex items-center gap-4">
         <input
@@ -46,14 +46,13 @@ export function SlideCountInput({ value, onChange }: SlideCountInputProps) {
             onChange={handleToggle}
             className="h-4 w-4 rounded border-border"
           />
-          <span>Que la IA decida</span>
+          <span>Let AI decide</span>
         </label>
       </div>
 
       {aiDecides && (
         <p className="text-xs text-muted-foreground">
-          La IA determinará la cantidad de slides (máx. 10) basándose en tu
-          brief.
+          AI will determine the number of slides (max 10) based on your brief.
         </p>
       )}
     </div>

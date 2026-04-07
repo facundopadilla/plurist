@@ -16,3 +16,23 @@ export interface DesignBankSource {
 }
 
 export type SourceStatus = "pending" | "processing" | "ready" | "failed";
+
+export interface ProjectDesignSystemStatus {
+  has_design_system: boolean;
+  has_reference_brief: boolean;
+  has_relevant_sources: boolean;
+  is_outdated: boolean;
+  relevant_source_count: number;
+  last_relevant_source_at: string | null;
+  artifact_revision: string | null;
+  design_system_source_id: number | null;
+  reference_brief_source_id: number | null;
+  has_manual_edits: boolean;
+}
+
+export interface SyncProjectDesignSystemResult {
+  ok: boolean;
+  status: ProjectDesignSystemStatus;
+  design_system_source_id: number;
+  reference_brief_source_id: number;
+}

@@ -18,73 +18,75 @@ export function HeaderBar({ onExport, onSubmit }: HeaderBarProps) {
   const isStreaming = useCanvasStore((s) => s.isStreaming);
 
   function saveLabel() {
-    if (isDirty) return "Cambios sin guardar";
-    if (lastSavedAt) return `Guardado`;
+    if (isDirty) return "Unsaved changes";
+    if (lastSavedAt) return "Saved";
     return "";
   }
 
   return (
-    <header className="h-14 flex items-center gap-3 px-4 border-b border-border bg-card flex-shrink-0">
-      {/* Back */}
+    <header className="relative z-10 flex h-14 flex-shrink-0 items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/80 px-3 backdrop-blur-xl sm:gap-3 sm:px-4">
       <Link
         to="/"
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+        className="flex flex-shrink-0 items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-zinc-50"
       >
         <ArrowLeft size={16} />
-        <span className="hidden sm:inline">Inicio</span>
+        <span className="hidden sm:inline">Home</span>
       </Link>
 
-      <div className="w-px h-5 bg-border flex-shrink-0" />
+      <div className="h-5 w-px flex-shrink-0 bg-zinc-800/70" />
 
-      {/* Title */}
-      <span className="text-sm font-semibold text-foreground flex-shrink-0">
+      <span className="hidden flex-shrink-0 text-sm font-semibold tracking-[-0.02em] text-zinc-50 md:inline">
         Canvas Studio
       </span>
 
-      {/* Title input */}
       <input
         type="text"
         value={config.title}
         onChange={(e) => setConfig({ title: e.target.value })}
-        placeholder="Sin título..."
-        aria-label="Título del canvas"
-        className="flex-1 min-w-0 text-sm bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          e.nativeEvent.stopImmediatePropagation();
+        }}
+        onKeyUp={(e) => {
+          e.stopPropagation();
+          e.nativeEvent.stopImmediatePropagation();
+        }}
+        placeholder="Untitled..."
+        aria-label="Canvas title"
+        className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-800/70 bg-zinc-950/70 px-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-white/[0.04]"
       />
 
-      {/* Save status */}
       {saveLabel() && (
         <span
           className={cn(
-            "text-xs flex-shrink-0",
-            isDirty ? "text-amber-500" : "text-muted-foreground",
+            "hidden flex-shrink-0 text-[11px] md:inline",
+            isDirty ? "text-amber-300" : "text-zinc-500",
           )}
         >
           {saveLabel()}
         </span>
       )}
 
-      {/* Export */}
       {onExport && (
         <Button
           onClick={onExport}
           variant="outline"
           size="sm"
-          className="gap-1.5 flex-shrink-0"
+          className="h-9 gap-1.5 rounded-lg border-zinc-800/70 bg-transparent text-zinc-200 shadow-none hover:bg-white/[0.04] hover:text-zinc-50"
         >
           <Download size={14} />
-          <span>Exportar</span>
+          <span className="hidden lg:inline">Export</span>
         </Button>
       )}
 
-      {/* Submit */}
       <Button
         onClick={onSubmit}
         disabled={!draftPostId || isDirty || isStreaming}
         size="sm"
-        className="gap-1.5 flex-shrink-0"
+        className="h-9 gap-1.5 rounded-lg bg-zinc-50 text-zinc-900 shadow-none hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500"
       >
         <Send size={14} />
-        <span>Enviar a aprobación</span>
+        <span className="hidden xl:inline">Submit for approval</span>
       </Button>
     </header>
   );

@@ -1,61 +1,43 @@
-const workspaceLanes = [
-  { label: "Projects", value: "Campaign structure, briefs, and shared assets" },
-  { label: "Reviews", value: "Approval flow with role-aware decisions" },
-  { label: "Publishing", value: "Queue visibility and network-ready delivery" },
-];
+import { Code2 } from "lucide-react";
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex w-full flex-col overflow-hidden rounded-[24px] border border-border bg-card shadow-sm lg:flex-row">
-          <section className="flex flex-1 flex-col justify-between border-b border-border bg-gradient-to-br from-card to-muted/50 px-6 py-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10">
-            <div className="space-y-10">
-              <div className="space-y-4 border-b border-border pb-5">
-                <div className="flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  <span className="paper-kicker text-inherit">Socialclaw</span>
-                  <span className="font-elegant-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    Elegant UI
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  <h2 className="max-w-lg text-[32px] font-semibold leading-[1.05] tracking-[-0.04em] text-foreground">
-                    A calmer way into the workspace.
-                  </h2>
-                  <p className="max-w-md text-[16px] leading-7 text-muted-foreground">
-                    Sign in to review active work, move content through
-                    approvals, and publish with a clearer sense of what needs
-                    attention.
-                  </p>
-                </div>
-              </div>
+    <div className="relative flex min-h-screen items-center justify-center bg-[#09090b] px-4 py-12 text-zinc-50">
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-1/3 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-500/[0.05] blur-[160px]" />
+      </div>
 
-              <div className="space-y-3">
-                {workspaceLanes.map((lane) => (
-                  <div
-                    key={lane.label}
-                    className="grid grid-cols-[112px_1fr] gap-4 border-b border-border/80 py-3 last:border-b-0"
-                  >
-                    <div className="font-elegant-mono text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-                      {lane.label}
-                    </div>
-                    <div className="text-[16px] leading-7 text-foreground/80">
-                      {lane.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* Dot grid */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, #fafafa 0.6px, transparent 0.6px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
 
-            <div className="font-elegant-mono mt-10 border-t border-border pt-4 text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-              Invite-only onboarding · Session auth · Google sign-in
-            </div>
-          </section>
-
-          <section className="flex w-full items-center bg-card px-6 py-8 sm:px-8 lg:w-[480px] lg:flex-shrink-0 lg:px-10 lg:py-10">
-            <div className="mx-auto w-full max-w-md">{children}</div>
-          </section>
+      <div className="relative z-10 w-full max-w-[400px]">
+        {/* Logo */}
+        <div className="mb-8 flex items-center justify-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-50 text-zinc-900">
+            <Code2 size={15} strokeWidth={2.5} />
+          </div>
+          <span className="text-[15px] font-semibold tracking-[-0.01em] text-zinc-50">
+            Plurist
+          </span>
         </div>
+
+        {/* Card */}
+        <div className="overflow-hidden rounded-2xl border border-zinc-800/50 bg-zinc-900/30 backdrop-blur-xl">
+          <div className="p-8">{children}</div>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+          Open source · Self-hostable · MIT
+        </p>
       </div>
     </div>
   );

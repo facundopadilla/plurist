@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AppShell } from "./layout/app-shell";
 import { AuthShell } from "./layout/auth-shell";
@@ -10,17 +10,26 @@ import { DesignBankPage } from "../features/design-bank/design-bank-page";
 import { ProjectsListPage } from "../features/projects/projects-list-page";
 import { ProjectDetailPage } from "../features/projects/project-detail-page";
 import { ReviewPage } from "../features/content/review-page";
-import { QueuePage } from "../features/scheduler/queue-page";
-import { CalendarPage } from "../features/scheduler/calendar-page";
-import { AnalyticsPage } from "../features/analytics/analytics-page";
-import { SettingsIntegrationsPage } from "../features/integrations/settings-integrations-page";
-import { RedesSocialesPage } from "../features/integrations/redes-sociales-page";
 import { AIProvidersPage } from "../features/settings/ai-providers/ai-providers-page";
 
 // Landing — public, code-split
 const LandingPage = lazy(() =>
   import("../features/landing/landing-page").then((m) => ({
     default: m.LandingPage,
+  })),
+);
+
+// Landing2 — HeroUI, public, code-split
+const Landing2Page = lazy(() =>
+  import("../features/landing2/landing2-page").then((m) => ({
+    default: m.Landing2Page,
+  })),
+);
+
+// Landing3 — save.design aesthetic, shadcn + Tailwind only
+const Landing3Page = lazy(() =>
+  import("../features/landing3/landing3-page").then((m) => ({
+    default: m.Landing3Page,
   })),
 );
 
@@ -32,10 +41,8 @@ const CanvasComposePage = lazy(() =>
 );
 
 const CanvasComposeFallback = () => (
-  <div className="flex h-screen w-screen items-center justify-center bg-background">
-    <span className="text-muted-foreground text-sm">
-      Cargando Canvas Studio...
-    </span>
+  <div className="flex h-screen w-screen items-center justify-center bg-[#09090b] text-zinc-50">
+    <span className="text-sm text-zinc-500">Loading Canvas Studio...</span>
   </div>
 );
 
@@ -87,6 +94,34 @@ export function AppRouter() {
           }
         />
         <Route
+          path="/landing2"
+          element={
+            <Suspense
+              fallback={
+                <div className="flex h-screen w-screen items-center justify-center">
+                  <span className="text-sm text-neutral-400">Loading...</span>
+                </div>
+              }
+            >
+              <Landing2Page />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/landing3"
+          element={
+            <Suspense
+              fallback={
+                <div className="flex h-screen w-screen items-center justify-center bg-[#09090b]">
+                  <span className="text-sm text-zinc-500">Loading...</span>
+                </div>
+              }
+            >
+              <Landing3Page />
+            </Suspense>
+          }
+        />
+        <Route
           path="/dashboard"
           element={
             <RequireAuth>
@@ -127,7 +162,7 @@ export function AppRouter() {
           }
         />
         <Route
-          path="/contenido"
+          path="/content"
           element={
             <RequireAuth>
               <AppShell>
@@ -136,8 +171,6 @@ export function AppRouter() {
             </RequireAuth>
           }
         />
-        {/* Backward-compatible redirect: /posts → /contenido */}
-        <Route path="/posts" element={<Navigate to="/contenido" replace />} />
         <Route
           path="/compose"
           element={
@@ -145,56 +178,6 @@ export function AppRouter() {
               <Suspense fallback={<CanvasComposeFallback />}>
                 <CanvasComposePage />
               </Suspense>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/queue"
-          element={
-            <RequireAuth>
-              <AppShell>
-                <QueuePage />
-              </AppShell>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <RequireAuth>
-              <AppShell>
-                <CalendarPage />
-              </AppShell>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/analytics"
-          element={
-            <RequireAuth>
-              <AppShell>
-                <AnalyticsPage />
-              </AppShell>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/settings/integrations"
-          element={
-            <RequireAuth>
-              <AppShell>
-                <SettingsIntegrationsPage />
-              </AppShell>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/settings/redes-sociales"
-          element={
-            <RequireAuth>
-              <AppShell>
-                <RedesSocialesPage />
-              </AppShell>
             </RequireAuth>
           }
         />

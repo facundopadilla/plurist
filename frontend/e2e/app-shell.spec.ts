@@ -2,37 +2,35 @@ import { test, expect } from "@playwright/test";
 
 async function loginAsOwner(page: import("@playwright/test").Page) {
   await page.goto("/login");
-  await page.getByTestId("login-email").fill("owner@example.com");
+  await page.getByTestId("login-email").fill("owner@test.com");
   await page.getByTestId("login-password").fill("testpassword123");
   await page.getByTestId("login-submit").click();
-  await expect(page).toHaveURL("/");
+  await expect(page).toHaveURL(/\/(dashboard)?$/);
 }
 
 test.describe("App shell", () => {
-  test("renders navigation and theme toggle", async ({ page }) => {
+  test("renders current navigation and logout control", async ({ page }) => {
     await loginAsOwner(page);
     await expect(page.getByTestId("app-sidebar")).toBeVisible();
     await expect(page.getByTestId("nav-dashboard")).toBeVisible();
+    await expect(page.getByTestId("nav-projects")).toBeVisible();
     await expect(page.getByTestId("nav-design-bank")).toBeVisible();
-    await expect(page.getByTestId("nav-contenido")).toBeVisible();
-    await expect(page.getByTestId("nav-revision")).toBeVisible();
-    await expect(page.getByTestId("nav-queue")).toBeVisible();
-    await expect(page.getByTestId("nav-calendar")).toBeVisible();
-    await expect(page.getByTestId("nav-analytics")).toBeVisible();
-    await expect(page.getByTestId("nav-settings")).toBeVisible();
-    await expect(page.getByTestId("theme-toggle")).toBeVisible();
+    await expect(page.getByTestId("nav-content")).toBeVisible();
+    await expect(page.getByTestId("nav-ai-providers")).toBeVisible();
+    await expect(page.getByTestId("logout-button")).toBeVisible();
     await page.screenshot({
       path: "../.sisyphus/evidence/task-3-app-shell.png",
     });
   });
 
-  test("theme toggle switches mode", async ({ page }) => {
+  test("dashboard quick actions are visible after login", async ({ page }) => {
     await loginAsOwner(page);
-    const html = page.locator("html");
-    const before = await html.getAttribute("class");
-    await page.getByTestId("theme-toggle").click();
-    const after = await html.getAttribute("class");
-    expect(before).not.toEqual(after);
+    await expect(
+      page.getByRole("link", { name: /Open Canvas Studio/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /Browse projects/i }),
+    ).toBeVisible();
   });
 
   test("unknown route shows 404 inside app shell", async ({ page }) => {

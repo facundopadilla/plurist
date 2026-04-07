@@ -135,14 +135,17 @@ export function AddResourceModal({
 
   if (!open) return null;
 
+  const inputClassName =
+    "flex w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 shadow-none transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.04]";
+
   const showProjectSelector = initialProjectId == null;
 
   const tabs: { key: AddTab; label: string; icon: React.ReactNode }[] = [
-    { key: "upload", label: "Archivo", icon: <Upload size={13} /> },
+    { key: "upload", label: "Upload", icon: <Upload size={13} /> },
     { key: "url", label: "URL", icon: <Globe size={13} /> },
     { key: "color", label: "Color", icon: <Palette size={13} /> },
-    { key: "font", label: "Fuente", icon: <Type size={13} /> },
-    { key: "text", label: "Texto", icon: <FileText size={13} /> },
+    { key: "font", label: "Font", icon: <Type size={13} /> },
+    { key: "text", label: "Text", icon: <FileText size={13} /> },
   ];
 
   return (
@@ -152,15 +155,15 @@ export function AddResourceModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative bg-card rounded-xl shadow-xl max-w-lg w-full">
+      <div className="relative w-full max-w-lg rounded-2xl border border-zinc-800/70 bg-zinc-950/95 text-zinc-50 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground">
-            Agregar recurso
+        <div className="flex items-center justify-between border-b border-zinc-800/60 px-5 py-4">
+          <h2 className="text-sm font-semibold tracking-[-0.02em] text-zinc-50">
+            Add resource
           </h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
           >
             <X size={16} />
           </button>
@@ -169,8 +172,8 @@ export function AddResourceModal({
         {/* Project selector */}
         {showProjectSelector && projects.length > 0 && (
           <div className="px-5 pt-4">
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Proyecto (opcional)
+            <label className="mb-1 block text-xs font-medium text-zinc-500">
+              Project (optional)
             </label>
             <select
               value={selectedProjectId ?? ""}
@@ -179,9 +182,9 @@ export function AddResourceModal({
                   e.target.value ? Number(e.target.value) : null,
                 )
               }
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              className={inputClassName}
             >
-              <option value="">Sin proyecto</option>
+              <option value="">No project</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -194,7 +197,7 @@ export function AddResourceModal({
         {/* Tabs */}
         <div
           className={cn(
-            "flex border-b border-border",
+            "flex border-b border-zinc-800/60",
             showProjectSelector && projects.length > 0 ? "mt-4" : "mt-0",
           )}
         >
@@ -205,8 +208,8 @@ export function AddResourceModal({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors",
                 activeTab === t.key
-                  ? "border-b-2 border-foreground text-foreground -mb-px"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "-mb-px border-b-2 border-zinc-50 text-zinc-50"
+                  : "text-zinc-500 hover:text-zinc-100",
               )}
             >
               {t.icon}
@@ -219,15 +222,15 @@ export function AddResourceModal({
         <div className="p-5">
           {activeTab === "upload" && (
             <div>
-              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted-foreground hover:border-foreground/40 hover:text-foreground transition-colors">
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-zinc-800/70 px-3 py-4 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100">
                 {fileMutation.isPending ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
                   <Upload size={16} />
                 )}
                 {fileMutation.isPending
-                  ? "Subiendo..."
-                  : "Elegir archivo (imagen, PDF, etc.)"}
+                  ? "Uploading..."
+                  : "Choose a file (image, PDF, and more)"}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -244,7 +247,7 @@ export function AddResourceModal({
               )}
               {fileMutation.isSuccess && (
                 <p className="mt-1 text-xs text-green-600">
-                  Archivo subido correctamente.
+                  File uploaded successfully.
                 </p>
               )}
             </div>
@@ -257,7 +260,7 @@ export function AddResourceModal({
                 value={urlValue}
                 onChange={(e) => setUrlValue(e.target.value)}
                 placeholder="https://..."
-                className="flex-1"
+                className={inputClassName}
               />
               <Button
                 onClick={() => urlMutation.mutate()}
@@ -268,7 +271,7 @@ export function AddResourceModal({
                 ) : (
                   <Plus size={13} />
                 )}
-                Agregar
+                Add
               </Button>
             </div>
           )}
@@ -279,17 +282,17 @@ export function AddResourceModal({
                 type="text"
                 value={colorName}
                 onChange={(e) => setColorName(e.target.value)}
-                placeholder="Nombre (ej. Primario)"
-                className="flex-1 min-w-[120px]"
+                placeholder="Name (e.g. Primary)"
+                className={`${inputClassName} min-w-[120px] flex-1`}
               />
-              <div className="flex items-center gap-1.5 rounded-[14px] border border-input bg-background px-2 py-1">
+              <div className="flex items-center gap-1.5 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-2 py-1">
                 <input
                   type="color"
                   value={colorHex}
                   onChange={(e) => setColorHex(e.target.value)}
                   className="h-7 w-7 cursor-pointer rounded border-none bg-transparent p-0"
                 />
-                <span className="text-xs text-muted-foreground font-mono">
+                <span className="font-mono text-xs text-zinc-500">
                   {colorHex}
                 </span>
               </div>
@@ -297,8 +300,8 @@ export function AddResourceModal({
                 type="text"
                 value={colorRole}
                 onChange={(e) => setColorRole(e.target.value)}
-                placeholder="Rol (opcional)"
-                className="w-28"
+                placeholder="Role (optional)"
+                className={`${inputClassName} w-28`}
               />
               <Button
                 onClick={() => colorMutation.mutate()}
@@ -309,7 +312,7 @@ export function AddResourceModal({
                 ) : (
                   <Plus size={13} />
                 )}
-                Agregar
+                Add
               </Button>
             </div>
           )}
@@ -320,15 +323,15 @@ export function AddResourceModal({
                 type="text"
                 value={fontName}
                 onChange={(e) => setFontName(e.target.value)}
-                placeholder="Nombre (ej. Fuente titular)"
-                className="flex-1 min-w-[140px]"
+                placeholder="Name (e.g. Display font)"
+                className={`${inputClassName} min-w-[140px] flex-1`}
               />
               <Input
                 type="text"
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
-                placeholder="Familia (ej. Inter)"
-                className="flex-1 min-w-[120px]"
+                placeholder="Family (e.g. Inter)"
+                className={`${inputClassName} min-w-[120px] flex-1`}
               />
               <Button
                 onClick={() => fontMutation.mutate()}
@@ -343,7 +346,7 @@ export function AddResourceModal({
                 ) : (
                   <Plus size={13} />
                 )}
-                Agregar
+                Add
               </Button>
             </div>
           )}
@@ -355,27 +358,27 @@ export function AddResourceModal({
                   type="text"
                   value={textName}
                   onChange={(e) => setTextName(e.target.value)}
-                  placeholder="Nombre (ej. Tagline)"
-                  className="flex-1"
+                  placeholder="Name (e.g. Tagline)"
+                  className={`${inputClassName} flex-1`}
                 />
                 <select
                   value={textKind}
                   onChange={(e) => setTextKind(e.target.value)}
-                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  className={inputClassName}
                 >
                   <option value="copy">Copy</option>
                   <option value="tagline">Tagline</option>
                   <option value="slogan">Slogan</option>
-                  <option value="voice_notes">Notas de voz</option>
+                  <option value="voice_notes">Voice notes</option>
                 </select>
               </div>
               <div className="flex gap-2">
                 <textarea
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
-                  placeholder="Escribí tu copy de marca aquí..."
+                  placeholder="Write your brand copy here..."
                   rows={3}
-                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 flex-1 resize-none"
+                  className={`${inputClassName} flex-1 resize-none`}
                 />
                 <Button
                   onClick={() => textMutation.mutate()}
@@ -391,7 +394,7 @@ export function AddResourceModal({
                   ) : (
                     <Plus size={13} />
                   )}
-                  Agregar
+                  Add
                 </Button>
               </div>
             </div>

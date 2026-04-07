@@ -4,7 +4,7 @@
  * Demonstrates the full extension lifecycle:
  *  1. Define extension metadata + Panel component
  *  2. Register via registerExtension()
- *  3. Appears in the "Extensiones" sidebar
+ *  3. Appears in the "Extensions" sidebar
  *
  * This is a scaffold — replace with a real provider (Midjourney, DALL-E,
  * Stable Diffusion) when ready.
@@ -19,7 +19,7 @@ export const aiImageStubExtension: CanvasExtension = {
   meta: {
     id: AI_IMAGE_STUB_ID,
     name: "AI Image (Stub)",
-    description: "Genera imágenes placeholder — extensión de referencia",
+    description: "Generates placeholder images — reference extension",
     icon: createElement("span", { role: "img", "aria-label": "image" }, "🖼️"),
     category: "image",
   },

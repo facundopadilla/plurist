@@ -24,6 +24,17 @@ import {
 import { patchSource, updateSourceContent, getSourceFileUrl } from "./api";
 import type { DesignBankSource } from "./types";
 
+function artifactKind(source: DesignBankSource | null): string {
+  const rd = (source?.resource_data ?? {}) as Record<string, unknown>;
+  const value = rd.artifact_kind;
+  return typeof value === "string" ? value : "";
+}
+
+function isManagedArtifact(source: DesignBankSource | null): boolean {
+  const kind = artifactKind(source);
+  return kind === "design_system" || kind === "reference_brief";
+}
+
 function formatFileSize(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
   let value = bytes;
@@ -36,7 +47,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("es-AR", {
+  return new Date(iso).toLocaleString("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -48,25 +59,20 @@ function formatDate(iso: string): string {
 function sourceTypeIcon(sourceType: string, size = 18) {
   const t = sourceType.toLowerCase();
   if (["image", "jpg", "jpeg", "png", "gif", "svg", "webp", "logo"].includes(t))
-    return <ImageIcon size={size} className="text-muted-foreground" />;
+    return <ImageIcon size={size} className="text-zinc-500" />;
   if (t === "pdf") return <FileText size={size} className="text-red-500" />;
-  if (t === "color")
-    return <Palette size={size} className="text-muted-foreground" />;
-  if (t === "font")
-    return <Type size={size} className="text-muted-foreground" />;
-  if (t === "text")
-    return <AlignLeft size={size} className="text-muted-foreground" />;
-  if (t === "html")
-    return <Code size={size} className="text-muted-foreground" />;
+  if (t === "color") return <Palette size={size} className="text-zinc-500" />;
+  if (t === "font") return <Type size={size} className="text-zinc-500" />;
+  if (t === "text") return <AlignLeft size={size} className="text-zinc-500" />;
+  if (t === "html") return <Code size={size} className="text-zinc-500" />;
   if (["css", "design_system"].includes(t))
-    return <Paintbrush size={size} className="text-muted-foreground" />;
+    return <Paintbrush size={size} className="text-zinc-500" />;
   if (["js", "javascript"].includes(t))
-    return <Braces size={size} className="text-muted-foreground" />;
+    return <Braces size={size} className="text-zinc-500" />;
   if (t === "markdown")
-    return <FileCode size={size} className="text-muted-foreground" />;
-  if (t === "url")
-    return <Globe size={size} className="text-muted-foreground" />;
-  return <File size={size} className="text-muted-foreground" />;
+    return <FileCode size={size} className="text-zinc-500" />;
+  if (t === "url") return <Globe size={size} className="text-zinc-500" />;
+  return <File size={size} className="text-zinc-500" />;
 }
 
 interface SourceDetailModalProps {
@@ -111,12 +117,15 @@ export function SourceDetailModal({
       const srcType = source.source_type.toLowerCase();
       const isCodeType = [
         "html",
+        "design_system",
         "css",
         "js",
         "javascript",
         "markdown",
       ].includes(srcType);
-      if (isCodeType && source.storage_key) {
+      if (isManagedArtifact(source)) {
+        setCodeContent(rd.content || "");
+      } else if (isCodeType && source.storage_key) {
         setCodeContent(ed.text_snippet || "");
         setCodeLoading(true);
         fetch(getSourceFileUrl(source.id), { credentials: "include" })
@@ -137,9 +146,11 @@ export function SourceDetailModal({
       if (!source) throw new Error("No source");
       const t = source.source_type.toLowerCase();
       let resource_data: Record<string, unknown> | undefined;
+      const managedArtifact = isManagedArtifact(source);
 
       const isCodeType = [
         "html",
+        "design_system",
         "css",
         "js",
         "javascript",
@@ -153,6 +164,14 @@ export function SourceDetailModal({
         resource_data = { ...rd, family: editFamily };
       } else if (t === "text") {
         resource_data = { content: editContent, kind: editKind };
+      } else if (managedArtifact) {
+        const rd = (source.resource_data ?? {}) as Record<string, unknown>;
+        resource_data = {
+          ...rd,
+          content: codeContent,
+          edited_after_generation: true,
+          last_edited_at: new Date().toISOString(),
+        };
       }
 
       const patchPromise = patchSource(source.id, {
@@ -160,7 +179,7 @@ export function SourceDetailModal({
         ...(resource_data ? { resource_data } : {}),
       });
 
-      if (isCodeType && source.storage_key) {
+      if (isCodeType && source.storage_key && !managedArtifact) {
         return patchPromise.then(() =>
           updateSourceContent(source.id, codeContent),
         );
@@ -178,6 +197,7 @@ export function SourceDetailModal({
     if (!codeContent) return "";
     const langMap: Record<string, string> = {
       html: "xml",
+      design_system: "markdown",
       css: "css",
       js: "javascript",
       javascript: "javascript",
@@ -213,6 +233,7 @@ export function SourceDetailModal({
     "logo",
   ].includes(t);
   const isCode = ["html", "css", "js", "javascript", "markdown"].includes(t);
+  const managedArtifact = isManagedArtifact(source);
   const hasFile = Boolean(source.storage_key);
 
   return (
@@ -222,9 +243,9 @@ export function SourceDetailModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative bg-card rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-zinc-800/70 bg-zinc-950/95 text-zinc-50 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-border shrink-0">
+        <div className="flex shrink-0 items-center gap-3 border-b border-zinc-800/60 px-5 py-4">
           <span className="shrink-0">{sourceTypeIcon(t)}</span>
           <div className="flex-1 min-w-0">
             {editMode ? (
@@ -232,14 +253,12 @@ export function SourceDetailModal({
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded-[10px] border border-input bg-background px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/15"
+                className="w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm font-medium text-zinc-100 outline-none focus:ring-2 focus:ring-white/[0.04]"
               />
             ) : (
-              <h2 className="font-semibold text-foreground truncate">
-                {label}
-              </h2>
+              <h2 className="truncate font-semibold text-zinc-50">{label}</h2>
             )}
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mt-0.5">
+            <p className="mt-0.5 text-xs uppercase tracking-wide text-zinc-500">
               {source.source_type}
             </p>
           </div>
@@ -249,29 +268,29 @@ export function SourceDetailModal({
                 <button
                   onClick={() => saveMutation.mutate()}
                   disabled={saveMutation.isPending}
-                  className="inline-flex items-center gap-1.5 rounded-[14px] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:brightness-95 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500"
                 >
                   {saveMutation.isPending ? (
                     <Loader2 size={12} className="animate-spin" />
                   ) : (
                     <Save size={12} />
                   )}
-                  Guardar
+                  Save
                 </button>
                 <button
                   onClick={() => setEditMode(false)}
-                  className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+                  className="rounded-xl border border-zinc-800/70 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
                 >
-                  Cancelar
+                  Cancel
                 </button>
               </>
             ) : (
               <button
                 onClick={() => setEditMode(true)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800/70 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
               >
                 <Pencil size={12} />
-                Editar
+                Edit
               </button>
             )}
             {canDelete && !editMode && (
@@ -280,15 +299,15 @@ export function SourceDetailModal({
                   onClose();
                   onDeleteRequest?.();
                 }}
-                title="Eliminar recurso"
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 transition-colors"
+                title="Delete resource"
+                className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
               >
                 <Trash2 size={15} />
               </button>
             )}
             <button
               onClick={onClose}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
             >
               <X size={16} />
             </button>
@@ -299,7 +318,7 @@ export function SourceDetailModal({
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Image preview */}
           {isImage && hasFile && source.status === "ready" && (
-            <div className="rounded-lg overflow-hidden border border-border bg-muted/30 flex items-center justify-center min-h-[200px]">
+            <div className="flex min-h-[200px] items-center justify-center overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-900/60">
               <img
                 src={getSourceFileUrl(source.id)}
                 alt={label}
@@ -314,10 +333,10 @@ export function SourceDetailModal({
               href={getSourceFileUrl(source.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-accent transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-800/70 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
             >
               <ExternalLink size={14} />
-              Abrir / Descargar PDF
+              Open / Download PDF
             </a>
           )}
 
@@ -329,11 +348,11 @@ export function SourceDetailModal({
                   type="color"
                   value={editHex}
                   onChange={(e) => setEditHex(e.target.value)}
-                  className="h-16 w-16 cursor-pointer rounded-xl border border-border"
+                  className="h-16 w-16 cursor-pointer rounded-xl border border-zinc-800/70"
                 />
               ) : (
                 <div
-                  className="h-16 w-16 rounded-xl border border-border shadow-sm shrink-0"
+                  className="h-16 w-16 shrink-0 rounded-xl border border-zinc-800/70 shadow-sm"
                   style={{ background: String(rd.hex ?? "#000000") }}
                 />
               )}
@@ -344,14 +363,14 @@ export function SourceDetailModal({
                       type="text"
                       value={editHex}
                       onChange={(e) => setEditHex(e.target.value)}
-                      className="block rounded-[10px] border border-input bg-background px-2 py-1 text-sm font-mono w-28 focus:outline-none focus:ring-2 focus:ring-primary/15"
+                      className="block w-28 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm font-mono text-zinc-100 outline-none focus:ring-2 focus:ring-white/[0.04]"
                     />
                     <input
                       type="text"
                       value={editRole}
                       onChange={(e) => setEditRole(e.target.value)}
-                      placeholder="Rol (ej. primary, secondary)"
-                      className="block rounded-[10px] border border-input bg-background px-2 py-1 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-primary/15"
+                      placeholder="Role (e.g. primary, secondary)"
+                      className="block w-48 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-white/[0.04]"
                     />
                   </>
                 ) : (
@@ -360,9 +379,7 @@ export function SourceDetailModal({
                       {String(rd.hex ?? "")}
                     </p>
                     {!!rd.role && (
-                      <p className="text-sm text-muted-foreground">
-                        {String(rd.role)}
-                      </p>
+                      <p className="text-sm text-zinc-400">{String(rd.role)}</p>
                     )}
                   </>
                 )}
@@ -373,7 +390,7 @@ export function SourceDetailModal({
           {/* Font */}
           {t === "font" && (
             <div className="space-y-3">
-              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+              <div className="space-y-2 rounded-xl border border-zinc-800/70 bg-zinc-900/60 p-4">
                 <p
                   style={{ fontFamily: String(rd.family ?? "") }}
                   className="text-2xl"
@@ -382,7 +399,7 @@ export function SourceDetailModal({
                 </p>
                 <p
                   style={{ fontFamily: String(rd.family ?? "") }}
-                  className="text-sm text-muted-foreground"
+                  className="text-sm text-zinc-400"
                 >
                   ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz
                   0123456789
@@ -393,19 +410,19 @@ export function SourceDetailModal({
                   type="text"
                   value={editFamily}
                   onChange={(e) => setEditFamily(e.target.value)}
-                  placeholder="Familia CSS (ej. Inter, Roboto)"
-                  className="w-full rounded border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/15"
+                  placeholder="CSS family (e.g. Inter, Roboto)"
+                  className="w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-white/[0.04]"
                 />
               ) : (
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-zinc-400">
                     Family:{" "}
                     <span className="font-mono text-foreground">
                       {String(rd.family ?? "")}
                     </span>
                   </p>
                   {!!rd.weights && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-zinc-400">
                       Weights:{" "}
                       {Array.isArray(rd.weights)
                         ? rd.weights.join(", ")
@@ -425,24 +442,24 @@ export function SourceDetailModal({
                   <select
                     value={editKind}
                     onChange={(e) => setEditKind(e.target.value)}
-                    className="rounded border border-input bg-background px-2 py-1 text-sm"
+                    className="rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100"
                   >
                     <option value="copy">Copy</option>
                     <option value="tagline">Tagline</option>
                     <option value="slogan">Slogan</option>
-                    <option value="voice_notes">Notas de voz</option>
+                    <option value="voice_notes">Voice notes</option>
                   </select>
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={6}
-                    className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                    className="flex w-full resize-y rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 shadow-none transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </>
               ) : (
                 <>
                   {!!rd.kind && (
-                    <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="inline-block rounded-lg border border-zinc-800/70 bg-zinc-900/70 px-2 py-0.5 text-xs text-zinc-400">
                       {String(rd.kind)}
                     </span>
                   )}
@@ -454,13 +471,13 @@ export function SourceDetailModal({
             </div>
           )}
 
-          {/* Code (html, css, js, markdown) */}
-          {isCode && (
+          {/* Code (html, css, js, markdown, generated artifacts) */}
+          {(isCode || managedArtifact || t === "design_system") && (
             <div className="space-y-2">
               {codeLoading && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Loader2 size={12} className="animate-spin" /> Cargando
-                  contenido...
+                <p className="flex items-center gap-1.5 text-xs text-zinc-500">
+                  <Loader2 size={12} className="animate-spin" /> Loading
+                  content...
                 </p>
               )}
               {editMode ? (
@@ -469,10 +486,10 @@ export function SourceDetailModal({
                   onChange={(e) => setCodeContent(e.target.value)}
                   rows={16}
                   spellCheck={false}
-                  className="w-full rounded-[14px] border border-input bg-background px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/15 resize-y"
+                  className="w-full resize-y rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-xs font-mono text-zinc-100 outline-none focus:ring-2 focus:ring-white/[0.04]"
                 />
               ) : (
-                <div className="rounded-lg border border-border overflow-auto max-h-72">
+                <div className="max-h-72 overflow-auto rounded-xl border border-zinc-800/70 bg-zinc-950/80">
                   <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words hljs">
                     {highlightedCode ? (
                       <code
@@ -481,8 +498,8 @@ export function SourceDetailModal({
                         dangerouslySetInnerHTML={{ __html: highlightedCode }}
                       />
                     ) : (
-                      <code className="text-muted-foreground">
-                        Sin contenido disponible
+                      <code className="text-zinc-500">
+                        No content available
                       </code>
                     )}
                   </pre>
@@ -497,7 +514,7 @@ export function SourceDetailModal({
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm text-primary hover:bg-accent transition-colors break-all"
+              className="inline-flex items-center gap-2 break-all rounded-xl border border-zinc-800/70 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
             >
               <ExternalLink size={14} className="shrink-0" />
               {source.url}
@@ -510,10 +527,10 @@ export function SourceDetailModal({
               href={getSourceFileUrl(source.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-accent transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-800/70 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
             >
               <ExternalLink size={14} />
-              Descargar archivo
+              Download file
             </a>
           )}
 
@@ -521,34 +538,34 @@ export function SourceDetailModal({
             <p className="text-xs text-red-500">
               {saveMutation.error instanceof Error
                 ? saveMutation.error.message
-                : "Error al guardar"}
+                : "Failed to save changes"}
             </p>
           )}
 
           {/* Metadata */}
-          <div className="border-t border-border pt-4 grid grid-cols-2 gap-x-6 gap-y-2">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-zinc-800/60 pt-4">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Subido
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                Uploaded
               </p>
-              <p className="mt-0.5 text-sm text-foreground">
+              <p className="mt-0.5 text-sm text-zinc-100">
                 {formatDate(source.created_at)}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Modificado
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                Updated
               </p>
-              <p className="mt-0.5 text-sm text-foreground">
+              <p className="mt-0.5 text-sm text-zinc-100">
                 {formatDate(source.updated_at)}
               </p>
             </div>
             {source.file_size_bytes != null && (
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Tamaño
+                <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                  Size
                 </p>
-                <p className="mt-0.5 text-sm text-foreground">
+                <p className="mt-0.5 text-sm text-zinc-100">
                   {formatFileSize(source.file_size_bytes)}
                 </p>
               </div>

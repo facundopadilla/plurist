@@ -4,11 +4,13 @@ import type {
   ChatMessage,
   CanvasConfig,
   ContextualAiMode,
+  ElementReference,
   NetworkId,
   PanelId,
   ResponsiveVariantType,
   SlideData,
   VariantGenerationMeta,
+  VirtualFile,
 } from "./types";
 import type { DraftFrameMetadata, DraftVariant } from "../content/types";
 import type { Editor, TLShapeId } from "tldraw";
@@ -114,8 +116,11 @@ interface CanvasStore {
 
   // Edit state
   editingNodeId: string | null;
+  selectedSlideIds: string[];
   enterEditMode: (nodeId: string) => void;
   exitEditMode: () => void;
+  setSelectedSlideIds: (slideIds: string[]) => void;
+  clearSelectedSlideIds: () => void;
   annotationEditorSlideId: string | null;
   openAnnotationEditor: (slideId: string) => void;
   closeAnnotationEditor: () => void;
@@ -123,10 +128,18 @@ interface CanvasStore {
   openContextualAi: (slideId: string, mode: ContextualAiMode) => void;
   closeContextualAi: () => void;
 
+  // Element reference for "Edit with AI"
+  elementReference: ElementReference | null;
+  setElementReference: (ref: ElementReference | null) => void;
+  clearElementReference: () => void;
+
   // Panel navigation
   activePanel: PanelId | null;
+  chatPanelSize: "compact" | "expanded";
   resetActivePanel: () => void;
+  setActivePanel: (panel: PanelId) => void;
   togglePanel: (panel: PanelId) => void;
+  toggleChatPanelSize: () => void;
 
   // Persistence
   draftPostId: number | null;
@@ -138,6 +151,13 @@ interface CanvasStore {
 
   // Derived: count of slides (replaces nodes.length for load guards)
   slideCount: () => number;
+
+  // Code editor
+  globalStyles: string;
+  setGlobalStyles: (css: string) => void;
+  updateEpoch: number;
+  bumpEpoch: () => void;
+  getVirtualFileTree: () => VirtualFile[];
 }
 
 let slideCounter = 0;
@@ -311,22 +331,34 @@ function createUiSlice(
 ): Pick<
   CanvasStore,
   | "editingNodeId"
+  | "selectedSlideIds"
   | "enterEditMode"
   | "exitEditMode"
+  | "setSelectedSlideIds"
+  | "clearSelectedSlideIds"
   | "annotationEditorSlideId"
   | "openAnnotationEditor"
   | "closeAnnotationEditor"
   | "contextualAiTarget"
   | "openContextualAi"
   | "closeContextualAi"
+  | "elementReference"
+  | "setElementReference"
+  | "clearElementReference"
   | "activePanel"
+  | "chatPanelSize"
   | "resetActivePanel"
+  | "setActivePanel"
   | "togglePanel"
+  | "toggleChatPanelSize"
 > {
   return {
     editingNodeId: null,
+    selectedSlideIds: [],
     enterEditMode: (nodeId) => set({ editingNodeId: nodeId }),
     exitEditMode: () => set({ editingNodeId: null }),
+    setSelectedSlideIds: (slideIds) => set({ selectedSlideIds: slideIds }),
+    clearSelectedSlideIds: () => set({ selectedSlideIds: [] }),
     annotationEditorSlideId: null,
     openAnnotationEditor: (slideId) =>
       set({ annotationEditorSlideId: slideId }),
@@ -335,11 +367,22 @@ function createUiSlice(
     openContextualAi: (slideId, mode) =>
       set({ contextualAiTarget: { slideId, mode } }),
     closeContextualAi: () => set({ contextualAiTarget: null }),
+    elementReference: null,
+    setElementReference: (ref) =>
+      set({ elementReference: ref, activePanel: "chat" }),
+    clearElementReference: () => set({ elementReference: null }),
     activePanel: "chat",
+    chatPanelSize: "expanded",
     resetActivePanel: () => set({ activePanel: "chat" }),
+    setActivePanel: (panel) => set({ activePanel: panel }),
     togglePanel: (panel) =>
       set((state: CanvasStore) => ({
         activePanel: state.activePanel === panel ? null : panel,
+      })),
+    toggleChatPanelSize: () =>
+      set((state: CanvasStore) => ({
+        chatPanelSize:
+          state.chatPanelSize === "expanded" ? "compact" : "expanded",
       })),
   };
 }
@@ -501,6 +544,9 @@ function createSlidesSlice(
           contextualAiTarget && newSlides.has(contextualAiTarget.slideId)
             ? contextualAiTarget
             : null,
+        selectedSlideIds: Array.from(newSlides.keys()).filter((slideId) =>
+          selectedSlideIds.has(slideId),
+        ),
       });
 
       if (editor && selectedSlideIds.size > 0) {
@@ -657,6 +703,9 @@ function createSlidesSlice(
             state.contextualAiTarget?.slideId === slideId
               ? null
               : state.contextualAiTarget,
+          selectedSlideIds: state.selectedSlideIds.filter(
+            (id) => id !== slideId,
+          ),
           slides: newSlides,
           isDirty: true,
         };
@@ -999,6 +1048,59 @@ function createSlidesSlice(
   };
 }
 
+function createCodeEditorSlice(
+  set: CanvasSet,
+  get: CanvasGet,
+): Pick<
+  CanvasStore,
+  | "globalStyles"
+  | "setGlobalStyles"
+  | "updateEpoch"
+  | "bumpEpoch"
+  | "getVirtualFileTree"
+> {
+  return {
+    globalStyles: "",
+    setGlobalStyles: (css) => set({ globalStyles: css }),
+    updateEpoch: 0,
+    bumpEpoch: () =>
+      set((state: CanvasStore) => ({ updateEpoch: state.updateEpoch + 1 })),
+    getVirtualFileTree: () => {
+      const { slides, globalStyles, isStreaming } = get();
+      const files: VirtualFile[] = [
+        {
+          id: "styles.css",
+          filename: "styles.css",
+          language: "css",
+          content: globalStyles,
+          readOnly: false,
+        },
+      ];
+
+      const sortedEntries = Array.from(slides.entries()).sort(
+        ([, a], [, b]) => a.slideIndex - b.slideIndex,
+      );
+
+      sortedEntries.forEach(([slideId, slide], index) => {
+        const activeVariant = slide.variants.find(
+          (v) => v.id === slide.activeVariantId,
+        );
+        files.push({
+          id: `slide-${slideId}`,
+          filename: `slide-${index + 1}.html`,
+          language: "html",
+          content: activeVariant?.html ?? "",
+          slideId,
+          variantId: slide.activeVariantId ?? undefined,
+          readOnly: isStreaming,
+        });
+      });
+
+      return files;
+    },
+  };
+}
+
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
   // tldraw editor
   editor: null,
@@ -1011,6 +1113,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   ...createChatSlice(set),
   ...createUiSlice(set),
   ...createPersistenceSlice(set, get),
+  ...createCodeEditorSlice(set, get),
 }));
 
 // Selector helpers (stable references)

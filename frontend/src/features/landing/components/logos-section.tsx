@@ -1,38 +1,55 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { ease, fadeScale, staggerContainer } from "../lib/animations";
 
-const PILLS = [
-  { label: "Instagram", color: "bg-pink-500" },
-  { label: "LinkedIn", color: "bg-blue-600" },
-  { label: "X (Twitter)", color: "bg-foreground" },
-  { label: "OpenAI", color: "bg-emerald-500" },
-  { label: "Anthropic", color: "bg-orange-500" },
-  { label: "Gemini", color: "bg-violet-500" },
+const ITEMS = [
+  { label: "Instagram", dot: "#E1306C" },
+  { label: "LinkedIn", dot: "#0A66C2" },
+  { label: "X", dot: "#000" },
+  { label: "OpenAI", dot: "#10a37f" },
+  { label: "Anthropic", dot: "#d97706" },
+  { label: "Gemini", dot: "#4285f4" },
 ];
 
 export function LogosSection() {
   return (
-    <section className="py-16 bg-background">
-      <div className="max-w-7xl mx-auto px-4">
-        <p className="text-center text-sm text-muted-foreground mb-8">
-          Publish to every network. Generate with any model.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {PILLS.map(({ label, color }, i) => (
+    <section className="py-16 sm:py-20 bg-white border-b-2 border-black">
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.p
+          className="text-center text-xs text-black mb-6 tracking-widest uppercase font-bold"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, ease }}
+        >
+          Publish everywhere · Generate with any model
+        </motion.p>
+        <motion.div
+          className="flex flex-wrap items-center justify-center gap-3"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          {ITEMS.map(({ label, dot }) => (
             <motion.div
               key={label}
-              className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground"
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.07 }}
+              variants={fadeScale}
+              whileHover={{ x: -2, y: -2 }}
+              whileTap={{ x: 2, y: 2 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center gap-2 bg-white border-2 border-black rounded px-4 py-2 text-sm text-black font-bold cursor-default"
+              style={{ boxShadow: "3px 3px 0 0 #000" }}
             >
-              <span className={`h-2 w-2 rounded-full ${color} shrink-0`} />
+              <span
+                className="h-2 w-2 rounded-full shrink-0 border border-black"
+                style={{ background: dot }}
+              />
               {label}
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

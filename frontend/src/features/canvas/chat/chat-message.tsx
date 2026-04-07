@@ -1,4 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
+import {
+  AlertTriangle,
+  KeyRound,
+  Gauge,
+  ShieldAlert,
+  ServerCrash,
+  Wifi,
+  RefreshCw,
+} from "lucide-react";
 import { cn } from "../../../lib/utils";
 import type { ChatMessage } from "../types";
 
@@ -148,6 +157,85 @@ function renderAssistantContent(content: string, isStreaming: boolean) {
   return <div className="space-y-2">{elements}</div>;
 }
 
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  auth: <KeyRound size={16} />,
+  limit: <Gauge size={16} />,
+  content: <ShieldAlert size={16} />,
+  provider: <ServerCrash size={16} />,
+  network: <Wifi size={16} />,
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  auth: "border-amber-500/30 bg-amber-500/[0.06]",
+  limit: "border-orange-500/30 bg-orange-500/[0.06]",
+  content: "border-violet-500/30 bg-violet-500/[0.06]",
+  provider: "border-red-500/30 bg-red-500/[0.06]",
+  network: "border-sky-500/30 bg-sky-500/[0.06]",
+};
+
+const CATEGORY_ICON_COLORS: Record<string, string> = {
+  auth: "text-amber-400",
+  limit: "text-orange-400",
+  content: "text-violet-400",
+  provider: "text-red-400",
+  network: "text-sky-400",
+};
+
+function ErrorCard({
+  message,
+  onRetry,
+}: {
+  message: ChatMessage;
+  onRetry?: () => void;
+}) {
+  const error = message.error;
+  if (!error) return null;
+
+  const category = error.category || "provider";
+  const icon = CATEGORY_ICONS[category] ?? <AlertTriangle size={16} />;
+  const borderBg =
+    CATEGORY_COLORS[category] ?? "border-red-500/30 bg-red-500/[0.06]";
+  const iconColor = CATEGORY_ICON_COLORS[category] ?? "text-red-400";
+
+  return (
+    <div className={cn("max-w-[85%] rounded-lg border p-3", borderBg)}>
+      <div className="flex items-start gap-2.5">
+        <div className={cn("mt-0.5 flex-shrink-0", iconColor)}>{icon}</div>
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="text-sm font-medium text-zinc-100">
+            {message.content || error.hint || "Something went wrong"}
+          </p>
+          {error.hint && message.content && (
+            <p className="text-xs text-zinc-400">{error.hint}</p>
+          )}
+          {error.retryable && onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-1.5 inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800/80 px-2.5 py-1 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 hover:text-zinc-50"
+            >
+              <RefreshCw size={12} />
+              Try again
+            </button>
+          )}
+        </div>
+      </div>
+      {(message.provider || error.code) && (
+        <div className="mt-2 flex items-center gap-2 text-[10px] text-zinc-500">
+          {message.provider && (
+            <span className="capitalize">{message.provider}</span>
+          )}
+          {error.code && error.code !== "unknown" && (
+            <span className="rounded bg-zinc-800/60 px-1.5 py-0.5 font-mono">
+              {error.code}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ChatMessageBubble({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
@@ -218,6 +306,15 @@ export function ChatMessageBubble({ message }: ChatMessageProps) {
   // Consideramos que está escribiendo si el streaming de la red está activo O si nuestra animación local no terminó
   const isTyping =
     message.isStreaming || displayedContent.length < targetContent.length;
+
+  // Error messages get a dedicated card instead of the normal bubble
+  if (!isUser && message.error) {
+    return (
+      <div className="flex flex-col gap-1 items-start">
+        <ErrorCard message={message} />
+      </div>
+    );
+  }
 
   return (
     <div

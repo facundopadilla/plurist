@@ -13,7 +13,7 @@ export function FolderCard({
   project,
   sourceCount,
   onClick,
-  countUnit = "recurso",
+  countUnit = "resource",
 }: FolderCardProps) {
   const color = project?.color || "#6b7280";
   const accentBg = color + "1a";
@@ -22,7 +22,7 @@ export function FolderCard({
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left rounded-lg border border-border p-4 hover:border-foreground/20 transition-colors"
+      className="group w-full rounded-2xl border border-zinc-800/60 p-4 text-left transition-colors hover:border-zinc-700/80"
       style={{
         borderTopColor: color,
         borderTopWidth: 2,
@@ -31,7 +31,7 @@ export function FolderCard({
     >
       <div className="flex items-start gap-3">
         <div
-          className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-md shrink-0 overflow-hidden"
+          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg"
           style={{ backgroundColor: accentBg }}
         >
           {project?.icon_url ? (
@@ -56,10 +56,10 @@ export function FolderCard({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-            {project ? project.name : "Sin proyecto"}
+          <p className="truncate font-semibold text-zinc-100 transition-colors group-hover:text-zinc-50">
+            {project ? project.name : "No project"}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-xs text-zinc-500">
             {sourceCount} {countUnit}
             {sourceCount !== 1 ? "s" : ""}
           </p>

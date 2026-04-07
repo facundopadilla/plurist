@@ -14,7 +14,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-zinc-400">
         <Loader2 size={14} className="animate-spin" />
         Loading…
       </div>
@@ -33,26 +33,26 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
           Filename
         </p>
         <p className="text-sm">{data.original_filename || "—"}</p>
       </div>
       <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
           Type
         </p>
         <p className="text-sm">{data.source_type}</p>
       </div>
       <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
           Status
         </p>
         <p className="text-sm">{data.status}</p>
       </div>
       {data.url && (
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
             URL
           </p>
           <a
@@ -75,10 +75,10 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
       )}
       {hasExtracted && (
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
             Extracted data
           </p>
-          <pre className="rounded-md border border-border bg-muted p-3 text-xs overflow-auto max-h-64">
+          <pre className="max-h-64 overflow-auto rounded-xl border border-zinc-800/70 bg-zinc-900/60 p-3 text-xs text-zinc-200">
             {JSON.stringify(data.extracted_data, null, 2)}
           </pre>
         </div>

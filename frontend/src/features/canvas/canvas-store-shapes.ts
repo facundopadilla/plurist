@@ -35,6 +35,8 @@ export function createTldrawShape(
       html,
       slideId,
       slideIndex,
+      formatWidth,
+      formatHeight,
     },
   });
 }

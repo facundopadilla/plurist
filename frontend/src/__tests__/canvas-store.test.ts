@@ -69,6 +69,51 @@ describe("canvas-store", () => {
     it("starts with isDirty false", () => {
       expect(useCanvasStore.getState().isDirty).toBe(false);
     });
+
+    it("starts with no selected slides", () => {
+      expect(useCanvasStore.getState().selectedSlideIds).toEqual([]);
+    });
+  });
+
+  describe("selectedSlideIds", () => {
+    it("stores and clears selected slide ids", () => {
+      const firstSlideId = useCanvasStore
+        .getState()
+        .addSlide(0, "<p>1</p>", "openai", 1);
+      const secondSlideId = useCanvasStore
+        .getState()
+        .addSlide(1, "<p>2</p>", "openai", 1);
+
+      useCanvasStore
+        .getState()
+        .setSelectedSlideIds([firstSlideId, secondSlideId]);
+
+      expect(useCanvasStore.getState().selectedSlideIds).toEqual([
+        firstSlideId,
+        secondSlideId,
+      ]);
+
+      useCanvasStore.getState().clearSelectedSlideIds();
+      expect(useCanvasStore.getState().selectedSlideIds).toEqual([]);
+    });
+
+    it("removes deleted slides from selected slide ids", () => {
+      const firstSlideId = useCanvasStore
+        .getState()
+        .addSlide(0, "<p>1</p>", "openai", 1);
+      const secondSlideId = useCanvasStore
+        .getState()
+        .addSlide(1, "<p>2</p>", "openai", 1);
+
+      useCanvasStore
+        .getState()
+        .setSelectedSlideIds([firstSlideId, secondSlideId]);
+      useCanvasStore.getState().removeSlide(firstSlideId);
+
+      expect(useCanvasStore.getState().selectedSlideIds).toEqual([
+        secondSlideId,
+      ]);
+    });
   });
 
   describe("setEditor", () => {
@@ -373,7 +418,11 @@ describe("canvas-store", () => {
           "<p>Variant</p>",
           "anthropic",
           "claude-3-5-sonnet",
-          { sourcePrompt: "más premium", sourceVariantId: 1, mode: "generate" },
+          {
+            sourcePrompt: "more premium",
+            sourceVariantId: 1,
+            mode: "generate",
+          },
         );
 
       const slide = useCanvasStore.getState().slides.get(slideId)!;
@@ -381,7 +430,7 @@ describe("canvas-store", () => {
       expect(slide.activeVariantId).toBe(2);
       expect(slide.generationMeta).toEqual(
         expect.objectContaining({
-          sourcePrompt: "más premium",
+          sourcePrompt: "more premium",
           sourceVariantId: 1,
         }),
       );

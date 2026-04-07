@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useCanvasStore } from "../features/canvas/canvas-store";
 import {
+  ModelDropdown,
   ProjectDropdown,
   ProviderDropdown,
 } from "../features/canvas/header-dropdowns";
 import { fetchProjects } from "../features/projects/api";
+import { fetchAISettings } from "../features/settings/ai-providers/api";
 import {
   fetchFormats,
   fetchOllamaModels,
@@ -74,6 +76,14 @@ describe("canvas header dropdowns", () => {
       { name: "mistral", display_name: "Mistral" },
     ]);
     vi.mocked(fetchFormats).mockResolvedValue([]);
+    vi.mocked(fetchAISettings).mockResolvedValue({
+      has_openai_key: false,
+      has_anthropic_key: false,
+      has_gemini_key: false,
+      has_openrouter_key: false,
+      ollama_base_url: "",
+      preferred_models: {},
+    });
   });
 
   it("selects a project from the shared dropdown menu", async () => {
@@ -129,6 +139,46 @@ describe("canvas header dropdowns", () => {
       expect(useCanvasStore.getState().config.selectedProviders).toContain(
         "ollama",
       );
+    });
+  });
+
+  it("shows fallback label when no provider key is configured", async () => {
+    useCanvasStore.setState({
+      config: {
+        ...useCanvasStore.getState().config,
+        selectedProviders: ["openai", "gemini"],
+      },
+    });
+
+    const view = renderWithQuery(<ModelDropdown />);
+
+    await waitFor(() => {
+      expect(view.container.textContent).toContain("Configurar AI");
+    });
+  });
+
+  it("shows model label for the first configured provider", async () => {
+    vi.mocked(fetchAISettings).mockResolvedValue({
+      has_openai_key: true,
+      has_anthropic_key: false,
+      has_gemini_key: false,
+      has_openrouter_key: false,
+      ollama_base_url: "",
+      preferred_models: {},
+    });
+
+    useCanvasStore.setState({
+      config: {
+        ...useCanvasStore.getState().config,
+        selectedProviders: ["openai"],
+        selectedModels: { openai: "openai/gpt-4o" },
+      },
+    });
+
+    const view = renderWithQuery(<ModelDropdown />);
+
+    await waitFor(() => {
+      expect(view.container.textContent).toContain("gpt-4o");
     });
   });
 });

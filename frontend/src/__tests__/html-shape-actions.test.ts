@@ -240,14 +240,14 @@ describe("html-shape-actions", () => {
     const slideId = useCanvasStore
       .getState()
       .addSlide(0, "<p>Note</p>", "openai", 1);
-    vi.spyOn(window, "prompt").mockReturnValue("Ajustar spacing del título");
+    vi.spyOn(window, "prompt").mockReturnValue("Adjust title spacing");
 
     const annotationId = addHtmlShapeAnnotation(slideId);
 
     expect(annotationId).toBeTruthy();
     expect(useCanvasStore.getState().annotationEditorSlideId).toBe(slideId);
     expect(useCanvasStore.getState().slides.get(slideId)?.annotations).toEqual([
-      expect.objectContaining({ text: "Ajustar spacing del título" }),
+      expect.objectContaining({ text: "Adjust title spacing" }),
     ]);
   });
 

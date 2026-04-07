@@ -8,15 +8,33 @@ test.describe("Canvas Compose page", () => {
     // The canvas compose page should render
     const canvasPage = page.locator('[data-testid="canvas-compose-page"]');
 
-    // On desktop viewport (1280x720 by default in playwright)
-    // The page should be visible
-    // Note: Auth redirect may happen — check for the page or a redirect
+    const loginForm = page.locator('[data-testid="login-form"]');
+
+    await expect
+      .poll(
+        async () => {
+          const currentUrl = page.url();
+          if (currentUrl.includes("/login") || currentUrl.includes("/auth")) {
+            return "login-url";
+          }
+          if (await loginForm.isVisible().catch(() => false)) {
+            return "login-form";
+          }
+          if (await canvasPage.isVisible().catch(() => false)) {
+            return "canvas";
+          }
+          return "pending";
+        },
+        { timeout: 10000 },
+      )
+      .not.toBe("pending");
+
     const url = page.url();
 
-    // Either we see the canvas page or we were redirected to login
     if (url.includes("/login") || url.includes("/auth")) {
-      // Auth redirect is expected — verify the page loads without crashing
       expect(url).toBeTruthy();
+    } else if (await loginForm.isVisible().catch(() => false)) {
+      await expect(loginForm).toBeVisible();
     } else {
       // Canvas page loaded
       await expect(canvasPage).toBeVisible({ timeout: 10000 });
@@ -72,13 +90,40 @@ test.describe("Canvas Compose page", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/compose");
 
+    const loginForm = page.locator('[data-testid="login-form"]');
+    const notice = page.locator("text=Canvas Studio");
+
+    await expect
+      .poll(
+        async () => {
+          const currentUrl = page.url();
+          if (currentUrl.includes("/login") || currentUrl.includes("/auth")) {
+            return "login-url";
+          }
+          if (await loginForm.isVisible().catch(() => false)) {
+            return "login-form";
+          }
+          if (await notice.isVisible().catch(() => false)) {
+            return "desktop-notice";
+          }
+          return "pending";
+        },
+        { timeout: 5000 },
+      )
+      .not.toBe("pending");
+
     const url = page.url();
-    if (!url.includes("/login") && !url.includes("/auth")) {
-      // Desktop-only notice should be visible on small screens
-      const notice = page.locator(
-        "text=Canvas Compose requires a desktop browser",
-      );
-      await expect(notice).toBeVisible({ timeout: 5000 });
+    if (url.includes("/login") || url.includes("/auth")) {
+      expect(url).toBeTruthy();
+    } else if (await loginForm.isVisible().catch(() => false)) {
+      await expect(loginForm).toBeVisible();
+    } else {
+      await expect(page.locator("text=Canvas Studio")).toBeVisible();
+      await expect(
+        page.locator(
+          "text=Canvas Compose requires a desktop browser (1024px+).",
+        ),
+      ).toBeVisible();
     }
   });
 });
