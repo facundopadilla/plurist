@@ -10,6 +10,7 @@ class DesignBankSource(models.Model):
         URL = "url", "URL"
         PDF = "pdf", "PDF"
         IMAGE = "image", "Image"
+        CSS = "css", "CSS"
         COLOR = "color", "Color"
         FONT = "font", "Font"
         LOGO = "logo", "Logo"

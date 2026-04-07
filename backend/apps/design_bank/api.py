@@ -9,6 +9,10 @@ from apps.accounts.auth import get_membership, require_editor_capabilities
 from apps.accounts.models import RoleChoices
 from apps.accounts.session_auth import session_auth as django_auth
 
+from .design_system_service import (
+    get_project_design_system_status,
+    sync_project_design_system,
+)
 from .models import DesignBankSource
 from .validators import validate_file_size, validate_url
 
@@ -63,6 +67,32 @@ class ResourcePatchIn(Schema):
     resource_data: dict | None = None
 
 
+class DesignSystemStatusOut(Schema):
+    has_design_system: bool
+    has_reference_brief: bool
+    has_relevant_sources: bool
+    is_outdated: bool
+    relevant_source_count: int
+    last_relevant_source_at: str | None = None
+    artifact_revision: str | None = None
+    design_system_source_id: int | None = None
+    reference_brief_source_id: int | None = None
+    has_manual_edits: bool
+
+
+class DesignSystemSyncIn(Schema):
+    provider: str = "openai"
+    model_id: str | None = None
+    guidance: str = ""
+
+
+class DesignSystemSyncOut(Schema):
+    ok: bool
+    status: DesignSystemStatusOut
+    design_system_source_id: int
+    reference_brief_source_id: int
+
+
 def _workspace_from_request(request):
     from apps.accounts.models import Workspace
 
@@ -112,9 +142,11 @@ def upload_source(request: HttpRequest, file: UploadedFile, project_id: int | No
         source_type = DesignBankSource.SourceType.PDF
     elif ext in {"jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"}:
         source_type = DesignBankSource.SourceType.IMAGE
+    elif ext == "css":
+        source_type = DesignBankSource.SourceType.CSS
     elif ext == "html":
         source_type = DesignBankSource.SourceType.HTML
-    elif ext == "md":
+    elif ext in {"md", "markdown"}:
         source_type = DesignBankSource.SourceType.MARKDOWN
     else:
         source_type = DesignBankSource.SourceType.UPLOAD
@@ -145,10 +177,10 @@ def upload_source(request: HttpRequest, file: UploadedFile, project_id: int | No
         exc_str = str(exc)
         source.delete()
         if "ConnectionError" in type(exc).__name__ or "Max retries" in exc_str or "Connection refused" in exc_str:
-            raise HttpError(503, "No se puede conectar al almacenamiento (MinIO no disponible)")
+            raise HttpError(503, "Cannot connect to storage (MinIO unavailable)")
         if "NoSuchBucket" in exc_str or "does not exist" in exc_str.lower():
-            raise HttpError(503, "El bucket de almacenamiento no existe — contactar al administrador")
-        raise HttpError(500, f"Error al subir el archivo: {exc_str[:120]}")
+            raise HttpError(503, "Storage bucket does not exist — contact the administrator")
+        raise HttpError(500, f"Failed to upload file: {exc_str[:120]}")
 
     return 201, _source_to_out(source)
 
@@ -204,6 +236,53 @@ def list_sources(request: HttpRequest, project_id: int | None = None):
     if project_id is not None:
         qs = qs.filter(project_id=project_id)
     return [_source_to_out(s) for s in qs.order_by("-created_at")]
+
+
+@router.get(
+    "/projects/{project_id}/design-system/status",
+    auth=django_auth,
+    response=DesignSystemStatusOut,
+    summary="Get compacted design-system status for a project",
+)
+def get_design_system_status(request: HttpRequest, project_id: int):
+    membership = get_membership(request)
+    if not membership:
+        raise HttpError(403, "Membership required")
+
+    workspace = _workspace_from_request(request)
+    _get_project(workspace, project_id)
+    return get_project_design_system_status(project_id).to_dict()
+
+
+@router.post(
+    "/projects/{project_id}/design-system/sync",
+    auth=django_auth,
+    response=DesignSystemSyncOut,
+    summary="Create or refresh compacted project design artifacts",
+)
+def sync_design_system(request: HttpRequest, project_id: int, payload: DesignSystemSyncIn):
+    require_editor_capabilities(request)
+    workspace = _workspace_from_request(request)
+    _get_project(workspace, project_id)
+
+    try:
+        result = sync_project_design_system(
+            project_id=project_id,
+            workspace=workspace,
+            user=request.user,
+            provider_key=payload.provider,
+            model_id=payload.model_id,
+            guidance=payload.guidance,
+        )
+    except ValueError as exc:
+        raise HttpError(400, str(exc))
+
+    return {
+        "ok": True,
+        "status": result["status"].to_dict(),
+        "design_system_source_id": result["design_system"].pk,
+        "reference_brief_source_id": result["reference_brief"].pk,
+    }
 
 
 @router.get(

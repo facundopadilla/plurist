@@ -37,7 +37,14 @@ def _extract_text_metadata(content: bytes, content_type: str, url: str = "") -> 
         "reference_only": is_reference_only(content_type),
     }
 
-    if base_type in {"text/html", "text/css", "application/javascript", "text/javascript"}:
+    if base_type in {
+        "text/html",
+        "text/css",
+        "application/javascript",
+        "text/javascript",
+        "text/plain",
+        "text/markdown",
+    }:
         # Store only a text snippet — never parse/execute
         try:
             text = content[:4096].decode("utf-8", errors="replace")
