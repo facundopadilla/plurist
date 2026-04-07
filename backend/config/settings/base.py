@@ -17,15 +17,11 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.workspace",
     "apps.posts",
-    "apps.approvals",
-    "apps.publishing",
     "apps.meta",
     "apps.design_bank",
-    "apps.integrations",
     "apps.rendering",
     "apps.generation",
     "apps.analytics",
-    "apps.scheduler",
     "apps.projects",
 ]
 
@@ -128,13 +124,4 @@ SOCIAL_TOKEN_ENCRYPTION_KEY = os.environ.get("SOCIAL_TOKEN_ENCRYPTION_KEY", "")
 AI_ENCRYPTION_KEY = os.environ.get("AI_ENCRYPTION_KEY", "")
 
 # Celery Beat schedule
-CELERY_BEAT_SCHEDULE = {
-    "refresh-expiring-social-tokens": {
-        "task": "apps.integrations.tasks.refresh_expiring_tokens",
-        "schedule": 6 * 60 * 60,  # every 6 hours
-    },
-    "check-pending-schedules": {
-        "task": "apps.scheduler.tasks.check_pending_schedules",
-        "schedule": 60,  # every minute
-    },
-}
+CELERY_BEAT_SCHEDULE = {}

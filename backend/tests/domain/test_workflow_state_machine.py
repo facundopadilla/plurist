@@ -1,18 +1,12 @@
 # pyright: reportAttributeAccessIssue=false
 
 import pytest
+from django.core.exceptions import ValidationError
 
-from apps.approvals.models import ApprovalDecision
 from apps.posts.models import DraftPost
 from tests.accounts.factories import MembershipFactory, UserFactory, WorkspaceFactory
 
 pytestmark = pytest.mark.django_db
-
-
-def _create_user_with_role(workspace, role: str):
-    user = UserFactory()
-    MembershipFactory(user=user, workspace=workspace, role=role)
-    return user
 
 
 def _create_post(workspace, creator):
@@ -21,183 +15,79 @@ def _create_post(workspace, creator):
         created_by=creator,
         title="Post title",
         body_text="Initial body",
-        target_networks=["linkedin"],
     )
 
 
-def test_draft_submit_transitions_to_pending():
+def test_new_post_defaults_to_draft():
     workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    post = _create_post(workspace, editor)
+    user = UserFactory()
+    MembershipFactory(user=user, workspace=workspace, role="editor")
+    post = _create_post(workspace, user)
 
-    post.submit_for_approval(editor)
+    assert post.status == DraftPost.Status.DRAFT
+    assert post.completed_at is None
+
+
+def test_draft_to_completed():
+    workspace = WorkspaceFactory()
+    user = UserFactory()
+    MembershipFactory(user=user, workspace=workspace, role="editor")
+    post = _create_post(workspace, user)
+
+    post.mark_completed()
 
     post.refresh_from_db()
-    assert post.status == DraftPost.Status.PENDING_APPROVAL
+    assert post.status == DraftPost.Status.COMPLETED
+    assert post.completed_at is not None
 
 
-def test_owner_approve_transitions_to_approved():
+def test_completed_to_draft():
     workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
+    user = UserFactory()
+    MembershipFactory(user=user, workspace=workspace, role="editor")
+    post = _create_post(workspace, user)
+    post.mark_completed()
 
-    post.approve(owner, reason="Looks good")
-
-    post.refresh_from_db()
-    decision = ApprovalDecision.objects.get(draft_post=post)
-    assert post.status == DraftPost.Status.APPROVED
-    assert decision.decision == ApprovalDecision.Decision.APPROVED
-
-
-def test_owner_reject_transitions_to_rejected():
-    workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-
-    post.reject(owner, reason="Need changes")
-
-    post.refresh_from_db()
-    decision = ApprovalDecision.objects.get(draft_post=post)
-    assert post.status == DraftPost.Status.REJECTED
-    assert decision.decision == ApprovalDecision.Decision.REJECTED
-
-
-def test_rejected_can_be_reset_to_draft():
-    workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-    post.reject(owner, reason="Need changes")
-
-    post.reset_to_draft(editor)
+    post.revert_to_draft()
 
     post.refresh_from_db()
     assert post.status == DraftPost.Status.DRAFT
+    assert post.completed_at is None
 
 
-def test_material_edit_on_approved_resets_to_draft():
+def test_completed_cannot_complete_again():
     workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-    post.approve(owner, reason="ok")
+    user = UserFactory()
+    MembershipFactory(user=user, workspace=workspace, role="editor")
+    post = _create_post(workspace, user)
+    post.mark_completed()
 
-    post.body_text = "Changed body"
-    post.save(update_fields=["body_text"])
-
-    post.refresh_from_db()
-    decision = ApprovalDecision.objects.filter(draft_post=post).latest("id")
-    assert post.status == DraftPost.Status.DRAFT
-    assert decision.invalidated is True
+    with pytest.raises(ValidationError):
+        post.mark_completed()
 
 
-def test_material_edit_on_pending_resets_to_draft():
+def test_draft_cannot_revert():
     workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    post = _create_post(workspace, editor)
+    user = UserFactory()
+    MembershipFactory(user=user, workspace=workspace, role="editor")
+    post = _create_post(workspace, user)
 
-    post.submit_for_approval(editor)
-    post.reject(owner, reason="needs changes")
-    post.reset_to_draft(editor)
-    post.submit_for_approval(editor)
-
-    post.body_text = "Changed body while pending"
-    post.save(update_fields=["body_text"])
-
-    post.refresh_from_db()
-    decision = ApprovalDecision.objects.filter(draft_post=post).latest("id")
-    assert post.status == DraftPost.Status.DRAFT
-    assert decision.invalidated is True
+    with pytest.raises(ValidationError):
+        post.revert_to_draft()
 
 
-def test_non_material_edit_does_not_invalidate():
+def test_empty_content_cannot_complete():
     workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-    post.approve(owner, reason="ok")
+    user = UserFactory()
+    MembershipFactory(user=user, workspace=workspace, role="editor")
+    post = DraftPost.objects.create(
+        workspace=workspace,
+        created_by=user,
+        title="Empty post",
+        body_text="",
+        html_content="",
+        render_asset_key="",
+    )
 
-    post.title = "Updated title"
-    post.save(update_fields=["title"])
-
-    post.refresh_from_db()
-    decision = ApprovalDecision.objects.filter(draft_post=post).latest("id")
-    assert post.status == DraftPost.Status.APPROVED
-    assert decision.invalidated is False
-
-
-def test_approved_to_publishing():
-    workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    publisher = _create_user_with_role(workspace, "publisher")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-    post.approve(owner, reason="ok")
-
-    post.start_publishing(publisher)
-
-    post.refresh_from_db()
-    assert post.status == DraftPost.Status.PUBLISHING
-
-
-def test_publishing_to_published():
-    workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    publisher = _create_user_with_role(workspace, "publisher")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-    post.approve(owner, reason="ok")
-    post.start_publishing(publisher)
-
-    post.mark_published()
-
-    post.refresh_from_db()
-    assert post.status == DraftPost.Status.PUBLISHED
-    assert post.published_at is not None
-
-
-def test_publishing_to_failed():
-    workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    owner = _create_user_with_role(workspace, "owner")
-    publisher = _create_user_with_role(workspace, "publisher")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-    post.approve(owner, reason="ok")
-    post.start_publishing(publisher)
-
-    post.mark_failed("Network timeout")
-
-    post.refresh_from_db()
-    assert post.status == DraftPost.Status.FAILED
-
-
-def test_editor_cannot_approve():
-    workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-
-    with pytest.raises(PermissionError):
-        post.approve(editor, reason="not allowed")
-
-
-def test_publisher_cannot_approve():
-    workspace = WorkspaceFactory()
-    editor = _create_user_with_role(workspace, "editor")
-    publisher = _create_user_with_role(workspace, "publisher")
-    post = _create_post(workspace, editor)
-    post.submit_for_approval(editor)
-
-    with pytest.raises(PermissionError):
-        post.approve(publisher, reason="not allowed")
+    with pytest.raises(ValidationError):
+        post.mark_completed()

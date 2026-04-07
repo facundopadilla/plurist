@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
-from apps.accounts.models import Membership, RoleChoices, Workspace
+from apps.accounts.models import Workspace
 
 
 class BrandProfileVersion(models.Model):
@@ -36,23 +36,11 @@ class TemplateDefinition(models.Model):
 class DraftPost(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
-        PENDING_APPROVAL = "pending_approval", "Pending approval"
-        APPROVED = "approved", "Approved"
-        REJECTED = "rejected", "Rejected"
-        PUBLISHING = "publishing", "Publishing"
-        PUBLISHED = "published", "Published"
-        FAILED = "failed", "Failed"
-
-    # Legacy format keys — kept for reference only
-    LEGACY_FORMAT_SQUARE = "1:1"
-    LEGACY_FORMAT_LANDSCAPE = "16:9"
-    LEGACY_FORMAT_PORTRAIT = "4:5"
-    LEGACY_FORMAT_STORY = "9:16"
+        COMPLETED = "completed", "Completed"
 
     MATERIAL_FIELDS = {
         "body_text",
         "selected_variant",
-        "target_networks",
         "render_asset_key",
         "brand_profile_version",
         "template_definition",
@@ -62,6 +50,7 @@ class DraftPost(models.Model):
         "html_content",
         "format",
         "project_id",
+        "global_styles",
     }
 
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
@@ -72,7 +61,6 @@ class DraftPost(models.Model):
     )
     title = models.CharField(max_length=255)
     body_text = models.TextField(blank=True)
-    target_networks = models.JSONField(default=list, blank=True)
     brand_profile_version = models.ForeignKey(
         BrandProfileVersion,
         on_delete=models.SET_NULL,
@@ -96,6 +84,7 @@ class DraftPost(models.Model):
     )
     format = models.CharField(max_length=20, default="ig_square", blank=True)
     html_content = models.TextField(blank=True)
+    global_styles = models.TextField(blank=True, default="")
     render_asset_key = models.CharField(max_length=255, blank=True)
     selected_variant = models.ForeignKey(
         "posts.DraftVariant",
@@ -109,174 +98,49 @@ class DraftPost(models.Model):
         choices=Status.choices,
         default=Status.DRAFT,
     )
-    submitted_at = models.DateTimeField(null=True, blank=True)
-    approved_at = models.DateTimeField(null=True, blank=True)
-    published_at = models.DateTimeField(null=True, blank=True)
-    failure_message = models.TextField(blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._loaded_status = self.status
         self._loaded_material_snapshot = self._material_snapshot()
 
     def _material_snapshot(self):
         return {
             "body_text": self.body_text,
             "selected_variant_id": self.selected_variant_id,
-            "target_networks": list(self.target_networks or []),
             "render_asset_key": self.render_asset_key,
             "brand_profile_version_id": self.brand_profile_version_id,
             "template_definition_id": self.template_definition_id,
             "html_content": self.html_content,
             "format": self.format,
             "project_id": self.project_id,
+            "global_styles": self.global_styles,
         }
 
-    def _membership_role(self, user):
-        membership = Membership.objects.filter(
-            user=user,
-            workspace=self.workspace,
-        ).first()
-        return membership.role if membership else None
-
-    def _ensure_role(self, user, allowed_roles):
-        role = self._membership_role(user)
-        if role not in allowed_roles:
-            raise PermissionError("User role is not allowed for this transition")
-
-    def _ensure_content_valid_for_submission(self):
+    def _ensure_content_valid(self):
         if not self.body_text.strip() and not self.render_asset_key.strip() and not self.html_content.strip():
-            raise ValidationError("Draft must include text, render asset, or HTML content before submit")
-
-    def _invalidate_approval_if_needed(self):
-        if self._loaded_status not in {
-            self.Status.APPROVED,
-            self.Status.PENDING_APPROVAL,
-        }:
-            return False
-
-        previous = self._loaded_material_snapshot
-        current = self._material_snapshot()
-        if previous == current:
-            return False
-
-        self.status = self.Status.DRAFT
-        self.submitted_at = None
-        self.approved_at = None
-
-        from apps.approvals.models import ApprovalDecision
-
-        ApprovalDecision.objects.filter(
-            draft_post=self,
-            invalidated=False,
-        ).update(invalidated=True)
-        return True
+            raise ValidationError("Draft must include text, render asset, or HTML content")
 
     def save(self, *args, **kwargs):
-        invalidated = self._invalidate_approval_if_needed()
-        if invalidated and "update_fields" in kwargs and kwargs["update_fields"] is not None:
-            update_fields = set(kwargs["update_fields"])
-            update_fields.update({"status", "submitted_at", "approved_at"})
-            kwargs["update_fields"] = list(update_fields)
         super().save(*args, **kwargs)
-        self._loaded_status = self.status
         self._loaded_material_snapshot = self._material_snapshot()
 
-    def submit_for_approval(self, actor):
-        self._ensure_role(actor, {RoleChoices.EDITOR, RoleChoices.OWNER})
+    def mark_completed(self):
         if self.status != self.Status.DRAFT:
-            raise ValidationError("Only drafts can be submitted")
-        self._ensure_content_valid_for_submission()
-        self.status = self.Status.PENDING_APPROVAL
-        self.submitted_at = timezone.now()
-        self.save(update_fields=["status", "submitted_at", "updated_at"])
+            raise ValidationError("Only drafts can be marked as completed")
+        self._ensure_content_valid()
+        self.status = self.Status.COMPLETED
+        self.completed_at = timezone.now()
+        self.save(update_fields=["status", "completed_at", "updated_at"])
 
-    def approve(self, actor, reason=""):
-        self._ensure_role(actor, {RoleChoices.OWNER})
-        if self.status != self.Status.PENDING_APPROVAL:
-            raise ValidationError("Only pending approvals can be approved")
-
-        from apps.approvals.models import ApprovalDecision, ApprovedSnapshot
-
-        decision = ApprovalDecision.objects.create(
-            draft_post=self,
-            decided_by=actor,
-            decision=ApprovalDecision.Decision.APPROVED,
-            reason=reason,
-        )
-
-        snapshot = {
-            "draft_post_id": self.pk,
-            "title": self.title,
-            "body_text": self.body_text,
-            "target_networks": self.target_networks,
-            "render_asset_key": self.render_asset_key,
-            "selected_variant_id": self.selected_variant_id,
-            "brand_profile_version_id": self.brand_profile_version_id,
-            "template_definition_id": self.template_definition_id,
-            "html_content": self.html_content,
-            "format": self.format,
-            "project_id": self.project_id,
-        }
-        ApprovedSnapshot.objects.update_or_create(
-            draft_post=self,
-            defaults={
-                "approval_decision": decision,
-                "snapshot_data": snapshot,
-            },
-        )
-
-        self.status = self.Status.APPROVED
-        self.approved_at = timezone.now()
-        self.save(update_fields=["status", "approved_at", "updated_at"])
-
-    def reject(self, actor, reason=""):
-        self._ensure_role(actor, {RoleChoices.OWNER})
-        if self.status != self.Status.PENDING_APPROVAL:
-            raise ValidationError("Only pending approvals can be rejected")
-
-        from apps.approvals.models import ApprovalDecision
-
-        ApprovalDecision.objects.create(
-            draft_post=self,
-            decided_by=actor,
-            decision=ApprovalDecision.Decision.REJECTED,
-            reason=reason,
-        )
-
-        self.status = self.Status.REJECTED
-        self.save(update_fields=["status", "updated_at"])
-
-    def reset_to_draft(self, actor):
-        self._ensure_role(actor, {RoleChoices.EDITOR, RoleChoices.OWNER})
-        if self.status != self.Status.REJECTED:
-            raise ValidationError("Only rejected posts can be reset")
+    def revert_to_draft(self):
+        if self.status != self.Status.COMPLETED:
+            raise ValidationError("Only completed content can revert to draft")
         self.status = self.Status.DRAFT
-        self.save(update_fields=["status", "updated_at"])
-
-    def start_publishing(self, actor):
-        self._ensure_role(actor, {RoleChoices.PUBLISHER, RoleChoices.OWNER})
-        if self.status != self.Status.APPROVED:
-            raise ValidationError("Only approved posts can start publishing")
-        self.status = self.Status.PUBLISHING
-        self.save(update_fields=["status", "updated_at"])
-
-    def mark_published(self):
-        if self.status != self.Status.PUBLISHING:
-            raise ValidationError("Only publishing posts can become published")
-        self.status = self.Status.PUBLISHED
-        self.published_at = timezone.now()
-        self.failure_message = ""
-        self.save(update_fields=["status", "published_at", "failure_message", "updated_at"])
-
-    def mark_failed(self, message):
-        if self.status != self.Status.PUBLISHING:
-            raise ValidationError("Only publishing posts can fail")
-        self.status = self.Status.FAILED
-        self.failure_message = message
-        self.save(update_fields=["status", "failure_message", "updated_at"])
+        self.completed_at = None
+        self.save(update_fields=["status", "completed_at", "updated_at"])
 
 
 class DraftVariant(models.Model):

@@ -223,10 +223,10 @@ def upload_project_icon(request: HttpRequest, project_id: int, file: UploadedFil
     except Exception as exc:
         exc_str = str(exc)
         if "ConnectionError" in type(exc).__name__ or "Max retries" in exc_str or "Connection refused" in exc_str:
-            raise HttpError(503, "No se puede conectar al almacenamiento (MinIO no disponible)")
+            raise HttpError(503, "Cannot connect to storage (MinIO unavailable)")
         if "NoSuchBucket" in exc_str or "does not exist" in exc_str.lower():
-            raise HttpError(503, "El bucket de almacenamiento no existe — contactar al administrador")
-        raise HttpError(500, f"Error al subir el ícono: {exc_str[:120]}")
+            raise HttpError(503, "Storage bucket does not exist — contact the administrator")
+        raise HttpError(500, f"Failed to upload icon: {exc_str[:120]}")
 
     return _project_out(project)
 

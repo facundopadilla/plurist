@@ -1,17 +1,14 @@
 from .models import AuditEvent
 
 _SUMMARY_EVENT_TYPES = [
-    "publish_requested",
-    "publish_succeeded",
-    "publish_failed",
-    "approval_requested",
-    "approval_approved",
-    "approval_rejected",
+    "content_created",
+    "content_completed",
+    "content_reverted",
 ]
 
 
 def record_event(workspace, event_type, actor, target_type, target_id, metadata=None):
-    """Record a workflow audit event for the workspace."""
+    """Record an audit event for the workspace."""
     return AuditEvent.objects.create(
         workspace=workspace,
         event_type=event_type,
@@ -23,10 +20,7 @@ def record_event(workspace, event_type, actor, target_type, target_id, metadata=
 
 
 def get_operational_summary(workspace):
-    """Return counts of operational workflow events for the workspace.
-
-    Only includes workflow telemetry — no engagement metrics.
-    """
+    """Return counts of content workflow events for the workspace."""
     qs = AuditEvent.objects.filter(workspace=workspace)
     summary = {}
     for event_type in _SUMMARY_EVENT_TYPES:

@@ -7,8 +7,6 @@ from ninja.errors import HttpError
 from apps.accounts.auth import (
     get_membership,
     require_editor_capabilities,
-    require_owner,
-    require_publisher_capabilities,
 )
 from apps.accounts.session_auth import session_auth as django_auth
 from apps.posts.models import DraftFrameMetadata, DraftPost, DraftVariant
@@ -24,27 +22,26 @@ router = Router(tags=["posts"])
 class DraftPostIn(Schema):
     title: str
     body_text: str = ""
-    target_networks: list[str] = []
     render_asset_key: str = ""
     project_id: int | None = None
     format: str = "1:1"
     html_content: str = ""
+    global_styles: str = ""
 
 
 class DraftPostOut(Schema):
     id: int
     title: str
     body_text: str
-    target_networks: list[str]
     render_asset_key: str
     project_id: int | None = None
     format: str
     html_content: str
+    global_styles: str = ""
     status: str
-    submitted_at: str | None = None
-    approved_at: str | None = None
-    published_at: str | None = None
-    failure_message: str
+    completed_at: str | None = None
+    created_at: str
+    updated_at: str
 
 
 class FrameMetadataIn(Schema):
@@ -92,18 +89,14 @@ class DraftPostDetailOut(DraftPostOut):
     variants: list[VariantOut] = []
 
 
-class ReasonIn(Schema):
-    reason: str = ""
-
-
 class DraftPostPatchIn(Schema):
     title: str | None = None
     body_text: str | None = None
     html_content: str | None = None
     render_asset_key: str | None = None
     format: str | None = None
-    target_networks: list[str] | None = None
     project_id: int | None = None
+    global_styles: str | None = None
     frame_metadata: list[FrameMetadataIn] | None = None
     variants: list[VariantSyncIn] | None = None
 
@@ -125,16 +118,15 @@ def _post_out(post: DraftPost) -> DraftPostOut:
         id=post.pk,
         title=post.title,
         body_text=post.body_text,
-        target_networks=list(post.target_networks or []),
         render_asset_key=post.render_asset_key,
         project_id=post.project_id,
         format=post.format or "1:1",
         html_content=post.html_content,
+        global_styles=post.global_styles,
         status=post.status,
-        submitted_at=post.submitted_at.isoformat() if post.submitted_at else None,
-        approved_at=post.approved_at.isoformat() if post.approved_at else None,
-        published_at=post.published_at.isoformat() if post.published_at else None,
-        failure_message=post.failure_message,
+        completed_at=post.completed_at.isoformat() if post.completed_at else None,
+        created_at=post.created_at.isoformat(),
+        updated_at=post.updated_at.isoformat(),
     )
 
 
@@ -255,11 +247,11 @@ def create_post(request, payload: DraftPostIn):
         created_by=request.user,
         title=payload.title,
         body_text=payload.body_text,
-        target_networks=payload.target_networks,
         render_asset_key=payload.render_asset_key,
         project=project,
         format=payload.format,
         html_content=payload.html_content,
+        global_styles=payload.global_styles,
     )
     return 201, _post_detail_out(post)
 
@@ -273,56 +265,28 @@ def get_post(request, post_id: int):
     return _post_detail_out(post)
 
 
-@router.post("/{post_id}/submit", auth=django_auth, response=DraftPostOut)
-def submit_post(request, post_id: int):
+@router.post("/{post_id}/complete", auth=django_auth, response=DraftPostOut)
+def complete_post(request, post_id: int):
+    """Mark a draft as completed content."""
     membership = require_editor_capabilities(request)
     post = _get_post_for_workspace(post_id, membership.workspace)
     try:
-        post.submit_for_approval(request.user)
-    except (ValidationError, PermissionError) as exc:
+        post.mark_completed()
+    except ValidationError as exc:
         raise HttpError(400, str(exc))
     return _post_out(post)
 
 
-@router.post("/{post_id}/approve", auth=django_auth, response=DraftPostOut)
-def approve_post(request, post_id: int, payload: ReasonIn):
-    membership = require_owner(request)
+@router.post("/{post_id}/revert", auth=django_auth, response=DraftPostOut)
+def revert_post(request, post_id: int):
+    """Revert completed content back to draft for re-editing."""
+    membership = require_editor_capabilities(request)
     post = _get_post_for_workspace(post_id, membership.workspace)
     try:
-        post.approve(request.user, reason=payload.reason)
-    except (ValidationError, PermissionError) as exc:
+        post.revert_to_draft()
+    except ValidationError as exc:
         raise HttpError(400, str(exc))
     return _post_out(post)
-
-
-@router.post("/{post_id}/reject", auth=django_auth, response=DraftPostOut)
-def reject_post(request, post_id: int, payload: ReasonIn):
-    membership = require_owner(request)
-    post = _get_post_for_workspace(post_id, membership.workspace)
-    try:
-        post.reject(request.user, reason=payload.reason)
-    except (ValidationError, PermissionError) as exc:
-        raise HttpError(400, str(exc))
-    return _post_out(post)
-
-
-@router.post("/{post_id}/publish", auth=django_auth, response={202: DraftPostOut})
-def publish_post(request, post_id: int):
-    """Trigger immediate publish for an approved post (Owner/Publisher only)."""
-    membership = require_publisher_capabilities(request)
-    post = _get_post_for_workspace(post_id, membership.workspace)
-
-    if post.status != DraftPost.Status.APPROVED:
-        raise HttpError(400, "Post must be in approved status to publish")
-
-    # Delegate to the publishing API's idempotent handler.
-    from apps.publishing.api import _do_publish_now
-
-    idempotency_key = request.headers.get("Idempotency-Key", "")
-    _do_publish_now(post, actor=request.user, idempotency_key=idempotency_key)
-
-    post.refresh_from_db()
-    return 202, _post_out(post)
 
 
 @router.get("/{post_id}/variants", auth=django_auth, response=list[VariantOut])
@@ -365,9 +329,9 @@ def patch_post(request, post_id: int, payload: DraftPostPatchIn):
         post.format = payload.format
         update_fields.append("format")
 
-    if payload.target_networks is not None:
-        post.target_networks = payload.target_networks
-        update_fields.append("target_networks")
+    if payload.global_styles is not None:
+        post.global_styles = payload.global_styles
+        update_fields.append("global_styles")
 
     if payload.project_id is not None:
         try:
@@ -422,3 +386,12 @@ def update_variant(request, post_id: int, variant_id: int, payload: VariantUpdat
 
     post.refresh_from_db()
     return _post_detail_out(post)
+
+
+@router.delete("/{post_id}", auth=django_auth, response={204: None})
+def delete_post(request, post_id: int):
+    """Permanently delete a content item and all its variants."""
+    membership = require_editor_capabilities(request)
+    post = _get_post_for_workspace(post_id, membership.workspace)
+    post.delete()
+    return 204, None

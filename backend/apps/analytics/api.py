@@ -14,12 +14,9 @@ router = Router(tags=["analytics"])
 
 
 class OperationalSummaryOut(Schema):
-    publish_requested: int
-    publish_succeeded: int
-    publish_failed: int
-    approval_requested: int
-    approval_approved: int
-    approval_rejected: int
+    content_created: int
+    content_completed: int
+    content_reverted: int
 
 
 class AuditEventOut(Schema):

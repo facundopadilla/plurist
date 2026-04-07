@@ -32,51 +32,23 @@ def test_summary_returns_correct_structure(client):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner@example.com", password="testpassword123")
     MembershipFactory(user=owner, workspace=workspace, role="owner")
-    record_event(workspace, "publish_requested", owner, "draft_post", 1)
-    record_event(workspace, "publish_succeeded", owner, "publish_attempt", 1)
+    record_event(workspace, "content_created", owner, "draft_post", 1)
+    record_event(workspace, "content_completed", owner, "draft_post", 1)
     _login(client, owner.email)
 
     response = client.get("/api/v1/analytics/summary")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["publish_requested"] == 1
-    assert data["publish_succeeded"] == 1
-    assert data["publish_failed"] == 0
-    assert data["approval_requested"] == 0
-    assert data["approval_approved"] == 0
-    assert data["approval_rejected"] == 0
-
-
-def test_summary_has_no_engagement_keys(client):
-    workspace = WorkspaceFactory()
-    editor = UserFactory(email="editor@example.com", password="testpassword123")
-    MembershipFactory(user=editor, workspace=workspace, role="editor")
-    _login(client, editor.email)
-
-    response = client.get("/api/v1/analytics/summary")
-
-    assert response.status_code == 200
-    data = response.json()
-    forbidden = {"likes", "impressions", "comments", "clicks", "followers", "reach"}
-    assert forbidden.isdisjoint(data.keys())
+    assert data["content_created"] == 1
+    assert data["content_completed"] == 1
+    assert data["content_reverted"] == 0
 
 
 def test_summary_unauthenticated_returns_401(client):
     WorkspaceFactory()
     response = client.get("/api/v1/analytics/summary")
     assert response.status_code == 401
-
-
-def test_summary_accessible_by_publisher(client):
-    workspace = WorkspaceFactory()
-    publisher = UserFactory(email="publisher@example.com", password="testpassword123")
-    MembershipFactory(user=publisher, workspace=workspace, role="publisher")
-    _login(client, publisher.email)
-
-    response = client.get("/api/v1/analytics/summary")
-
-    assert response.status_code == 200
 
 
 # --- /analytics/timeline ---
@@ -86,8 +58,8 @@ def test_timeline_returns_list_of_events(client):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner2@example.com", password="testpassword123")
     MembershipFactory(user=owner, workspace=workspace, role="owner")
-    record_event(workspace, "approval_approved", owner, "draft_post", 10)
-    record_event(workspace, "publish_failed", owner, "publish_attempt", 5)
+    record_event(workspace, "content_created", owner, "draft_post", 10)
+    record_event(workspace, "content_completed", owner, "draft_post", 10)
     _login(client, owner.email)
 
     response = client.get("/api/v1/analytics/timeline")
@@ -95,16 +67,15 @@ def test_timeline_returns_list_of_events(client):
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    # Most recent first
-    assert data[0]["event_type"] == "publish_failed"
-    assert data[1]["event_type"] == "approval_approved"
+    assert data[0]["event_type"] == "content_completed"
+    assert data[1]["event_type"] == "content_created"
 
 
 def test_timeline_event_has_required_fields(client):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner3@example.com", password="testpassword123")
     MembershipFactory(user=owner, workspace=workspace, role="owner")
-    record_event(workspace, "publish_requested", owner, "draft_post", 99)
+    record_event(workspace, "content_created", owner, "draft_post", 99)
     _login(client, owner.email)
 
     response = client.get("/api/v1/analytics/timeline")
@@ -133,9 +104,9 @@ def test_target_timeline_filters_correctly(client):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner4@example.com", password="testpassword123")
     MembershipFactory(user=owner, workspace=workspace, role="owner")
-    record_event(workspace, "approval_requested", owner, "draft_post", 7)
-    record_event(workspace, "approval_approved", owner, "draft_post", 7)
-    record_event(workspace, "approval_requested", owner, "draft_post", 8)  # different target_id
+    record_event(workspace, "content_created", owner, "draft_post", 7)
+    record_event(workspace, "content_completed", owner, "draft_post", 7)
+    record_event(workspace, "content_created", owner, "draft_post", 8)
     _login(client, owner.email)
 
     response = client.get("/api/v1/analytics/timeline/draft_post/7")

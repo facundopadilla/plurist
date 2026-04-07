@@ -35,13 +35,3 @@ def require_editor_capabilities(request):
     if not membership or membership.role not in {RoleChoices.OWNER, RoleChoices.EDITOR}:
         raise HttpError(403, "Editor access required")
     return membership
-
-
-def require_publisher_capabilities(request):
-    membership = get_membership(request)
-    if not membership or membership.role not in {
-        RoleChoices.OWNER,
-        RoleChoices.PUBLISHER,
-    }:
-        raise HttpError(403, "Publisher access required")
-    return membership
