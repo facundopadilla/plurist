@@ -44,7 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Workspace(models.Model):
-    name = models.CharField(max_length=200, default="Socialclaw")
+    name = models.CharField(max_length=200, default="Plurist")
     timezone = models.CharField(max_length=50, default="UTC")
     created_at = models.DateTimeField(auto_now_add=True)
 

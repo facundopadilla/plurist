@@ -53,7 +53,7 @@ describe("GenerateVariantsPanel", () => {
     fetchProjects.mockResolvedValue([
       {
         id: 7,
-        name: "SocialClaw",
+        name: "Plurist",
         description: "",
         tags: [],
         color: "#6366f1",
@@ -104,7 +104,7 @@ describe("GenerateVariantsPanel", () => {
       expect(
         document.querySelector('button[aria-label="Speech to text"]'),
       ).not.toBeNull();
-      expect(document.body.textContent).toContain("SocialClaw");
+      expect(document.body.textContent).toContain("Plurist");
     });
   });
 
@@ -155,8 +155,7 @@ describe("GenerateVariantsPanel", () => {
     });
 
     const storedDrafts = JSON.parse(
-      window.sessionStorage.getItem("socialclaw:generate-variants-drafts") ??
-        "{}",
+      window.sessionStorage.getItem("plurist:generate-variants-drafts") ?? "{}",
     );
     expect(storedDrafts[firstSlideId].instruction).toBe(
       "Use the attached brand texture",
@@ -165,7 +164,7 @@ describe("GenerateVariantsPanel", () => {
 
   it("prunes stale drafts when saving a fresh one", async () => {
     window.sessionStorage.setItem(
-      "socialclaw:generate-variants-drafts",
+      "plurist:generate-variants-drafts",
       JSON.stringify({
         stale: {
           instruction: "old",
@@ -197,7 +196,7 @@ describe("GenerateVariantsPanel", () => {
 
     await waitFor(() => {
       const storedDrafts = JSON.parse(
-        window.sessionStorage.getItem("socialclaw:generate-variants-drafts") ??
+        window.sessionStorage.getItem("plurist:generate-variants-drafts") ??
           "{}",
       );
       expect(storedDrafts.stale).toBeUndefined();

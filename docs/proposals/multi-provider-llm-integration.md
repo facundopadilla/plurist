@@ -2,7 +2,7 @@
 
 ## Intent
 
-Socialclaw's AI providers read API keys exclusively from server-side `.env` variables. This blocks workspace owners from bringing their own keys, prevents local model usage via Ollama, and forces hardcoded model choices. This change enables per-workspace API key management (encrypted), Ollama as a local-model provider, and user-selectable models per provider.
+Plurist's AI providers read API keys exclusively from server-side `.env` variables. This blocks workspace owners from bringing their own keys, prevents local model usage via Ollama, and forces hardcoded model choices. This change enables per-workspace API key management (encrypted), Ollama as a local-model provider, and user-selectable models per provider.
 
 ## Scope
 

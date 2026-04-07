@@ -217,7 +217,7 @@ function findInteractiveTarget(el: Element, root: Element): Element | null {
 
 // ── Inline editing style injection ───────────────────────────────────
 
-const INLINE_EDIT_STYLE_ID = "socialclaw-inline-edit-styles";
+const INLINE_EDIT_STYLE_ID = "plurist-inline-edit-styles";
 
 function injectEditStyles(shadowRoot: ShadowRoot, scale: number) {
   // Remove existing styles first so we can update scale-compensated values
@@ -411,7 +411,7 @@ export class InlineEditController {
     const shadowRoot = host.shadowRoot;
     if (!shadowRoot) return false;
 
-    const contentRoot = shadowRoot.querySelector("#socialclaw-html-shape-root");
+    const contentRoot = shadowRoot.querySelector("#plurist-html-shape-root");
     if (!contentRoot) return false;
 
     this.shadowRoot = shadowRoot;

@@ -95,7 +95,7 @@ export function renderHtmlIntoShadowHost(
         height: ${formatHeight}px;
       }
 
-      #socialclaw-html-shape-root {
+      #plurist-html-shape-root {
         width: ${formatWidth}px;
         height: ${formatHeight}px;
         overflow: hidden;
@@ -103,7 +103,7 @@ export function renderHtmlIntoShadowHost(
         transform-origin: top left;
       }
     </style>
-    <div id="socialclaw-html-shape-root">${bodyMarkup}</div>
+    <div id="plurist-html-shape-root">${bodyMarkup}</div>
   `;
 
   for (const image of Array.from(root.querySelectorAll("img"))) {

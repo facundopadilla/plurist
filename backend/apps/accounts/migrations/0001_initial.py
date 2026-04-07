@@ -84,7 +84,7 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("name", models.CharField(default="Socialclaw", max_length=200)),
+                ("name", models.CharField(default="Plurist", max_length=200)),
                 ("timezone", models.CharField(default="UTC", max_length=50)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
             ],

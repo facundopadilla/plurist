@@ -80,7 +80,7 @@ def extract_from_url(self, source_id: int):
             timeout=DOWNLOAD_TIMEOUT,
             stream=True,
             allow_redirects=False,
-            headers={"User-Agent": "Socialclaw-DesignBank/1.0"},
+            headers={"User-Agent": "Plurist-DesignBank/1.0"},
         )
 
         # Manually follow redirects with SSRF validation at each hop
@@ -93,7 +93,7 @@ def extract_from_url(self, source_id: int):
                 timeout=DOWNLOAD_TIMEOUT,
                 stream=True,
                 allow_redirects=False,
-                headers={"User-Agent": "Socialclaw-DesignBank/1.0"},
+                headers={"User-Agent": "Plurist-DesignBank/1.0"},
             )
             redirect_count += 1
 

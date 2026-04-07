@@ -12,7 +12,7 @@ class WorkspaceFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ("id",)
 
     id = 1
-    name = "Socialclaw"
+    name = "Plurist"
     timezone = "UTC"
 
 

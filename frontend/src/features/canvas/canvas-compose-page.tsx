@@ -21,7 +21,7 @@ import { ExportModal } from "./export/export-modal";
 import { AnnotationPanel } from "./editor/annotation-panel";
 import { ContextualAiPanel } from "./editor/contextual-ai-panel";
 import { GenerateVariantsPanel } from "./editor/generate-variants-panel";
-import { SocialClawContextMenu } from "./context-menu/socialclaw-context-menu";
+import { PluristContextMenu } from "./context-menu/plurist-context-menu";
 import { exportSlideToBlob } from "./export/use-snapdom-export";
 import { uploadRenderBlob } from "./export/upload-render-blob";
 import { useSaveDraft } from "./hooks/use-save-draft";
@@ -70,7 +70,7 @@ function CanvasContent() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const navigate = useNavigate();
   const tldrawComponents = useMemo<TLComponents>(
-    () => ({ ContextMenu: SocialClawContextMenu }),
+    () => ({ ContextMenu: PluristContextMenu }),
     [],
   );
 

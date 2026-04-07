@@ -118,7 +118,7 @@ interface GenerateVariantsDraft {
   updatedAt: number;
 }
 
-const GENERATE_VARIANTS_DRAFTS_KEY = "socialclaw:generate-variants-drafts";
+const GENERATE_VARIANTS_DRAFTS_KEY = "plurist:generate-variants-drafts";
 const GENERATE_VARIANTS_DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 const CREATIVE_RANGE_LABELS: Record<CreativeRange, string> = {

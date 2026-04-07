@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the requirements that evolve Socialclaw from a single-user HTML generation tool into a collaborative, easy-first, model-agnostic UI studio for designers and developers.
+Define the requirements that evolve Plurist from a single-user HTML generation tool into a collaborative, easy-first, model-agnostic UI studio for designers and developers.
 
 ## Requirements
 

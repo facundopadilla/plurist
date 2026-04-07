@@ -25,20 +25,20 @@ Key terms (as of tldraw v4):
 
 ---
 
-## Use-case analysis for SocialClaw
+## Use-case analysis for Plurist
 
-| Criterion                        | Assessment                                                                                                                                               |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Product category                 | Social-media content creation / publishing platform                                                                                                      |
-| Canvas purpose                   | Render AI-generated HTML content (posts, stories, carousels) on a composable surface                                                                     |
-| Competes with tldraw?            | **No.** SocialClaw is not a whiteboard, diagramming, or collaborative drawing tool. The canvas is an internal rendering surface, not the product itself. |
-| Self-hosted model                | Open-source, self-hostable (n8n-style). Users run SocialClaw locally or on their own infrastructure.                                                     |
-| SaaS model                       | Paid cloud subscription for hosted version.                                                                                                              |
-| Redistribution of tldraw source? | **No.** tldraw is consumed as an npm dependency. No source redistribution.                                                                               |
+| Criterion                        | Assessment                                                                                                                                            |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product category                 | Social-media content creation / publishing platform                                                                                                   |
+| Canvas purpose                   | Render AI-generated HTML content (posts, stories, carousels) on a composable surface                                                                  |
+| Competes with tldraw?            | **No.** Plurist is not a whiteboard, diagramming, or collaborative drawing tool. The canvas is an internal rendering surface, not the product itself. |
+| Self-hosted model                | Open-source, self-hostable (n8n-style). Users run Plurist locally or on their own infrastructure.                                                     |
+| SaaS model                       | Paid cloud subscription for hosted version.                                                                                                           |
+| Redistribution of tldraw source? | **No.** tldraw is consumed as an npm dependency. No source redistribution.                                                                            |
 
 ### Conclusion
 
-SocialClaw's use of tldraw falls **within the additional use grant** of BSL 1.1.
+Plurist's use of tldraw falls **within the additional use grant** of BSL 1.1.
 The product is a content-creation platform, not a whiteboard or diagramming tool.
 Both the self-hosted and SaaS deployment models are compliant.
 
@@ -56,7 +56,7 @@ Both the self-hosted and SaaS deployment models are compliant.
 ## Sign-off
 
 - [ ] Engineering lead has reviewed and acknowledges BSL-1.1 terms
-- [ ] Product confirms SocialClaw does not compete with tldraw's whiteboard/diagramming market
+- [ ] Product confirms Plurist does not compete with tldraw's whiteboard/diagramming market
 - [ ] Legal review completed (if applicable)
 
 **Approved by:** \***\*\*\*\*\*\*\***\_\_\_\***\*\*\*\*\*\*\***

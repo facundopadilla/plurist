@@ -2,7 +2,7 @@
 
 ## Technical Approach
 
-Build on Socialclaw's existing HTML-native canvas and workspace-scoped AI provider infrastructure rather than replacing them. The change adds a collaboration layer, a dual-surface UX (design mode + dev mode), structured generation inputs, and reusable brand context. The design goal is to keep one canonical project state that powers generation, collaboration, inspection, and export.
+Build on Plurist's existing HTML-native canvas and workspace-scoped AI provider infrastructure rather than replacing them. The change adds a collaboration layer, a dual-surface UX (design mode + dev mode), structured generation inputs, and reusable brand context. The design goal is to keep one canonical project state that powers generation, collaboration, inspection, and export.
 
 ## Architecture Decisions
 

@@ -1327,7 +1327,7 @@ wheels = [
 ]
 
 [[package]]
-name = "socialclaw-backend"
+name = "plurist-backend"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

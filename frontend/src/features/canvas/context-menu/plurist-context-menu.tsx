@@ -262,7 +262,7 @@ function HtmlShapeContextMenuContent() {
   );
 }
 
-export function SocialClawContextMenu(props: TLUiContextMenuProps) {
+export function PluristContextMenu(props: TLUiContextMenuProps) {
   const editor = useEditor();
   const selectedHtmlShape = getSelectedHtmlShape(editor);
 

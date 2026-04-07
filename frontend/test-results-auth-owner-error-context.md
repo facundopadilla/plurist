@@ -2,7 +2,7 @@
 
 ```yaml
 - generic [ref=e4]:
-    - generic [ref=e5]: Socialclaw
+    - generic [ref=e5]: Plurist
     - generic [ref=e6]:
         - heading "Login" [level=1] [ref=e7]
         - generic [ref=e8]:

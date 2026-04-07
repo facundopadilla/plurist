@@ -9,7 +9,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         workspace, _ = Workspace.objects.get_or_create(
             pk=1,
-            defaults={"name": "Socialclaw"},
+            defaults={"name": "Plurist"},
         )
 
         accounts = [

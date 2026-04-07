@@ -2,7 +2,7 @@
 
 ## Intent
 
-Socialclaw already supports HTML-native generation, workspace-scoped BYOK, provider/model selection, and content workflows. What it does not yet provide is the product shape that would clearly differentiate it from Google Stitch, Banani, v0, Pencil, and Penpot-style collaboration. This change reframes Socialclaw as a collaborative UI studio: easy-first generation for non-designers, live multiplayer collaboration for design/dev teams, provider-neutral AI orchestration, and developer-grade handoff from the same canvas.
+Plurist already supports HTML-native generation, workspace-scoped BYOK, provider/model selection, and content workflows. What it does not yet provide is the product shape that would clearly differentiate it from Google Stitch, Banani, v0, Pencil, and Penpot-style collaboration. This change reframes Plurist as a collaborative UI studio: easy-first generation for non-designers, live multiplayer collaboration for design/dev teams, provider-neutral AI orchestration, and developer-grade handoff from the same canvas.
 
 ## Scope
 
@@ -28,7 +28,7 @@ Socialclaw already supports HTML-native generation, workspace-scoped BYOK, provi
 This change should ship as five sequential-but-overlapping epics:
 
 **Phase 1 — Realtime Collaboration**
-Add multiplayer primitives to the existing canvas: presence, live cursors, active slide awareness, role-aware edit access, and comment threads. The goal is to make Socialclaw a shared workspace instead of a single-player generation tool.
+Add multiplayer primitives to the existing canvas: presence, live cursors, active slide awareness, role-aware edit access, and comment threads. The goal is to make Plurist a shared workspace instead of a single-player generation tool.
 
 **Phase 2 — Canvas-to-Dev Handoff**
 Introduce a dev-facing inspection layer on top of the active canvas content so developers can inspect HTML structure, tokens, prompt/provider metadata, and export clean artifacts without leaving the workspace.
@@ -62,7 +62,7 @@ Add reusable design constraints and workspace memory so generated output is cons
 | -------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------- |
 | Collaboration adds major infra complexity before UX is proven  | Med        | Deliver presence/comments before full concurrent editing breadth           |
 | Provider-neutral UX becomes too technical for first-time users | High       | Keep guided mode opinionated; hide advanced routing behind progressive UI  |
-| “Socialclaw” branding still signals only social media tooling  | Med        | Treat positioning and messaging updates as a parallel product workstream   |
+| “Plurist” branding still signals only social media tooling     | Med        | Treat positioning and messaging updates as a parallel product workstream   |
 | Dev handoff exports become noisy/untrusted                     | Med        | Define clean export contracts and test against representative slide output |
 | Brand-aware generation becomes brittle or overly restrictive   | Med        | Start with opt-in constraints and explainable rule application             |
 
@@ -90,4 +90,4 @@ Each phase must be deployable and reversible independently.
 - [ ] Developers can inspect/export the active artifact with structure, tokens, and prompt/provider metadata from the canvas
 - [ ] Workspace/project owners can choose provider/model defaults without losing BYOK flexibility
 - [ ] Generated output can reuse workspace brand constraints so repeated generations are more consistent than one-shot prompts
-- [ ] Socialclaw can be positioned as a collaborative, model-agnostic UI studio rather than just another AI UI generator
+- [ ] Plurist can be positioned as a collaborative, model-agnostic UI studio rather than just another AI UI generator

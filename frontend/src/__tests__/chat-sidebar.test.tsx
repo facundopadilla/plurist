@@ -66,7 +66,7 @@ describe("ChatSidebar", () => {
     fetchProjects.mockResolvedValue([
       {
         id: 7,
-        name: "SocialClaw",
+        name: "Plurist",
         description: "",
         tags: [],
         color: "#6366f1",
@@ -123,7 +123,7 @@ describe("ChatSidebar", () => {
     await waitFor(() => {
       expect(document.body.textContent).toContain("Plan");
       expect(document.body.textContent).toContain("Build");
-      expect(document.body.textContent).toContain("SocialClaw");
+      expect(document.body.textContent).toContain("Plurist");
       expect(
         document
           .querySelector('textarea[aria-label="Message for AI assistant"]')

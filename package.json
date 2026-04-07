@@ -1,5 +1,5 @@
 {
-  "name": "socialclaw-githooks",
+  "name": "plurist-githooks",
   "private": true,
   "packageManager": "pnpm@9.4.0",
   "scripts": {

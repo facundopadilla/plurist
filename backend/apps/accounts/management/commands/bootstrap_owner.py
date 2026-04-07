@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         workspace, _ = Workspace.objects.get_or_create(
             pk=1,
-            defaults={"name": "Socialclaw"},
+            defaults={"name": "Plurist"},
         )
 
         user, created = User.objects.get_or_create(
