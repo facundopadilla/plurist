@@ -28,6 +28,7 @@ class ChatStreamIn(Schema):
     network: str = ""
     conversation_id: int | None = None
     mode: str = "build"
+    current_html: str = ""
 
 
 def _next_stream_chunk(iterator):
@@ -53,6 +54,7 @@ async def chat_stream(request, payload: ChatStreamIn):
         fmt=payload.format,
         network=payload.network,
         mode=payload.mode,
+        current_html=payload.current_html,
     )
 
     async def _event_generator():

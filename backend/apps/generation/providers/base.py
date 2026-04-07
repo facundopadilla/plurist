@@ -20,6 +20,10 @@ class GenerationResult:
     token_count: int = 0
     cost_estimate: float = 0.0
     error_message: str = ""
+    error_code: str = ""  # e.g. "rate_limited", "auth_invalid"
+    error_category: str = ""  # e.g. "limit", "auth", "provider"
+    error_hint: str = ""  # Actionable suggestion for the user
+    error_retryable: bool = False
 
 
 def resolve_api_key(
@@ -77,6 +81,27 @@ def _contains_html_like_content(content: str) -> bool:
     return any(tag in lowered for tag in html_tags)
 
 
+def make_error_result(
+    exc: Exception,
+    provider_name: str,
+    model_id: str,
+) -> GenerationResult:
+    """Create a GenerationResult with structured error info from an exception."""
+    from .errors import classify_provider_error
+
+    classified = classify_provider_error(exc, provider_name)
+    return GenerationResult(
+        success=False,
+        provider_name=provider_name,
+        model_id=model_id,
+        error_message=classified.message,
+        error_code=classified.code,
+        error_category=classified.category,
+        error_hint=classified.hint,
+        error_retryable=classified.retryable,
+    )
+
+
 class BaseProvider(ABC):
     """Abstract base interface for all generation providers."""
 
@@ -91,4 +116,13 @@ class BaseProvider(ABC):
         if result.success:
             yield result.generated_text
         else:
-            raise RuntimeError(result.error_message or "Generation failed")
+            from .errors import ProviderError
+
+            raise ProviderError(
+                message=result.error_message,
+                code=result.error_code,
+                category=result.error_category,
+                hint=result.error_hint,
+                retryable=result.error_retryable,
+                provider=result.provider_name,
+            )

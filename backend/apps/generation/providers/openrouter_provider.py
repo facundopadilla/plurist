@@ -7,6 +7,7 @@ from .base import (
     BaseProvider,
     GenerationResult,
     build_provider_messages,
+    make_error_result,
     resolve_api_key,
 )
 
@@ -49,7 +50,16 @@ class OpenRouterProvider(BaseProvider):
         if result.success:
             yield result.generated_text
         else:
-            raise RuntimeError(result.error_message or "OpenRouter generation failed")
+            from .errors import ProviderError
+
+            raise ProviderError(
+                message=result.error_message,
+                code=result.error_code,
+                category=result.error_category,
+                hint=result.error_hint,
+                retryable=result.error_retryable,
+                provider=result.provider_name,
+            )
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -97,9 +107,4 @@ class OpenRouterProvider(BaseProvider):
                 cost_estimate=0.0,
             )
         except Exception as exc:
-            return GenerationResult(
-                success=False,
-                provider_name=_PROVIDER_NAME,
-                model_id=self.model_id,
-                error_message=str(exc),
-            )
+            return make_error_result(exc, _PROVIDER_NAME, self.model_id)

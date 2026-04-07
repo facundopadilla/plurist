@@ -4,7 +4,7 @@ import json
 import time
 from typing import TYPE_CHECKING, Any, Iterator
 
-from .base import BaseProvider, GenerationResult, build_provider_messages
+from .base import BaseProvider, GenerationResult, build_provider_messages, make_error_result
 
 if TYPE_CHECKING:
     from apps.workspace.models import WorkspaceAISettings
@@ -117,7 +117,17 @@ class OllamaProvider(BaseProvider):
                     if text:
                         yield text
         except Exception as exc:
-            raise RuntimeError(f"Ollama stream error: {exc}") from exc
+            from .errors import ProviderError, classify_provider_error
+
+            classified = classify_provider_error(exc, _PROVIDER_NAME)
+            raise ProviderError(
+                message=classified.message,
+                code=classified.code,
+                category=classified.category,
+                hint=classified.hint,
+                retryable=classified.retryable,
+                provider=_PROVIDER_NAME,
+            ) from exc
 
     def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:  # pragma: no cover
         try:
@@ -149,9 +159,4 @@ class OllamaProvider(BaseProvider):
                 cost_estimate=0.0,
             )
         except Exception as exc:
-            return GenerationResult(
-                success=False,
-                provider_name=_PROVIDER_NAME,
-                model_id=self.model_id,
-                error_message=str(exc),
-            )
+            return make_error_result(exc, _PROVIDER_NAME, self.model_id)
