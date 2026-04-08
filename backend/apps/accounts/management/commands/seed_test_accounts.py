@@ -2,6 +2,8 @@ from django.core.management.base import BaseCommand
 
 from apps.accounts.models import Membership, RoleChoices, User, Workspace
 
+TEST_PASSWORD = "testpassword123"  # pragma: allowlist secret
+
 
 class Command(BaseCommand):
     help = "Seed owner/editor test accounts"
@@ -27,7 +29,10 @@ class Command(BaseCommand):
                 defaults={"name": name},
             )
             if created:
-                user.set_password("testpassword123")  # nosec B106 -- dev seed command, not production
+                # Test-only deterministic seed password.
+                user.set_password(
+                    TEST_PASSWORD
+                )  # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
                 user.save(update_fields=["password"])
             Membership.objects.get_or_create(
                 user=user,

@@ -32,6 +32,7 @@ router = Router(tags=["auth"])
 
 GOOGLE_OIDC_SESSION_STATE_KEY = "google_oidc_state"
 GOOGLE_OIDC_SESSION_VERIFIER_KEY = "google_oidc_code_verifier"
+INVITE_REQUIRED_MESSAGE = "An invite is required to join this workspace"
 
 
 class LoginIn(Schema):
@@ -174,7 +175,7 @@ def google_callback(request):
         return _google_login_redirect_response(request, existing_provider.user)
 
     if not _is_google_domain_allowed(email):
-        raise HttpError(403, "An invite is required to join this workspace")
+        raise HttpError(403, INVITE_REQUIRED_MESSAGE)
 
     existing_user = User.objects.filter(email=email).first()
     if existing_user and email_verified:
@@ -184,7 +185,7 @@ def google_callback(request):
             defaults={"subject_id": subject_id},
         )
         if not created and user_provider.subject_id != subject_id:
-            raise HttpError(403, "An invite is required to join this workspace")
+            raise HttpError(403, INVITE_REQUIRED_MESSAGE)
         return _google_login_redirect_response(request, existing_user)
 
     valid_invite = (
@@ -200,7 +201,7 @@ def google_callback(request):
 
     if valid_invite:
         if existing_user:
-            raise HttpError(403, "An invite is required to join this workspace")
+            raise HttpError(403, INVITE_REQUIRED_MESSAGE)
 
         user = User.objects.create_user(
             email=email,
@@ -221,7 +222,7 @@ def google_callback(request):
         valid_invite.save(update_fields=["accepted"])
         return _google_login_redirect_response(request, user)
 
-    raise HttpError(403, "An invite is required to join this workspace")
+    raise HttpError(403, INVITE_REQUIRED_MESSAGE)
 
 
 @router.post("/login")
@@ -384,7 +385,10 @@ def dev_seed(request):
     for email, name, role in accounts:
         user, created = User.objects.get_or_create(email=email, defaults={"name": name})
         if created:
-            user.set_password("testpassword123")  # nosec B106 -- dev seed endpoint, not production
+            # Debug-only deterministic seed password.
+            user.set_password(
+                "testpassword123"
+            )  # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
             user.save(update_fields=["password"])
         Membership.objects.get_or_create(
             user=user,

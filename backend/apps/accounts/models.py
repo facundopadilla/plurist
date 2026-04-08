@@ -8,6 +8,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
+from django.contrib.auth.password_validation import validate_password
 from django.db import models
 from django.utils import timezone
 
@@ -18,7 +19,9 @@ class UserManager(BaseUserManager):
             raise ValueError("Users must have an email")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra)
-        user.set_password(password)  # nosec B106 -- password validation is enforced at the serializer/API layer, not the model manager
+        if password is not None:
+            validate_password(password, user)
+        user.set_password(password)  # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
         user.save(using=self._db)
         return user
 

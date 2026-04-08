@@ -1,3 +1,4 @@
+from django.contrib.auth.password_validation import validate_password
 from django.core.management.base import BaseCommand
 
 from apps.accounts.models import Membership, RoleChoices, User, Workspace
@@ -24,7 +25,8 @@ class Command(BaseCommand):
             defaults={"name": "Owner"},
         )
         if created:
-            user.set_password(password)  # nosec B106 -- management command, password supplied by operator via CLI arg
+            validate_password(password, user)
+            user.set_password(password)
             user.save(update_fields=["password"])
 
         membership, membership_created = Membership.objects.get_or_create(

@@ -56,7 +56,7 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgres://plurist:plurist@localhost:5432/plurist",  # pragma: allowlist secret
+    "postgres://plurist:plurist@localhost:5432/plurist",  # pragma: allowlist secret  # NOSONAR - dev-only fallback
 )
 
 _db_url = DATABASE_URL
@@ -104,13 +104,14 @@ GOOGLE_ALLOWED_DOMAINS = [
 
 # MinIO / S3 storage (design bank + project icons)
 _minio_endpoint = os.environ.get("MINIO_ENDPOINT", "minio:9000")
-DESIGN_BANK_S3_ENDPOINT_URL = f"http://{_minio_endpoint}"
-DESIGN_BANK_S3_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "plurist")
-DESIGN_BANK_S3_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "plurist")
+_minio_scheme = os.environ.get("MINIO_SCHEME", "http")
+DESIGN_BANK_S3_ENDPOINT_URL = f"{_minio_scheme}://{_minio_endpoint}"  # NOSONAR - local MinIO defaults to http in dev
+DESIGN_BANK_S3_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "pluristdev")
+DESIGN_BANK_S3_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "pluristdev")
 DESIGN_BANK_S3_BUCKET = os.environ.get("MINIO_BUCKET", "design-bank")
 DESIGN_BANK_S3_REGION = os.environ.get("MINIO_REGION", "us-east-1")
 # Public URL for presigned URLs (rewrite internal hostname to browser-accessible host)
-DESIGN_BANK_S3_PUBLIC_URL = os.environ.get("MINIO_PUBLIC_URL", "http://localhost:9000")
+DESIGN_BANK_S3_PUBLIC_URL = os.environ.get("MINIO_PUBLIC_URL", "http://localhost:9000")  # NOSONAR - local MinIO dev URL
 
 # Social network OAuth credentials
 X_CLIENT_ID = os.environ.get("X_CLIENT_ID", "")

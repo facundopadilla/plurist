@@ -14,7 +14,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-_SALT = b"plurist-ai-keys"
+_SALT = os.environ.get("AI_KEY_SALT", "plurist-ai-keys").encode()
 
 
 def _build_fernet() -> Fernet:

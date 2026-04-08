@@ -8,6 +8,9 @@ from tests.accounts.factories import MembershipFactory, UserFactory, WorkspaceFa
 
 pytestmark = pytest.mark.django_db
 
+AI_SETTINGS_URL = "/api/v1/workspace/ai-settings"
+_DEFAULT_PASSWORD = "testpassword123"
+
 
 # ---------------------------------------------------------------------------
 # Helpers (same pattern as test_roles.py)
@@ -19,7 +22,7 @@ def _csrf(client):
     return response.json().get("csrf_token", "")
 
 
-def _login(client, email, password="testpassword123"):
+def _login(client, email, password=_DEFAULT_PASSWORD):
     return client.post(
         "/api/v1/auth/login",
         data={"email": email, "password": password},
@@ -28,14 +31,14 @@ def _login(client, email, password="testpassword123"):
     )
 
 
-def _make_owner(password="testpassword123"):
+def _make_owner(password=_DEFAULT_PASSWORD):
     workspace = WorkspaceFactory()
     owner = UserFactory(email="owner@ai.test", password=password)
     MembershipFactory(user=owner, workspace=workspace, role="owner")
     return workspace, owner
 
 
-def _make_editor(workspace, password="testpassword123"):
+def _make_editor(workspace, password=_DEFAULT_PASSWORD):
     editor = UserFactory(email="editor@ai.test", password=password)
     MembershipFactory(user=editor, workspace=workspace, role="editor")
     return editor
@@ -48,23 +51,23 @@ def _make_editor(workspace, password="testpassword123"):
 
 class TestGetAISettings:
     def test_unauthenticated_returns_401(self, client):
-        response = client.get("/api/v1/workspace/ai-settings")
+        response = client.get(AI_SETTINGS_URL)
         assert response.status_code == 401
 
     def test_editor_returns_403(self, client):
         workspace, _ = _make_owner()
         editor = _make_editor(workspace)
         _login(client, editor.email)
-        response = client.get("/api/v1/workspace/ai-settings")
+        response = client.get(AI_SETTINGS_URL)
         assert response.status_code == 403
 
     def test_owner_gets_default_settings(self, client):
         workspace = WorkspaceFactory()
-        owner = UserFactory(email="ow2@ai.test", password="testpassword123")
+        owner = UserFactory(email="ow2@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=owner, workspace=workspace, role="owner")
         _login(client, owner.email)
 
-        response = client.get("/api/v1/workspace/ai-settings")
+        response = client.get(AI_SETTINGS_URL)
         assert response.status_code == 200
         data = response.json()
         assert data["has_openai_key"] is False
@@ -76,38 +79,38 @@ class TestGetAISettings:
 
     def test_owner_gets_flags_after_key_set(self, client):
         workspace = WorkspaceFactory()
-        owner = UserFactory(email="ow3@ai.test", password="testpassword123")
+        owner = UserFactory(email="ow3@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=owner, workspace=workspace, role="owner")
         _login(client, owner.email)
         csrf = _csrf(client)
 
         # PUT a key
         client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"openai_api_key": "sk-test-123"},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
         )
 
-        response = client.get("/api/v1/workspace/ai-settings")
+        response = client.get(AI_SETTINGS_URL)
         assert response.status_code == 200
         assert response.json()["has_openai_key"] is True
 
     def test_response_never_contains_raw_key(self, client):
         workspace = WorkspaceFactory()
-        owner = UserFactory(email="ow4@ai.test", password="testpassword123")
+        owner = UserFactory(email="ow4@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=owner, workspace=workspace, role="owner")
         _login(client, owner.email)
         csrf = _csrf(client)
 
         client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"openai_api_key": "sk-secret-value"},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
         )
 
-        response = client.get("/api/v1/workspace/ai-settings")
+        response = client.get(AI_SETTINGS_URL)
         body = response.content.decode()
         assert "sk-secret-value" not in body
 
@@ -120,7 +123,7 @@ class TestGetAISettings:
 class TestPutAISettings:
     def test_unauthenticated_returns_401(self, client):
         response = client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={},
             content_type="application/json",
         )
@@ -128,13 +131,13 @@ class TestPutAISettings:
 
     def test_editor_returns_403(self, client):
         workspace = WorkspaceFactory()
-        editor = UserFactory(email="ed2@ai.test", password="testpassword123")
+        editor = UserFactory(email="ed2@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=editor, workspace=workspace, role="editor")
         _login(client, editor.email)
         csrf = _csrf(client)
 
         response = client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"openai_api_key": "sk-test"},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
@@ -143,13 +146,13 @@ class TestPutAISettings:
 
     def test_owner_can_set_all_keys(self, client):
         workspace = WorkspaceFactory()
-        owner = UserFactory(email="ow5@ai.test", password="testpassword123")
+        owner = UserFactory(email="ow5@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=owner, workspace=workspace, role="owner")
         _login(client, owner.email)
         csrf = _csrf(client)
 
         response = client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={
                 "openai_api_key": "sk-openai-test",
                 "anthropic_api_key": "sk-ant-test",
@@ -170,21 +173,21 @@ class TestPutAISettings:
 
     def test_owner_can_clear_key_with_empty_string(self, client):
         workspace = WorkspaceFactory()
-        owner = UserFactory(email="ow6@ai.test", password="testpassword123")
+        owner = UserFactory(email="ow6@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=owner, workspace=workspace, role="owner")
         _login(client, owner.email)
         csrf = _csrf(client)
 
         # First set a key
         client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"openai_api_key": "sk-test"},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
         )
         # Then clear it
         response = client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"openai_api_key": ""},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
@@ -194,21 +197,21 @@ class TestPutAISettings:
 
     def test_null_field_leaves_existing_key_unchanged(self, client):
         workspace = WorkspaceFactory()
-        owner = UserFactory(email="ow7@ai.test", password="testpassword123")
+        owner = UserFactory(email="ow7@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=owner, workspace=workspace, role="owner")
         _login(client, owner.email)
         csrf = _csrf(client)
 
         # Set openai key
         client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"openai_api_key": "sk-original"},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
         )
         # PUT without the openai key field (null)
         response = client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"anthropic_api_key": "sk-ant"},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
@@ -220,14 +223,14 @@ class TestPutAISettings:
 
     def test_owner_can_set_preferred_models(self, client):
         workspace = WorkspaceFactory()
-        owner = UserFactory(email="ow8@ai.test", password="testpassword123")
+        owner = UserFactory(email="ow8@ai.test", password=_DEFAULT_PASSWORD)
         MembershipFactory(user=owner, workspace=workspace, role="owner")
         _login(client, owner.email)
         csrf = _csrf(client)
 
         preferred = {"openai": "gpt-4o-mini", "anthropic": "claude-3-haiku-20240307"}
         response = client.put(
-            "/api/v1/workspace/ai-settings",
+            AI_SETTINGS_URL,
             data={"preferred_models": preferred},
             content_type="application/json",
             HTTP_X_CSRF_TOKEN=csrf,
