@@ -25,5 +25,12 @@ export default defineConfig({
     environment: "jsdom",
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     exclude: ["e2e/**", "node_modules/**"],
+    coverage: {
+      provider: "v8",
+      reporter: ["lcov", "text"],
+      reportsDirectory: "coverage",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.{test,spec}.{ts,tsx}", "src/main.tsx"],
+    },
   },
 });

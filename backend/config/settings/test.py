@@ -1,4 +1,6 @@
-from .base import *  # noqa: F401, F403
+from . import base as base_settings
+
+globals().update({name: getattr(base_settings, name) for name in dir(base_settings) if name.isupper()})
 
 DATABASES = {
     "default": {
@@ -10,3 +12,7 @@ DATABASES = {
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
+
+# Tests should not depend on the dockerized Redis service just to enqueue tasks.
+CELERY_BROKER_URL = "memory://"
+CELERY_RESULT_BACKEND = "cache+memory://"

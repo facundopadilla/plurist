@@ -116,6 +116,7 @@ logs/
 # Coverage reports
 htmlcov/
 .coverage
+frontend/coverage/
 
 # MinIO data
 minio-data/

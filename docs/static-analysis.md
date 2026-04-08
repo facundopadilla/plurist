@@ -35,6 +35,22 @@ docker compose -f docker-compose.static-analysis.yml --profile scan run --rm son
 
 La configuración del proyecto está en `sonar-project.properties`.
 
+## Coverage antes de SonarQube
+
+Para que SonarQube no marque `0%` de cobertura, generá los reportes antes del scan:
+
+```bash
+make coverage-backend
+make coverage-frontend
+```
+
+Esto produce:
+
+- `backend/coverage.xml`
+- `frontend/coverage/lcov.info`
+
+Además, `sonar.typescript.tsconfigPaths` está fijado para que el analizador de TypeScript no recorra `tmp_repos/**` ni otros directorios scratch del workspace.
+
 ## Apagar el stack
 
 ```bash
