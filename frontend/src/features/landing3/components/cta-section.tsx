@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, GitHub } from "lucide-react";
+import { ArrowRight, Github } from "lucide-react";
 import { fadeUp, stagger } from "../lib/animations";
 import { ColorWave, ColorWaveButton } from "./cycling-text";
 
@@ -80,7 +80,7 @@ export function CtaSection() {
                   rel="noopener noreferrer"
                 >
                   <button className="flex h-12 items-center gap-2 rounded-xl border border-zinc-700/30 bg-transparent px-7 text-[13px] font-semibold text-zinc-300 transition-all duration-300 hover:border-zinc-600/50 hover:bg-zinc-800/30 hover:text-zinc-50">
-                    <GitHub size={14} />
+                    <Github size={14} />
                     Star on GitHub
                   </button>
                 </a>

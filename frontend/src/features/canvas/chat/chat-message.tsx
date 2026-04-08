@@ -262,7 +262,7 @@ export function ChatMessageBubble({ message }: Readonly<ChatMessageProps>) {
     let text = message.content;
 
     // Remover bloques de código markdown de la vista (dejando solo el texto conversacional)
-    text = text.replaceAll(/```[\s\S]*?(?:```|$)/g, "").trim();
+    text = text.replace(/```[\s\S]*?(?:```|$)/g, "").trim();
 
     // Si el texto restante parece ser HTML crudo que se filtró sin backticks
     if (

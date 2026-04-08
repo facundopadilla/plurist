@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Code2, GitHub, Menu, X } from "lucide-react";
+import { Code2, Github, Menu, X } from "lucide-react";
 import { cn } from "../lib/cn";
 
 const NAV_LINKS = [
@@ -104,7 +104,7 @@ export function Navbar() {
               rel="noopener noreferrer"
               className="rounded-lg p-2 text-zinc-200 transition-colors hover:text-zinc-50"
             >
-              <GitHub size={15} />
+              <Github size={15} />
             </a>
             <a
               href="/login"

@@ -134,7 +134,7 @@ export function L2FaqSection() {
             className="flex flex-col gap-2"
           >
             {faqs.map((faq) => (
-              <FaqItem key={faq.q} faq={faq} />
+              <FaqItem key={faq.question} faq={faq} />
             ))}
           </motion.div>
         </div>

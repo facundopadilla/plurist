@@ -54,7 +54,7 @@ function buildCssPath(el: Element, root: Element): string {
  * Truncate text to a max length, adding ellipsis if needed.
  */
 function truncateText(text: string, maxLength: number): string {
-  const clean = text.replaceAll(/\s+/g, " ").trim();
+  const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= maxLength) return clean;
   return clean.slice(0, maxLength - 1) + "…";
 }

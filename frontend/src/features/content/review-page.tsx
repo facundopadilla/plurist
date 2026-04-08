@@ -106,7 +106,11 @@ function buildRootSections(
   projects: Project[],
   postsByProject: Map<number | null, DraftPost[]>,
 ): Array<{ project: Project | null; posts: DraftPost[]; key: string }> {
-  const sections = projects.map((project) => ({
+  const sections: Array<{
+    project: Project | null;
+    posts: DraftPost[];
+    key: string;
+  }> = projects.map((project) => ({
     project,
     posts: postsByProject.get(project.id) ?? [],
     key: String(project.id),

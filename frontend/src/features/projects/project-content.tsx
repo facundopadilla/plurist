@@ -30,7 +30,7 @@ function ContentRow({ post }: Readonly<{ post: DraftPost }>) {
       <span
         className={`shrink-0 rounded-[12px] px-2 py-0.5 text-xs font-medium ${statusClass}`}
       >
-        {post.status.replaceAll("_", " ")}
+        {post.status.split("_").join(" ")}
       </span>
     </div>
   );
