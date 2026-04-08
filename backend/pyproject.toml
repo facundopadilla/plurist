@@ -22,12 +22,14 @@ dependencies = [
     "factory-boy>=3.3",
     "pillow>=10.0",
     "cryptography>=42.0",
+    "mcp>=1.9",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "pytest-django>=4.8",
+    "pytest-cov>=6.0",
     "pytest-httpx>=0.30",
     "bandit[toml]>=1.8",
     "detect-secrets>=1.5",
@@ -54,6 +56,13 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["apps", "config"]
+relative_files = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.bandit]
 exclude_dirs = ["backend/tests", "backend/**/migrations"]
@@ -91,6 +100,7 @@ module = [
     "factory_boy.*",
     "nh3.*",
     "requests.*",
+    "mcp.*",
 ]
 ignore_missing_imports = true
 
