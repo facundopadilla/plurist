@@ -24,7 +24,9 @@ interface HtmlShapeComponentProps {
   shape: HtmlShape;
 }
 
-export function HtmlShapeComponent({ shape }: HtmlShapeComponentProps) {
+export function HtmlShapeComponent({
+  shape,
+}: Readonly<HtmlShapeComponentProps>) {
   const { slideId, w, h, html, slideIndex, formatWidth, formatHeight } =
     shape.props;
 
@@ -78,7 +80,7 @@ export function HtmlShapeComponent({ shape }: HtmlShapeComponentProps) {
         const currentVariant = slideData?.variants.find(
           (variant) => variant.id === variantId,
         );
-        const nextName = window.prompt(
+        const nextName = globalThis.prompt(
           "Renombrar variant",
           currentVariant?.name ?? "",
         );
@@ -113,9 +115,7 @@ export function HtmlShapeComponent({ shape }: HtmlShapeComponentProps) {
     useState<ElementSelection | null>(null);
 
   // Lazily create a single controller instance per component mount
-  if (!controllerRef.current) {
-    controllerRef.current = new InlineEditController();
-  }
+  controllerRef.current ??= new InlineEditController();
 
   const commitAndExit = useCallback(
     (result: InlineEditResult) => {

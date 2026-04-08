@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Code2, Github, Menu, X } from "lucide-react";
+import { Code2, GitHub, Menu, X } from "lucide-react";
 import { cn } from "../lib/cn";
 
 const NAV_LINKS = [
@@ -23,7 +23,7 @@ export function Navbar() {
     ).filter(Boolean) as Element[];
 
     const onScroll = () => {
-      setScrolled(window.scrollY > 40);
+      setScrolled(globalThis.scrollY > 40);
 
       let current: Element | undefined;
       for (let i = sections.length - 1; i >= 0; i -= 1) {
@@ -41,15 +41,16 @@ export function Navbar() {
     };
 
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    globalThis.addEventListener("scroll", onScroll, { passive: true });
+    return () => globalThis.removeEventListener("scroll", onScroll);
   }, []);
 
   const scrollTo = useCallback((href: string) => {
     const el = document.querySelector(href);
     if (el) {
-      const top = window.scrollY + el.getBoundingClientRect().top - NAV_OFFSET;
-      window.scrollTo({ top, behavior: "smooth" });
+      const top =
+        globalThis.scrollY + el.getBoundingClientRect().top - NAV_OFFSET;
+      globalThis.scrollTo({ top, behavior: "smooth" });
       setMobileOpen(false);
     }
   }, []);
@@ -103,7 +104,7 @@ export function Navbar() {
               rel="noopener noreferrer"
               className="rounded-lg p-2 text-zinc-200 transition-colors hover:text-zinc-50"
             >
-              <Github size={15} />
+              <GitHub size={15} />
             </a>
             <a
               href="/login"

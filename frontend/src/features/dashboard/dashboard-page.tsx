@@ -19,12 +19,12 @@ function StatCard({
   value,
   icon,
   note,
-}: {
+}: Readonly<{
   label: string;
   value: number;
   icon: React.ReactNode;
   note: string;
-}) {
+}>) {
   return (
     <div className="rounded-2xl border border-zinc-800/50 bg-zinc-900/30 p-5 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3">
@@ -41,7 +41,7 @@ function StatCard({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: Readonly<{ status: string }>) {
   const isCompleted = status === "completed";
   return (
     <span
@@ -62,12 +62,12 @@ function QuickLink({
   title,
   description,
   icon,
-}: {
+}: Readonly<{
   to: string;
   title: string;
   description: string;
   icon: React.ReactNode;
-}) {
+}>) {
   return (
     <Link
       to={to}
@@ -172,7 +172,7 @@ export function DashboardPage() {
             </h2>
           </div>
           <div className="px-5 py-5 sm:px-6">
-            {posts && posts.length === 0 ? (
+            {posts?.length === 0 ? (
               <p className="text-sm text-zinc-400">
                 No content yet. Start your first piece in Canvas Studio.
               </p>

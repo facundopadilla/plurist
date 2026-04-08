@@ -49,7 +49,9 @@ const navItems = [
   },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const location = useLocation();
   const { role, user } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -61,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setLogoutError(null);
     try {
       await logoutSession();
-      window.location.href = "/login?loggedOut=1";
+      globalThis.location.href = "/login?loggedOut=1";
     } catch (err) {
       setLogoutError(
         err instanceof Error ? err.message : "We could not sign you out.",
@@ -137,10 +139,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {!collapsed && (
               <div className="mt-3 grid gap-1">
                 <span className="truncate text-sm font-medium text-zinc-200">
-                  {user?.name || "Workspace user"}
+                  {user?.name ?? "Workspace user"}
                 </span>
                 <span className="truncate text-xs text-zinc-400">
-                  {user?.email || "Session active"}
+                  {user?.email ?? "Session active"}
                 </span>
                 <span className="text-xs text-zinc-500">
                   {role ?? "viewer"}
@@ -213,11 +215,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
                 disabled={isLoggingOut}
               >
-                {(!collapsed || true) && (
-                  <span className={cn(collapsed && "lg:hidden")}>
-                    {isLoggingOut ? "Signing out..." : "Sign out"}
-                  </span>
-                )}
+                <span className={cn(collapsed && "lg:hidden")}>
+                  {isLoggingOut ? "Signing out..." : "Sign out"}
+                </span>
                 <LogOut size={15} />
               </Button>
             </div>

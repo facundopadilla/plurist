@@ -18,12 +18,12 @@ import { cn } from "../../../lib/utils";
 function DynamicIcon({
   name,
   className,
-}: {
+}: Readonly<{
   name: string;
   className?: string;
-}) {
+}>) {
   const Icon =
-    (Icons as unknown as Record<string, React.ElementType>)[name] ||
+    (Icons as unknown as Record<string, React.ElementType>)[name] ??
     Icons.Code2;
   return <Icon className={className} />;
 }
@@ -36,6 +36,7 @@ export function SkillsPanel() {
   const projectId = useCanvasStore((s) => s.config.projectId);
   const [activeTab, setActiveTab] = useState<Tab>("installed");
   const [search, setSearch] = useState("");
+  const hasProject = projectId != null;
 
   return (
     <div className="flex h-full flex-col">
@@ -94,27 +95,39 @@ export function SkillsPanel() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {!projectId ? (
+        {hasProject ? (
+          <TabContent
+            projectId={projectId}
+            activeTab={activeTab}
+            search={search}
+          />
+        ) : (
           <EmptyNotice
             icon="FolderOpen"
             message="Select a project to manage skills."
             hint="Use the project dropdown in the top header to pick one."
           />
-        ) : activeTab === "installed" ? (
-          <InstalledSection projectId={projectId} />
-        ) : activeTab === "catalog" ? (
-          <CatalogSection projectId={projectId} search={search} />
-        ) : (
-          <ImportSection projectId={projectId} />
         )}
       </div>
     </div>
   );
 }
 
+function TabContent({
+  projectId,
+  activeTab,
+  search,
+}: Readonly<{ projectId: number; activeTab: Tab; search: string }>) {
+  if (activeTab === "installed")
+    return <InstalledSection projectId={projectId} />;
+  if (activeTab === "catalog")
+    return <CatalogSection projectId={projectId} search={search} />;
+  return <ImportSection projectId={projectId} />;
+}
+
 // ── Installed Section ───────────────────────────────────────────────
 
-function InstalledSection({ projectId }: { projectId: number }) {
+function InstalledSection({ projectId }: Readonly<{ projectId: number }>) {
   const { data: installed = [], isLoading } = useInstalledSkills(projectId);
   const { mutate: toggleSkill, isPending: isToggling } = useToggleSkill();
   const { mutate: uninstall, isPending: isUninstalling } = useUninstallSkill();
@@ -146,7 +159,7 @@ function InstalledSection({ projectId }: { projectId: number }) {
                 : "border-zinc-800 bg-zinc-950 text-zinc-600",
             )}
           >
-            <DynamicIcon name={ps.skill.icon || "Code2"} className="h-4 w-4" />
+            <DynamicIcon name={ps.skill.icon ?? "Code2"} className="h-4 w-4" />
           </div>
 
           <div className="min-w-0 flex-1">
@@ -196,10 +209,10 @@ function InstalledSection({ projectId }: { projectId: number }) {
 function CatalogSection({
   projectId,
   search,
-}: {
+}: Readonly<{
   projectId: number;
   search: string;
-}) {
+}>) {
   const { data: catalog = [], isLoading: loadingCatalog } = useCatalog(search);
   const { data: installed = [] } = useInstalledSkills(projectId);
   const { mutate: install, isPending: isInstalling } = useInstallSkill();
@@ -234,7 +247,7 @@ function CatalogSection({
             className="group flex items-start gap-3 rounded-lg border border-zinc-800/40 bg-zinc-900/30 p-3 transition-colors hover:border-zinc-700/50"
           >
             <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950 text-zinc-500 transition-colors group-hover:text-zinc-400">
-              <DynamicIcon name={skill.icon || "Code2"} className="h-4 w-4" />
+              <DynamicIcon name={skill.icon ?? "Code2"} className="h-4 w-4" />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -288,7 +301,7 @@ function CatalogSection({
 
 // ── Import / Create Section ─────────────────────────────────────────
 
-function ImportSection({ projectId }: { projectId: number }) {
+function ImportSection({ projectId }: Readonly<{ projectId: number }>) {
   return (
     <div className="flex flex-col gap-4 p-4">
       <ImportFromUrl projectId={projectId} />
@@ -302,7 +315,7 @@ function ImportSection({ projectId }: { projectId: number }) {
   );
 }
 
-function ImportFromUrl({ projectId }: { projectId: number }) {
+function ImportFromUrl({ projectId }: Readonly<{ projectId: number }>) {
   const [url, setUrl] = useState("");
   const {
     mutate: importSkill,
@@ -358,7 +371,7 @@ function ImportFromUrl({ projectId }: { projectId: number }) {
       </div>
       {error && (
         <p className="text-[11px] text-red-400">
-          {(error as Error).message || "Failed to import skill."}
+          {error instanceof Error ? error.message : "Failed to import skill."}
         </p>
       )}
       {isSuccess && (
@@ -370,7 +383,7 @@ function ImportFromUrl({ projectId }: { projectId: number }) {
   );
 }
 
-function CreateCustom({ projectId }: { projectId: number }) {
+function CreateCustom({ projectId }: Readonly<{ projectId: number }>) {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [open, setOpen] = useState(false);
@@ -463,7 +476,7 @@ function CreateCustom({ projectId }: { projectId: number }) {
       </div>
       {error && (
         <p className="text-[11px] text-red-400">
-          {(error as Error).message || "Failed to create skill."}
+          {error instanceof Error ? error.message : "Failed to create skill."}
         </p>
       )}
       {isSuccess && (
@@ -477,7 +490,7 @@ function CreateCustom({ projectId }: { projectId: number }) {
 
 // ── Shared components ───────────────────────────────────────────────
 
-function SourceBadge({ source }: { source: string }) {
+function SourceBadge({ source }: Readonly<{ source: string }>) {
   const config: Record<string, { label: string; className: string }> = {
     catalog: {
       label: "Catalog",
@@ -518,11 +531,11 @@ function EmptyNotice({
   icon,
   message,
   hint,
-}: {
+}: Readonly<{
   icon: string;
   message: string;
   hint?: string;
-}) {
+}>) {
   return (
     <div className="flex h-40 flex-col items-center justify-center gap-2 px-6">
       <DynamicIcon name={icon} className="h-6 w-6 text-zinc-700" />

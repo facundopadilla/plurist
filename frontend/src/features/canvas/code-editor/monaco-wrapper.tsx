@@ -25,7 +25,7 @@ export function MonacoWrapper({
   file,
   onChange,
   externalEpoch,
-}: MonacoWrapperProps) {
+}: Readonly<MonacoWrapperProps>) {
   const lastEpochRef = useRef(externalEpoch);
   const editorRef = useRef<unknown>(null);
 

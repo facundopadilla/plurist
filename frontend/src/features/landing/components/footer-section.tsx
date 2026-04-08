@@ -22,10 +22,10 @@ const COMPANY_LINKS = [
 function LinkColumn({
   heading,
   links,
-}: {
+}: Readonly<{
   heading: string;
   links: ReadonlyArray<{ label: string; href: string }>;
-}) {
+}>) {
   return (
     <div>
       <p className="text-[11px] font-bold text-black uppercase tracking-widest mb-3">

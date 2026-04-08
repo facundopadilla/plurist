@@ -2,30 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark-dimmed.min.css";
-import {
-  X,
-  Pencil,
-  Save,
-  ImageIcon,
-  FileText,
-  Palette,
-  Type,
-  AlignLeft,
-  Code,
-  Paintbrush,
-  Braces,
-  FileCode,
-  Globe,
-  File,
-  ExternalLink,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { X, Pencil, Save, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { patchSource, updateSourceContent, getSourceFileUrl } from "./api";
+import { SourceTypeIcon } from "./resource-ui";
 import type { DesignBankSource } from "./types";
 
 function artifactKind(source: DesignBankSource | null): string {
-  const rd = (source?.resource_data ?? {}) as Record<string, unknown>;
+  const rd: Record<string, unknown> = source?.resource_data ?? {};
   const value = rd.artifact_kind;
   return typeof value === "string" ? value : "";
 }
@@ -56,23 +39,22 @@ function formatDate(iso: string): string {
   });
 }
 
-function sourceTypeIcon(sourceType: string, size = 18) {
-  const t = sourceType.toLowerCase();
-  if (["image", "jpg", "jpeg", "png", "gif", "svg", "webp", "logo"].includes(t))
-    return <ImageIcon size={size} className="text-zinc-500" />;
-  if (t === "pdf") return <FileText size={size} className="text-red-500" />;
-  if (t === "color") return <Palette size={size} className="text-zinc-500" />;
-  if (t === "font") return <Type size={size} className="text-zinc-500" />;
-  if (t === "text") return <AlignLeft size={size} className="text-zinc-500" />;
-  if (t === "html") return <Code size={size} className="text-zinc-500" />;
-  if (["css", "design_system"].includes(t))
-    return <Paintbrush size={size} className="text-zinc-500" />;
-  if (["js", "javascript"].includes(t))
-    return <Braces size={size} className="text-zinc-500" />;
-  if (t === "markdown")
-    return <FileCode size={size} className="text-zinc-500" />;
-  if (t === "url") return <Globe size={size} className="text-zinc-500" />;
-  return <File size={size} className="text-zinc-500" />;
+function readRecordString(
+  record: Record<string, unknown>,
+  key: string,
+  fallback = "",
+): string {
+  const value = record[key];
+  return typeof value === "string" ? value : fallback;
+}
+
+function readRecordStringArray(
+  record: Record<string, unknown>,
+  key: string,
+): string[] | null {
+  const value = record[key];
+  if (!Array.isArray(value)) return null;
+  return value.filter((item): item is string => typeof item === "string");
 }
 
 interface SourceDetailModalProps {
@@ -91,7 +73,7 @@ export function SourceDetailModal({
   onSaved,
   onDeleteRequest,
   canDelete = false,
-}: SourceDetailModalProps) {
+}: Readonly<SourceDetailModalProps>) {
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState("");
   const [editHex, setEditHex] = useState("#000000");
@@ -104,14 +86,14 @@ export function SourceDetailModal({
 
   useEffect(() => {
     if (source) {
-      const rd = (source.resource_data ?? {}) as Record<string, string>;
-      const ed = (source.extracted_data ?? {}) as Record<string, string>;
-      setEditName(source.name || "");
-      setEditHex(rd.hex || "#000000");
-      setEditRole(rd.role || "");
-      setEditFamily(rd.family || "");
-      setEditContent(rd.content || "");
-      setEditKind(rd.kind || "copy");
+      const rd: Record<string, unknown> = source.resource_data ?? {};
+      const ed: Record<string, unknown> = source.extracted_data ?? {};
+      setEditName(source.name ?? "");
+      setEditHex(readRecordString(rd, "hex") ?? "#000000");
+      setEditRole(readRecordString(rd, "role") ?? "");
+      setEditFamily(readRecordString(rd, "family") ?? "");
+      setEditContent(readRecordString(rd, "content") ?? "");
+      setEditKind(readRecordString(rd, "kind") ?? "copy");
       setEditMode(false);
 
       const srcType = source.source_type.toLowerCase();
@@ -124,9 +106,9 @@ export function SourceDetailModal({
         "markdown",
       ].includes(srcType);
       if (isManagedArtifact(source)) {
-        setCodeContent(rd.content || "");
+        setCodeContent(readRecordString(rd, "content") ?? "");
       } else if (isCodeType && source.storage_key) {
-        setCodeContent(ed.text_snippet || "");
+        setCodeContent(readRecordString(ed, "text_snippet") ?? "");
         setCodeLoading(true);
         fetch(getSourceFileUrl(source.id), { credentials: "include" })
           .then((r) => r.text())
@@ -136,7 +118,11 @@ export function SourceDetailModal({
           })
           .catch(() => setCodeLoading(false));
       } else if (isCodeType) {
-        setCodeContent(ed.text_snippet || rd.content || "");
+        setCodeContent(
+          readRecordString(ed, "text_snippet") ??
+            readRecordString(rd, "content") ??
+            "",
+        );
       }
     }
   }, [source]);
@@ -160,12 +146,12 @@ export function SourceDetailModal({
       if (t === "color") {
         resource_data = { hex: editHex, role: editRole };
       } else if (t === "font") {
-        const rd = (source.resource_data ?? {}) as Record<string, unknown>;
+        const rd: Record<string, unknown> = source.resource_data ?? {};
         resource_data = { ...rd, family: editFamily };
       } else if (t === "text") {
         resource_data = { content: editContent, kind: editKind };
       } else if (managedArtifact) {
-        const rd = (source.resource_data ?? {}) as Record<string, unknown>;
+        const rd: Record<string, unknown> = source.resource_data ?? {};
         resource_data = {
           ...rd,
           content: codeContent,
@@ -216,7 +202,7 @@ export function SourceDetailModal({
   if (!open || !source) return null;
 
   const t = source.source_type.toLowerCase();
-  const rd = (source.resource_data ?? {}) as Record<string, unknown>;
+  const rd: Record<string, unknown> = source.resource_data ?? {};
   const label =
     source.name ||
     source.original_filename ||
@@ -237,16 +223,19 @@ export function SourceDetailModal({
   const hasFile = Boolean(source.storage_key);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-zinc-800/70 bg-zinc-950/95 text-zinc-50 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <button
+        type="button"
+        aria-label="Close source detail modal"
+        className="absolute inset-0"
+        onClick={onClose}
+      />
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-zinc-800/70 bg-zinc-950/95 text-zinc-50 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 border-b border-zinc-800/60 px-5 py-4">
-          <span className="shrink-0">{sourceTypeIcon(t)}</span>
+          <span className="shrink-0">
+            <SourceTypeIcon sourceType={t} size={18} />
+          </span>
           <div className="flex-1 min-w-0">
             {editMode ? (
               <input
@@ -353,7 +342,7 @@ export function SourceDetailModal({
               ) : (
                 <div
                   className="h-16 w-16 shrink-0 rounded-xl border border-zinc-800/70 shadow-sm"
-                  style={{ background: String(rd.hex ?? "#000000") }}
+                  style={{ background: readRecordString(rd, "hex", "#000000") }}
                 />
               )}
               <div className="space-y-2">
@@ -376,10 +365,12 @@ export function SourceDetailModal({
                 ) : (
                   <>
                     <p className="text-xl font-mono font-medium">
-                      {String(rd.hex ?? "")}
+                      {readRecordString(rd, "hex")}
                     </p>
-                    {!!rd.role && (
-                      <p className="text-sm text-zinc-400">{String(rd.role)}</p>
+                    {readRecordString(rd, "role") !== "" && (
+                      <p className="text-sm text-zinc-400">
+                        {readRecordString(rd, "role")}
+                      </p>
                     )}
                   </>
                 )}
@@ -392,13 +383,13 @@ export function SourceDetailModal({
             <div className="space-y-3">
               <div className="space-y-2 rounded-xl border border-zinc-800/70 bg-zinc-900/60 p-4">
                 <p
-                  style={{ fontFamily: String(rd.family ?? "") }}
+                  style={{ fontFamily: readRecordString(rd, "family") }}
                   className="text-2xl"
                 >
                   The quick brown fox jumps over the lazy dog
                 </p>
                 <p
-                  style={{ fontFamily: String(rd.family ?? "") }}
+                  style={{ fontFamily: readRecordString(rd, "family") }}
                   className="text-sm text-zinc-400"
                 >
                   ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz
@@ -418,15 +409,14 @@ export function SourceDetailModal({
                   <p className="text-sm text-zinc-400">
                     Family:{" "}
                     <span className="font-mono text-foreground">
-                      {String(rd.family ?? "")}
+                      {readRecordString(rd, "family")}
                     </span>
                   </p>
-                  {!!rd.weights && (
+                  {rd.weights !== undefined && (
                     <p className="text-sm text-zinc-400">
                       Weights:{" "}
-                      {Array.isArray(rd.weights)
-                        ? rd.weights.join(", ")
-                        : String(rd.weights)}
+                      {readRecordStringArray(rd, "weights")?.join(", ") ??
+                        readRecordString(rd, "weights")}
                     </p>
                   )}
                 </div>
@@ -458,13 +448,13 @@ export function SourceDetailModal({
                 </>
               ) : (
                 <>
-                  {!!rd.kind && (
+                  {readRecordString(rd, "kind") !== "" && (
                     <span className="inline-block rounded-lg border border-zinc-800/70 bg-zinc-900/70 px-2 py-0.5 text-xs text-zinc-400">
-                      {String(rd.kind)}
+                      {readRecordString(rd, "kind")}
                     </span>
                   )}
                   <p className="text-sm text-foreground whitespace-pre-wrap">
-                    {String(rd.content ?? "")}
+                    {readRecordString(rd, "content")}
                   </p>
                 </>
               )}
@@ -493,9 +483,7 @@ export function SourceDetailModal({
                   <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words hljs">
                     {highlightedCode ? (
                       <code
-                        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
-                        // highlightedCode is produced by highlight.js which escapes HTML entities — not raw user input
-                        dangerouslySetInnerHTML={{ __html: highlightedCode }}
+                        dangerouslySetInnerHTML={{ __html: highlightedCode }} // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- highlight.js output is escaped, not raw user HTML
                       />
                     ) : (
                       <code className="text-zinc-500">

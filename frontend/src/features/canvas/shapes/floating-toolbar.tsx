@@ -25,8 +25,10 @@ import {
   Type,
   Sparkles,
 } from "lucide-react";
-import type { InlineEditController } from "./inline-edit-controller";
-import type { ElementSelection } from "./inline-edit-controller";
+import type {
+  ElementSelection,
+  InlineEditController,
+} from "./inline-edit-controller";
 import {
   FONT_FAMILIES,
   FONT_SIZES,
@@ -99,7 +101,7 @@ export function FloatingToolbar({
   controller,
   onDelete,
   onEditWithAi,
-}: FloatingToolbarProps) {
+}: Readonly<FloatingToolbarProps>) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number }>({
     top: 0,
@@ -135,7 +137,7 @@ export function FloatingToolbar({
       TOOLBAR_VIEWPORT_PADDING,
       Math.min(
         left,
-        window.innerWidth - toolbarRect.width - TOOLBAR_VIEWPORT_PADDING,
+        globalThis.innerWidth - toolbarRect.width - TOOLBAR_VIEWPORT_PADDING,
       ),
     );
 
@@ -175,7 +177,7 @@ export function FloatingToolbar({
 
   const getActionElement = useCallback(() => {
     const el = controller.getActiveElement();
-    if (!el || !el.isConnected) return null;
+    if (!el?.isConnected) return null;
     return el;
   }, [controller]);
 
@@ -241,13 +243,15 @@ export function FloatingToolbar({
   // Find current font size (strip decimals)
   const computedSize = selection.styles.fontSize;
   const currentSizeLabel = computedSize
-    ? `${Math.round(parseFloat(computedSize))}px`
+    ? `${Math.round(Number.parseFloat(computedSize))}px`
     : "16px";
 
   const toolbar = (
     <div
       ref={toolbarRef}
       data-floating-toolbar
+      role="toolbar"
+      aria-label="Text formatting toolbar"
       onPointerDown={(e) => {
         // Prevent toolbar interactions from stealing focus from the contentEditable
         // element inside the Shadow DOM. Without this, the browser moves focus to
@@ -509,13 +513,26 @@ function ToolbarButton({
   onAction,
   title,
   variant,
-}: {
+}: Readonly<{
   children: React.ReactNode;
   active?: boolean;
   onAction: () => void;
   title: string;
   variant?: "destructive" | "accent";
-}) {
+}>) {
+  let stateClassName =
+    "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
+  if (variant === "destructive") {
+    stateClassName =
+      "text-zinc-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400";
+  } else if (variant === "accent") {
+    stateClassName =
+      "text-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300";
+  } else if (active) {
+    stateClassName =
+      "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100";
+  }
+
   // We use onPointerUp instead of onClick because the toolbar wrapper calls
   // e.preventDefault() on pointerdown to prevent focus theft from the
   // contentEditable element inside the Shadow DOM. In Chromium, preventDefault
@@ -531,13 +548,7 @@ function ToolbarButton({
       title={title}
       className={[
         "flex h-7 w-7 items-center justify-center rounded transition-colors",
-        variant === "destructive"
-          ? "text-zinc-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-          : variant === "accent"
-            ? "text-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300"
-            : active
-              ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-              : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
+        stateClassName,
       ].join(" ")}
     >
       {children}
@@ -555,13 +566,13 @@ function ToolbarDropdown({
   onToggle,
   width,
   children,
-}: {
+}: Readonly<{
   label: string;
   isOpen: boolean;
   onToggle: () => void;
   width: number;
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <div className="relative">
       <button
@@ -592,12 +603,12 @@ function DropdownItem({
   active,
   onAction,
   style,
-}: {
+}: Readonly<{
   label: string;
   active: boolean;
   onAction: () => void;
   style?: React.CSSProperties;
-}) {
+}>) {
   return (
     <button
       type="button"
@@ -626,7 +637,7 @@ function ColorPicker({
   onToggle,
   onSelect,
   title,
-}: {
+}: Readonly<{
   icon: React.ReactNode;
   colors: { label: string; value: string }[];
   currentColor: string;
@@ -634,7 +645,7 @@ function ColorPicker({
   onToggle: () => void;
   onSelect: (color: string) => void;
   title: string;
-}) {
+}>) {
   return (
     <div className="relative">
       <button
@@ -661,6 +672,8 @@ function ColorPicker({
                   (currentColor === "rgba(0, 0, 0, 0)" ||
                     currentColor === "transparent"));
 
+              const isTransparent = color.value === "transparent";
+
               return (
                 <button
                   key={color.value}
@@ -680,9 +693,7 @@ function ColorPicker({
                       : "",
                   ].join(" ")}
                   style={
-                    color.value !== "transparent"
-                      ? { backgroundColor: color.value }
-                      : undefined
+                    isTransparent ? undefined : { backgroundColor: color.value }
                   }
                 />
               );

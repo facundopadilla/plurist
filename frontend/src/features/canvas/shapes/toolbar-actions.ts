@@ -32,10 +32,10 @@ export const FONT_FAMILIES = [
 ] as const;
 
 export function setFontFamily(el: HTMLElement, fontFamily: string): void {
-  if (!fontFamily) {
-    el.style.removeProperty("font-family");
-  } else {
+  if (fontFamily) {
     el.style.setProperty("font-family", fontFamily, "important");
+  } else {
+    el.style.removeProperty("font-family");
   }
 }
 
@@ -69,22 +69,22 @@ export function setFontSize(el: HTMLElement, size: string): void {
 // ── Font Weight (Bold) ───────────────────────────────────────────────
 
 export function toggleBold(el: HTMLElement): boolean {
-  const computed = window.getComputedStyle(el);
-  const currentWeight = parseInt(computed.fontWeight, 10);
+  const computed = globalThis.getComputedStyle(el);
+  const currentWeight = Number.parseInt(computed.fontWeight, 10);
   const isBold = currentWeight >= 600;
   el.style.setProperty("font-weight", isBold ? "400" : "700", "important");
   return !isBold;
 }
 
 export function isBold(el: HTMLElement): boolean {
-  const computed = window.getComputedStyle(el);
-  return parseInt(computed.fontWeight, 10) >= 600;
+  const computed = globalThis.getComputedStyle(el);
+  return Number.parseInt(computed.fontWeight, 10) >= 600;
 }
 
 // ── Font Style (Italic) ─────────────────────────────────────────────
 
 export function toggleItalic(el: HTMLElement): boolean {
-  const computed = window.getComputedStyle(el);
+  const computed = globalThis.getComputedStyle(el);
   const isItalic = computed.fontStyle === "italic";
   el.style.setProperty(
     "font-style",
@@ -95,13 +95,13 @@ export function toggleItalic(el: HTMLElement): boolean {
 }
 
 export function isItalic(el: HTMLElement): boolean {
-  return window.getComputedStyle(el).fontStyle === "italic";
+  return globalThis.getComputedStyle(el).fontStyle === "italic";
 }
 
 // ── Text Decoration (Underline) ──────────────────────────────────────
 
 export function toggleUnderline(el: HTMLElement): boolean {
-  const computed = window.getComputedStyle(el);
+  const computed = globalThis.getComputedStyle(el);
   const hasUnderline = computed.textDecorationLine.includes("underline");
   el.style.setProperty(
     "text-decoration-line",
@@ -112,7 +112,9 @@ export function toggleUnderline(el: HTMLElement): boolean {
 }
 
 export function isUnderlined(el: HTMLElement): boolean {
-  return window.getComputedStyle(el).textDecorationLine.includes("underline");
+  return globalThis
+    .getComputedStyle(el)
+    .textDecorationLine.includes("underline");
 }
 
 // ── Text Color ───────────────────────────────────────────────────────
@@ -140,7 +142,7 @@ export function setTextAlign(el: HTMLElement, align: TextAlignment): void {
 }
 
 export function getTextAlign(el: HTMLElement): TextAlignment {
-  const computed = window.getComputedStyle(el);
+  const computed = globalThis.getComputedStyle(el);
   const align = computed.textAlign;
   if (align === "center" || align === "right" || align === "justify") {
     return align;

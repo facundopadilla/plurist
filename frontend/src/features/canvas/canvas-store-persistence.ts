@@ -46,8 +46,7 @@ export function snapshotPersistedPayload(
       const normalizedVariants = grouped
         .get(slideIndex)!
         .map(normalizeDraftVariant);
-      const activeVariant =
-        normalizedVariants[normalizedVariants.length - 1] ?? null;
+      const activeVariant = normalizedVariants.at(-1) ?? null;
       return {
         slideIndex,
         name: frameByIndex.get(slideIndex)?.name ?? `Frame ${slideIndex + 1}`,

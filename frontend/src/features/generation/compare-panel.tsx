@@ -25,7 +25,7 @@ export function ComparePanel({
   width = 1080,
   height = 1080,
   onVariantSelected,
-}: ComparePanelProps) {
+}: Readonly<ComparePanelProps>) {
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Record<number, number>>({});
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -84,7 +84,7 @@ export function ComparePanel({
     .sort((a, b) => a - b);
   const totalSlides = Math.max(
     run.slide_count ?? 1,
-    slideIndexes.length > 0 ? slideIndexes[slideIndexes.length - 1] + 1 : 1,
+    slideIndexes.length > 0 ? (slideIndexes.at(-1) ?? 0) + 1 : 1,
   );
 
   const currentVariants = variantsBySlide[currentSlide] ?? [];
@@ -180,16 +180,19 @@ function VariantCard({
   isSelected,
   onSelect,
   isSelecting,
-}: {
+}: Readonly<{
   variant: GenerationVariant;
   runWidth: number;
   runHeight: number;
   isSelected: boolean;
   onSelect: () => void;
   isSelecting: boolean;
-}) {
+}>) {
   const [showHtml, setShowHtml] = useState(true);
   const hasHtml = Boolean(variant.generated_html);
+  const codeTabClassName = showHtml
+    ? "hover:bg-accent"
+    : "bg-foreground text-background";
 
   return (
     <div
@@ -227,9 +230,7 @@ function VariantCard({
                 onClick={() => setShowHtml(false)}
                 className={cn(
                   "px-2 py-1 flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  !showHtml
-                    ? "bg-foreground text-background"
-                    : "hover:bg-accent",
+                  codeTabClassName,
                 )}
               >
                 <Code size={11} /> Code
@@ -277,11 +278,11 @@ function HtmlPreview({
   html,
   width,
   height,
-}: {
+}: Readonly<{
   html: string;
   width: number;
   height: number;
-}) {
+}>) {
   return (
     <div
       className="relative w-full overflow-hidden rounded-md border border-border bg-white"

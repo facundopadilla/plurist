@@ -91,13 +91,13 @@ function CanvasContent() {
       editor.updateInstanceState({ isGridMode: true });
 
       return tldrawReact("sync selected slides", () => {
-        const selectedShapeIds = editor
-          .getSelectedShapeIds()
-          .map((shapeId) => String(shapeId));
+        const selectedShapeIds = new Set(
+          editor.getSelectedShapeIds().map(String),
+        );
         const currentSlides = useCanvasStore.getState().slides;
         const nextSelectedSlideIds = Array.from(currentSlides.entries())
           .filter(([slideId]) =>
-            selectedShapeIds.includes(String(toShapeId(slideId))),
+            selectedShapeIds.has(String(toShapeId(slideId))),
           )
           .sort(([, a], [, b]) => a.slideIndex - b.slideIndex)
           .map(([slideId]) => slideId);

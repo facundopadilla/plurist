@@ -14,11 +14,11 @@ export function DynamicIcon({
   name,
   size = 14,
   className,
-}: {
+}: Readonly<{
   name: string;
   size?: number;
   className?: string;
-}) {
+}>) {
   const Icon = (LucideIcons as Record<string, unknown>)[name] as
     | React.ComponentType<{ size?: number; className?: string }>
     | undefined;
@@ -31,7 +31,10 @@ interface TagIconPickerProps {
   onChange: (name: string) => void;
 }
 
-export function TagIconPicker({ value, onChange }: TagIconPickerProps) {
+export function TagIconPicker({
+  value,
+  onChange,
+}: Readonly<TagIconPickerProps>) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);

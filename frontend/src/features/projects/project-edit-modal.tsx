@@ -32,7 +32,12 @@ interface Props {
   onSaved: () => void;
 }
 
-export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
+export function ProjectEditModal({
+  project,
+  open,
+  onClose,
+  onSaved,
+}: Readonly<Props>) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,7 +52,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
     if (project) {
       setName(project.name);
       setDescription(project.description);
-      setColor(project.color || "#6366f1");
+      setColor(project.color ?? "#6366f1");
       setTags(
         project.tags.map((t) => ({
           name: t.name,
@@ -109,6 +114,26 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
   const currentIconUrl = project.icon_url
     ? `/api/v1/projects/${project.id}/icon`
     : null;
+  let iconPreviewContent = (
+    <ImageIcon size={24} className="text-muted-foreground" />
+  );
+  if (iconPreview) {
+    iconPreviewContent = (
+      <img
+        src={iconPreview}
+        alt="preview"
+        className="h-full w-full object-cover"
+      />
+    );
+  } else if (currentIconUrl) {
+    iconPreviewContent = (
+      <img
+        src={currentIconUrl}
+        alt="icon"
+        className="h-full w-full object-cover"
+      />
+    );
+  }
 
   return (
     <Dialog
@@ -179,21 +204,7 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
             <Label>Custom icon</Label>
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-xl border border-border overflow-hidden flex items-center justify-center bg-muted/30">
-                {iconPreview ? (
-                  <img
-                    src={iconPreview}
-                    alt="preview"
-                    className="h-full w-full object-cover"
-                  />
-                ) : currentIconUrl ? (
-                  <img
-                    src={currentIconUrl}
-                    alt="icon"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <ImageIcon size={24} className="text-muted-foreground" />
-                )}
+                {iconPreviewContent}
               </div>
               <div className="space-y-1.5">
                 <Button
@@ -234,7 +245,10 @@ export function ProjectEditModal({ project, open, onClose, onSaved }: Props) {
             <Label>Tags</Label>
             <div className="space-y-2">
               {tags.map((tag, i) => (
-                <div key={i} className="flex items-center gap-2">
+                <div
+                  key={`tag-${tag.name || i}`}
+                  className="flex items-center gap-2"
+                >
                   <TagIconPicker
                     value={tag.icon ?? ""}
                     onChange={(name) => updateTag(i, "icon", name)}

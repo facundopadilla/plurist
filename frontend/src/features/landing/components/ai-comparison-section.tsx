@@ -99,9 +99,9 @@ export function AiComparisonSection() {
                 <div className="rounded border-2 border-black bg-white p-2.5">
                   <div className="h-12 rounded-sm bg-black opacity-10 mb-2.5" />
                   <div className="space-y-1.5">
-                    {provider.lines.map((width, j) => (
+                    {provider.lines.map((width) => (
                       <div
-                        key={j}
+                        key={`${provider.name}-${width}`}
                         className="h-1.5 rounded-full bg-black opacity-20"
                         style={{ width: `${width}%` }}
                       />

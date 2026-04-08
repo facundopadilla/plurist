@@ -21,7 +21,8 @@ function CodePane() {
             content: (
               <>
                 <span className="text-rose-400/70">&lt;section</span>{" "}
-                <span className="text-sky-400/60">class</span>=
+                <span className="text-sky-400/60">class</span>
+                {" = "}
                 <span className="text-emerald-400/60">&quot;hero&quot;</span>
                 <span className="text-rose-400/70">&gt;</span>
               </>
@@ -32,7 +33,8 @@ function CodePane() {
             content: (
               <>
                 &nbsp;&nbsp;<span className="text-rose-400/70">&lt;div</span>{" "}
-                <span className="text-sky-400/60">class</span>=
+                <span className="text-sky-400/60">class</span>
+                {" = "}
                 <span className="text-emerald-400/60">
                   &quot;container&quot;
                 </span>
@@ -57,7 +59,8 @@ function CodePane() {
               <>
                 &nbsp;&nbsp;&nbsp;&nbsp;
                 <span className="text-rose-400/70">&lt;p</span>{" "}
-                <span className="text-sky-400/60">class</span>=
+                <span className="text-sky-400/60">class</span>
+                {" = "}
                 <span className="text-emerald-400/60">&quot;lead&quot;</span>
                 <span className="text-rose-400/70">&gt;</span>
               </>
@@ -96,9 +99,13 @@ function CodePane() {
               <>
                 &nbsp;&nbsp;&nbsp;&nbsp;
                 <span className="text-rose-400/70">&lt;a</span>{" "}
-                <span className="text-sky-400/60">href</span>=
-                <span className="text-emerald-400/60">&quot;#start&quot;</span>{" "}
-                <span className="text-sky-400/60">class</span>=
+                <span className="text-sky-400/60">href</span>
+                {" = "}
+                <span className="text-emerald-400/60">
+                  &quot;#start&quot;
+                </span>{" "}
+                <span className="text-sky-400/60">class</span>
+                {" = "}
                 <span className="text-emerald-400/60">&quot;btn&quot;</span>
                 <span className="text-rose-400/70">&gt;</span>
               </>
@@ -133,11 +140,7 @@ function CodePane() {
           },
           {
             num: 12,
-            content: (
-              <>
-                <span className="text-rose-400/70">&lt;/section&gt;</span>
-              </>
-            ),
+            content: <span className="text-rose-400/70">&lt;/section&gt;</span>,
           },
           { num: 13, content: <></> },
           {
@@ -182,14 +185,7 @@ function CodePane() {
               </>
             ),
           },
-          {
-            num: 18,
-            content: (
-              <>
-                <span className="text-zinc-300">{"}"}</span>
-              </>
-            ),
-          },
+          { num: 18, content: <span className="text-zinc-300">{"}"}</span> },
         ].map(({ num, content }) => (
           <div key={num} className="flex">
             <span className="w-7 shrink-0 select-none pr-3 text-right text-white/35">

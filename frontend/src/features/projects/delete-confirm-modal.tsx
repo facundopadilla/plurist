@@ -24,7 +24,7 @@ export function DeleteConfirmModal({
   open,
   onClose,
   onDeleted,
-}: Props) {
+}: Readonly<Props>) {
   const [cascadePosts, setCascadePosts] = useState(false);
 
   const deleteMutation = useMutation({

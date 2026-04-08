@@ -39,7 +39,10 @@ const ROWS = [
   },
 ];
 
-function Cell({ value, highlight }: { value: boolean; highlight?: boolean }) {
+function Cell({
+  value,
+  highlight,
+}: Readonly<{ value: boolean; highlight?: boolean }>) {
   return (
     <td className="px-5 py-3.5 text-center">
       {value ? (

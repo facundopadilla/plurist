@@ -8,14 +8,18 @@ interface FileTreeProps {
   onFileSelect: (fileId: string) => void;
 }
 
-function FileIcon({ file }: { file: VirtualFile }) {
+function FileIcon({ file }: Readonly<{ file: VirtualFile }>) {
   if (file.language === "css") {
     return <FileText size={14} className="flex-shrink-0 text-blue-400" />;
   }
   return <FileCode2 size={14} className="flex-shrink-0 text-orange-400" />;
 }
 
-export function FileTree({ files, activeFileId, onFileSelect }: FileTreeProps) {
+export function FileTree({
+  files,
+  activeFileId,
+  onFileSelect,
+}: Readonly<FileTreeProps>) {
   return (
     <div
       className="flex flex-col border-b border-zinc-800/60"

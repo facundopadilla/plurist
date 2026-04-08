@@ -7,9 +7,9 @@ import { cleanupDom, render, waitFor } from "./test-dom";
 
 function HookHarness({
   onReady,
-}: {
+}: Readonly<{
   onReady: (value: ReturnType<typeof useChatToCanvas>) => void;
-}) {
+}>) {
   const value = useChatToCanvas();
 
   useEffect(() => {

@@ -9,7 +9,7 @@ interface HeaderBarProps {
   onSubmit?: () => void;
 }
 
-export function HeaderBar({ onExport, onSubmit }: HeaderBarProps) {
+export function HeaderBar({ onExport, onSubmit }: Readonly<HeaderBarProps>) {
   const config = useCanvasStore((s) => s.config);
   const setConfig = useCanvasStore((s) => s.setConfig);
   const isDirty = useCanvasStore((s) => s.isDirty);

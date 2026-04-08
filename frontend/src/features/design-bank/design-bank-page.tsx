@@ -3,23 +3,13 @@ import { useSearchParams, Link as RouterLink } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
-  ImageIcon,
   CheckCircle,
   XCircle,
   Loader2,
-  Globe,
   Folder,
   FolderOpen,
   ChevronRight,
   ExternalLink,
-  Palette,
-  Type,
-  AlignLeft,
-  Code,
-  Paintbrush,
-  Braces,
-  FileCode,
-  File,
   LayoutList,
   LayoutGrid,
   Search,
@@ -34,6 +24,7 @@ import { fetchSources, getSourceFileUrl, deleteSource } from "./api";
 import { SourceDetailModal } from "./source-detail-modal";
 import { AddResourceModal } from "./add-resource-modal";
 import { FolderCard } from "./folder-card";
+import { SourceTypeIcon } from "./resource-ui";
 import { fetchProjects, getProjectIconUrl } from "../projects/api";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -45,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { sortByNameOrDate } from "../projects/sort-utils";
 import type { DesignBankSource } from "./types";
 import type { Project } from "../projects/types";
 
@@ -75,7 +67,7 @@ const TYPE_FILTER_OPTIONS: { key: TypeFilter; label: string }[] = [
   { key: "code", label: "Code" },
 ];
 
-const IMAGE_TYPES = [
+const IMAGE_TYPES = new Set([
   "image",
   "jpg",
   "jpeg",
@@ -84,15 +76,15 @@ const IMAGE_TYPES = [
   "svg",
   "webp",
   "logo",
-];
-const CODE_TYPES = [
+]);
+const CODE_TYPES = new Set([
   "html",
   "css",
   "js",
   "javascript",
   "markdown",
   "design_system",
-];
+]);
 
 function matchesTypeFilter(
   source: DesignBankSource,
@@ -100,13 +92,13 @@ function matchesTypeFilter(
 ): boolean {
   if (filter === "all") return true;
   const t = source.source_type.toLowerCase();
-  if (filter === "image") return IMAGE_TYPES.includes(t);
+  if (filter === "image") return IMAGE_TYPES.has(t);
   if (filter === "color") return t === "color";
   if (filter === "font") return t === "font";
   if (filter === "text") return t === "text";
   if (filter === "pdf") return t === "pdf";
   if (filter === "url") return t === "url";
-  if (filter === "code") return CODE_TYPES.includes(t);
+  if (filter === "code") return CODE_TYPES.has(t);
   return true;
 }
 
@@ -132,34 +124,107 @@ function getStoredView(key: string, fallback: ViewMode): ViewMode {
   return fallback;
 }
 
+function setStoredView(key: string, value: ViewMode): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}
+
+function getDesignBankRefetchInterval(data: unknown): number | false {
+  if (!Array.isArray(data)) return false;
+  const hasTransient = data.some(
+    (source) => source.status === "pending" || source.status === "processing",
+  );
+  return hasTransient ? 3000 : false;
+}
+
+function getActiveFolderProject(
+  activeFolder: string | null,
+  projects: Project[],
+): Project | null {
+  if (!activeFolder || activeFolder === "unassigned") return null;
+  return (
+    projects.find((project) => project.id === Number(activeFolder)) ?? null
+  );
+}
+
+function getFolderSources(
+  activeFolder: string | null,
+  sourcesByProject: Map<number | null, DesignBankSource[]>,
+): DesignBankSource[] {
+  if (!activeFolder) return [];
+  if (activeFolder === "unassigned") return sourcesByProject.get(null) ?? [];
+  return sourcesByProject.get(Number(activeFolder)) ?? [];
+}
+
+function sortSources(
+  sources: DesignBankSource[],
+  sortKey: SortKey,
+): DesignBankSource[] {
+  const list = [...sources];
+  switch (sortKey) {
+    case "name-asc":
+      return list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    case "name-desc":
+      return list.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? ""));
+    case "date-desc":
+      return list.sort((a, b) => b.id - a.id);
+    case "date-asc":
+      return list.sort((a, b) => a.id - b.id);
+  }
+}
+
+function renderFolderSources(
+  sources: DesignBankSource[],
+  viewMode: ViewMode,
+  canUpload: boolean,
+  onSelectSource: (source: DesignBankSource) => void,
+  onDeleteSource: (source: DesignBankSource) => void,
+  emptyMessage: string,
+): React.ReactNode {
+  if (sources.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800/70 bg-zinc-900/10 py-12 text-center">
+        <FileText size={24} className="mb-2 text-zinc-500" />
+        <p className="text-sm text-zinc-400">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  if (viewMode === "folders") {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {sources.map((source) => (
+          <SourceCard
+            key={source.id}
+            source={source}
+            onClick={() => onSelectSource(source)}
+            onDelete={canUpload ? () => onDeleteSource(source) : undefined}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-zinc-800/60 divide-y divide-zinc-800/60 bg-zinc-900/20">
+      {sources.map((source) => (
+        <SourceRow
+          key={source.id}
+          source={source}
+          onClick={() => onSelectSource(source)}
+          onDelete={canUpload ? () => onDeleteSource(source) : undefined}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
-
-function SourceTypeIcon({
-  sourceType,
-  size = 16,
-}: {
-  sourceType: string;
-  size?: number;
-}) {
-  const t = sourceType.toLowerCase();
-  if (IMAGE_TYPES.includes(t))
-    return <ImageIcon size={size} className="text-zinc-500" />;
-  if (t === "pdf") return <FileText size={size} className="text-red-500" />;
-  if (t === "color") return <Palette size={size} className="text-zinc-500" />;
-  if (t === "font") return <Type size={size} className="text-zinc-500" />;
-  if (t === "text") return <AlignLeft size={size} className="text-zinc-500" />;
-  if (t === "html") return <Code size={size} className="text-zinc-500" />;
-  if (["css", "design_system"].includes(t))
-    return <Paintbrush size={size} className="text-zinc-500" />;
-  if (["js", "javascript"].includes(t))
-    return <Braces size={size} className="text-zinc-500" />;
-  if (t === "markdown")
-    return <FileCode size={size} className="text-zinc-500" />;
-  if (t === "url") return <Globe size={size} className="text-zinc-500" />;
-  return <File size={size} className="text-zinc-500" />;
-}
 
 function sourceStatusProps(status: string) {
   switch (status) {
@@ -186,7 +251,7 @@ function sourceStatusProps(status: string) {
   }
 }
 
-function SourceStatusBadge({ status }: { status: string }) {
+function SourceStatusBadge({ status }: Readonly<{ status: string }>) {
   const { label, variant, icon } = sourceStatusProps(status);
   return (
     <Badge variant={variant} className="rounded-full px-2 py-0.5 gap-1">
@@ -195,15 +260,52 @@ function SourceStatusBadge({ status }: { status: string }) {
   );
 }
 
+function SourceThumbnail({
+  showThumbnail,
+  sourceId,
+  label,
+  sourceType,
+  colorHex,
+}: Readonly<{
+  showThumbnail: boolean;
+  sourceId: number;
+  label: string;
+  sourceType: string;
+  colorHex?: string;
+}>) {
+  if (showThumbnail) {
+    return (
+      <img
+        src={getSourceFileUrl(sourceId)}
+        alt={label}
+        className="h-14 w-14 shrink-0 rounded-lg border border-zinc-800/70 object-cover"
+      />
+    );
+  }
+  if (colorHex) {
+    return (
+      <div
+        className="mt-0.5 h-10 w-10 shrink-0 rounded-lg border border-zinc-800/70"
+        style={{ background: colorHex }}
+      />
+    );
+  }
+  return (
+    <div className="mt-0.5 shrink-0">
+      <SourceTypeIcon sourceType={sourceType} />
+    </div>
+  );
+}
+
 function SourceCard({
   source,
   onClick,
   onDelete,
-}: {
+}: Readonly<{
   source: DesignBankSource;
   onClick?: () => void;
   onDelete?: () => void;
-}) {
+}>) {
   const label =
     source.name ||
     source.original_filename ||
@@ -211,27 +313,30 @@ function SourceCard({
     `Source #${source.id}`;
   const t = source.source_type.toLowerCase();
   const rd = (source.resource_data ?? {}) as Record<string, string>;
-  const isImage = IMAGE_TYPES.includes(t);
+  const isImage = IMAGE_TYPES.has(t);
   const showThumbnail =
     isImage && source.status === "ready" && source.storage_key;
-  const snippet =
-    t === "color"
-      ? rd.hex || ""
-      : t === "font"
-        ? rd.family || ""
-        : t === "text"
-          ? (rd.content || "").slice(0, 80)
-          : "";
+  let snippet = "";
+  if (t === "color") snippet = rd.hex ?? "";
+  else if (t === "font") snippet = rd.family ?? "";
+  else if (t === "text") snippet = (rd.content ?? "").slice(0, 80);
 
   return (
     <div
       data-testid="design-bank-source-card"
-      onClick={onClick}
       className={cn(
         "group relative flex items-start gap-3 rounded-2xl border border-zinc-800/60 bg-zinc-900/25 p-4 text-zinc-100",
         onClick && "cursor-pointer transition-colors hover:bg-white/[0.03]",
       )}
     >
+      {onClick && (
+        <button
+          type="button"
+          aria-label={`Open ${label}`}
+          className="absolute inset-0 rounded-2xl"
+          onClick={onClick}
+        />
+      )}
       {onDelete && (
         <button
           onClick={(e) => {
@@ -245,44 +350,40 @@ function SourceCard({
           <Trash2 size={12} />
         </button>
       )}
-      {showThumbnail ? (
-        <img
-          src={getSourceFileUrl(source.id)}
-          alt={label}
-          className="h-14 w-14 shrink-0 rounded-lg border border-zinc-800/70 object-cover"
+      <div className="pointer-events-none flex min-w-0 flex-1 items-start gap-3">
+        <SourceThumbnail
+          showThumbnail={!!showThumbnail}
+          sourceId={source.id}
+          label={label}
+          sourceType={source.source_type}
+          colorHex={t === "color" ? rd.hex : undefined}
         />
-      ) : t === "color" && rd.hex ? (
-        <div
-          className="mt-0.5 h-10 w-10 shrink-0 rounded-lg border border-zinc-800/70"
-          style={{ background: rd.hex }}
-        />
-      ) : (
-        <div className="mt-0.5 shrink-0">
-          <SourceTypeIcon sourceType={source.source_type} />
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-100" title={label}>
-          {label}
-        </p>
-        {snippet && (
-          <p className="mt-0.5 truncate font-mono text-xs text-zinc-500">
-            {snippet}
+        <div className="min-w-0 flex-1">
+          <p
+            className="truncate text-sm font-medium text-zinc-100"
+            title={label}
+          >
+            {label}
           </p>
-        )}
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <span data-testid="design-bank-source-status">
-            <SourceStatusBadge status={source.status} />
-          </span>
-          <span className="text-xs uppercase tracking-wide text-zinc-500">
-            {source.source_type}
-          </span>
+          {snippet && (
+            <p className="mt-0.5 truncate font-mono text-xs text-zinc-500">
+              {snippet}
+            </p>
+          )}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span data-testid="design-bank-source-status">
+              <SourceStatusBadge status={source.status} />
+            </span>
+            <span className="text-xs uppercase tracking-wide text-zinc-500">
+              {source.source_type}
+            </span>
+          </div>
+          {source.status === "failed" && source.error_message && (
+            <p className="mt-1 text-xs text-destructive">
+              {source.error_message}
+            </p>
+          )}
         </div>
-        {source.status === "failed" && source.error_message && (
-          <p className="mt-1 text-xs text-destructive">
-            {source.error_message}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -292,11 +393,11 @@ function SourceRow({
   source,
   onClick,
   onDelete,
-}: {
+}: Readonly<{
   source: DesignBankSource;
   onClick?: () => void;
   onDelete?: () => void;
-}) {
+}>) {
   const label =
     source.name ||
     source.original_filename ||
@@ -307,44 +408,53 @@ function SourceRow({
 
   return (
     <div
-      onClick={onClick}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2.5 transition-colors",
+        "group relative flex items-center gap-3 px-3 py-2.5 transition-colors",
         onClick
           ? "cursor-pointer hover:bg-white/[0.03]"
           : "hover:bg-white/[0.02]",
       )}
     >
-      <div className="shrink-0">
-        <SourceTypeIcon sourceType={source.source_type} />
-      </div>
-      {t === "color" && rd.hex && (
-        <span
-          className="inline-block h-4 w-4 shrink-0 rounded-full border border-zinc-800/70"
-          style={{ background: rd.hex }}
+      {onClick && (
+        <button
+          type="button"
+          aria-label={`Open ${label}`}
+          className="absolute inset-0 rounded-xl"
+          onClick={onClick}
         />
       )}
-      <p className="flex-1 truncate text-sm text-zinc-100">{label}</p>
-      <div className="flex items-center gap-2 shrink-0">
-        <span data-testid="design-bank-source-status">
-          <SourceStatusBadge status={source.status} />
-        </span>
-        <span className="hidden text-xs uppercase tracking-wide text-zinc-500 sm:inline">
-          {source.source_type}
-        </span>
-        {onDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="h-7 w-7 rounded-lg text-zinc-500 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-300"
-            title="Delete"
-            aria-label="Delete resource"
-          >
-            <Trash2 size={12} />
-          </button>
+      <div className="pointer-events-none flex min-w-0 flex-1 items-center gap-3">
+        <div className="shrink-0">
+          <SourceTypeIcon sourceType={source.source_type} />
+        </div>
+        {t === "color" && rd.hex && (
+          <span
+            className="inline-block h-4 w-4 shrink-0 rounded-full border border-zinc-800/70"
+            style={{ background: rd.hex }}
+          />
         )}
+        <p className="flex-1 truncate text-sm text-zinc-100">{label}</p>
+        <div className="flex items-center gap-2 shrink-0">
+          <span data-testid="design-bank-source-status">
+            <SourceStatusBadge status={source.status} />
+          </span>
+          <span className="hidden text-xs uppercase tracking-wide text-zinc-500 sm:inline">
+            {source.source_type}
+          </span>
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="pointer-events-auto h-7 w-7 rounded-lg text-zinc-500 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-300"
+              title="Delete"
+              aria-label="Delete resource"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -357,15 +467,15 @@ function ProjectFolder({
   onToggle,
   onSourceClick,
   onSourceDelete,
-}: {
+}: Readonly<{
   project: Project;
   sources: DesignBankSource[];
   open: boolean;
   onToggle: () => void;
   onSourceClick?: (source: DesignBankSource) => void;
   onSourceDelete?: (source: DesignBankSource) => void;
-}) {
-  const color = project.color || "#6366f1";
+}>) {
+  const color = project.color ?? "#6366f1";
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/20">
@@ -394,7 +504,7 @@ function ProjectFolder({
           {project.name}
         </span>
         <span className="shrink-0 text-xs text-zinc-500">
-          {sources.length} resource{sources.length !== 1 ? "s" : ""}
+          {sources.length} {sources.length === 1 ? "resource" : "resources"}
         </span>
         <ChevronRight
           size={14}
@@ -453,13 +563,13 @@ function UnassignedFolder({
   onToggle,
   onSourceClick,
   onSourceDelete,
-}: {
+}: Readonly<{
   sources: DesignBankSource[];
   open: boolean;
   onToggle: () => void;
   onSourceClick?: (source: DesignBankSource) => void;
   onSourceDelete?: (source: DesignBankSource) => void;
-}) {
+}>) {
   return (
     <div className="overflow-hidden rounded-2xl border border-dashed border-zinc-800/70 bg-zinc-900/10">
       <button
@@ -474,7 +584,7 @@ function UnassignedFolder({
           No project
         </span>
         <span className="shrink-0 text-xs text-zinc-500">
-          {sources.length} resource{sources.length !== 1 ? "s" : ""}
+          {sources.length} {sources.length === 1 ? "resource" : "resources"}
         </span>
         <ChevronRight
           size={14}
@@ -546,11 +656,7 @@ export function DesignBankPage() {
 
   function switchView(mode: ViewMode) {
     setViewMode(mode);
-    try {
-      localStorage.setItem("db-global-view", mode);
-    } catch {
-      // ignore
-    }
+    setStoredView("db-global-view", mode);
   }
 
   function enterFolder(folderId: string) {
@@ -572,14 +678,7 @@ export function DesignBankPage() {
   } = useQuery({
     queryKey: ["design-bank-sources"],
     queryFn: fetchSources,
-    refetchInterval: (query) => {
-      const data = query.state.data as DesignBankSource[] | undefined;
-      if (!data) return false;
-      const hasTransient = data.some(
-        (s) => s.status === "pending" || s.status === "processing",
-      );
-      return hasTransient ? 3000 : false;
-    },
+    refetchInterval: (query) => getDesignBankRefetchInterval(query.state.data),
   });
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
@@ -602,23 +701,20 @@ export function DesignBankPage() {
   }, [sources]);
 
   // Determine the active folder's project (if any)
-  const activeFolderProject = useMemo<Project | null>(() => {
-    if (!activeFolder || activeFolder === "unassigned") return null;
-    const id = Number(activeFolder);
-    return projects.find((p) => p.id === id) ?? null;
-  }, [activeFolder, projects]);
+  const activeFolderProject = useMemo(
+    () => getActiveFolderProject(activeFolder, projects),
+    [activeFolder, projects],
+  );
 
   // Sources for the active folder
-  const folderSources = useMemo<DesignBankSource[]>(() => {
-    if (!activeFolder) return [];
-    if (activeFolder === "unassigned") return sourcesByProject.get(null) ?? [];
-    const id = Number(activeFolder);
-    return sourcesByProject.get(id) ?? [];
-  }, [activeFolder, sourcesByProject]);
+  const folderSources = useMemo(
+    () => getFolderSources(activeFolder, sourcesByProject),
+    [activeFolder, sourcesByProject],
+  );
 
   // Filtered sources (for folder view or filtered root)
   const filteredSources = useMemo(() => {
-    const pool = activeFolder != null ? folderSources : (sources ?? []);
+    const pool = activeFolder == null ? (sources ?? []) : folderSources;
     return pool.filter(
       (s) => matchesTypeFilter(s, typeFilter) && matchesSearch(s, search),
     );
@@ -627,53 +723,54 @@ export function DesignBankPage() {
   const isFiltering = search.trim() !== "" || typeFilter !== "all";
   const unassigned = sourcesByProject.get(null) ?? [];
 
-  const sortedProjects = useMemo(() => {
-    const list = [...projects];
-    switch (sortKey) {
-      case "name-asc":
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-      case "name-desc":
-        return list.sort((a, b) => b.name.localeCompare(a.name));
-      case "date-desc":
-        return list.sort((a, b) => b.created_at.localeCompare(a.created_at));
-      case "date-asc":
-        return list.sort((a, b) => a.created_at.localeCompare(b.created_at));
-    }
-  }, [projects, sortKey]);
+  const sortedProjects = useMemo(
+    () => sortByNameOrDate(projects, sortKey),
+    [projects, sortKey],
+  );
 
-  const sortedFolderSources = useMemo(() => {
-    const list = [...filteredSources];
-    switch (sortKey) {
-      case "name-asc":
-        return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-      case "name-desc":
-        return list.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
-      case "date-desc":
-        return list.sort((a, b) => b.id - a.id);
-      case "date-asc":
-        return list.sort((a, b) => a.id - b.id);
-    }
-  }, [filteredSources, sortKey]);
+  const sortedFolderSources = useMemo(
+    () => sortSources(filteredSources, sortKey),
+    [filteredSources, sortKey],
+  );
 
   // Active folder label for header
-  const folderLabel = activeFolderProject
-    ? activeFolderProject.name
-    : activeFolder === "unassigned"
-      ? "No project"
-      : null;
+  let folderLabel: string | null = activeFolderProject?.name ?? null;
+  if (!folderLabel && activeFolder === "unassigned") {
+    folderLabel = "No project";
+  }
 
   // projectId to pre-select in AddResourceModal
   const modalProjectId = useMemo(() => {
     if (!activeFolder || activeFolder === "unassigned") return null;
     return Number(activeFolder);
   }, [activeFolder]);
+  const folderEmptyMessage = isFiltering
+    ? "No results for the active filters."
+    : "No resources in this folder.";
+  const folderResults = renderFolderSources(
+    sortedFolderSources,
+    viewMode,
+    canUpload,
+    setSelectedSource,
+    setDeletingSource,
+    folderEmptyMessage,
+  );
 
   return (
     <div className="animate-page-in space-y-6">
       {/* Top bar */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          {activeFolder != null ? (
+          {activeFolder == null ? (
+            <>
+              <h1 className="text-[32px] font-semibold tracking-[-0.04em] text-zinc-50">
+                Design Bank
+              </h1>
+              <p className="mt-2 text-sm text-zinc-400">
+                Design resources organized by project.
+              </p>
+            </>
+          ) : (
             <div className="flex items-center gap-2">
               <button
                 onClick={exitFolder}
@@ -685,15 +782,6 @@ export function DesignBankPage() {
               <span className="text-zinc-600">/</span>
               <span className="font-semibold text-zinc-100">{folderLabel}</span>
             </div>
-          ) : (
-            <>
-              <h1 className="text-[32px] font-semibold tracking-[-0.04em] text-zinc-50">
-                Design Bank
-              </h1>
-              <p className="mt-2 text-sm text-zinc-400">
-                Design resources organized by project.
-              </p>
-            </>
           )}
         </div>
 
@@ -800,44 +888,7 @@ export function DesignBankPage() {
         <>
           {/* ── INSIDE A FOLDER ── */}
           {activeFolder != null && (
-            <div className="space-y-3">
-              {filteredSources.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800/70 bg-zinc-900/10 py-12 text-center">
-                  <FileText size={24} className="mb-2 text-zinc-500" />
-                  <p className="text-sm text-zinc-400">
-                    {isFiltering
-                      ? "No results for the active filters."
-                      : "No resources in this folder."}
-                  </p>
-                </div>
-              ) : viewMode === "folders" ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {sortedFolderSources.map((s) => (
-                    <SourceCard
-                      key={s.id}
-                      source={s}
-                      onClick={() => setSelectedSource(s)}
-                      onDelete={
-                        canUpload ? () => setDeletingSource(s) : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-hidden rounded-2xl border border-zinc-800/60 divide-y divide-zinc-800/60 bg-zinc-900/20">
-                  {sortedFolderSources.map((s) => (
-                    <SourceRow
-                      key={s.id}
-                      source={s}
-                      onClick={() => setSelectedSource(s)}
-                      onDelete={
-                        canUpload ? () => setDeletingSource(s) : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            <div className="space-y-3">{folderResults}</div>
           )}
 
           {/* ── ROOT WITH ACTIVE FILTER — flat results ── */}

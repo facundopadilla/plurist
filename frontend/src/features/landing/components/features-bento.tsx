@@ -205,18 +205,10 @@ export function FeaturesBento() {
                 transition={{ duration: 0.15 }}
               >
                 <div
-                  className="relative h-full border-2 border-black rounded-lg p-5 transition-shadow duration-200"
+                  className="relative h-full rounded-lg border-2 border-black p-5 transition-shadow duration-200 hover:[box-shadow:7px_7px_0_0_#000]"
                   style={{
                     background: bg,
                     boxShadow: "5px 5px 0 0 #000",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.boxShadow =
-                      "7px 7px 0 0 #000";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.boxShadow =
-                      "5px 5px 0 0 #000";
                   }}
                 >
                   {"header" in item && item.header && (

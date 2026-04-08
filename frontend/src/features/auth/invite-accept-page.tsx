@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { useState, type BaseSyntheticEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,24 +14,27 @@ export function InviteAcceptPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: BaseSyntheticEvent) => {
     event.preventDefault();
+    void (async () => {
+      if (!token) {
+        setError("Missing invite token");
+        return;
+      }
 
-    if (!token) {
-      setError("Missing invite token");
-      return;
-    }
-
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      await acceptInvite(token, name, password, confirmPassword);
-      navigate("/login?inviteAccepted=1", { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not accept invite");
-    } finally {
-      setIsSubmitting(false);
-    }
+      setError(null);
+      setIsSubmitting(true);
+      try {
+        await acceptInvite(token, name, password, confirmPassword);
+        navigate("/login?inviteAccepted=1", { replace: true });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Could not accept invite",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   return (

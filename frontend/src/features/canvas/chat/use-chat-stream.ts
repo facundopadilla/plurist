@@ -1,10 +1,6 @@
 import { useCallback, useRef } from "react";
 import { getCsrfToken, setCsrfToken } from "../../auth/csrf";
-import type {
-  ChatStreamCallbacks,
-  ChatStreamErrorEvent,
-  ChatStreamEvent,
-} from "./chat-types";
+import type { ChatStreamCallbacks, ChatStreamEvent } from "./chat-types";
 
 interface ChatStreamParams {
   conversationId: number | null;
@@ -16,6 +12,122 @@ interface ChatStreamParams {
   network: string | null;
   mode: "plan" | "build" | "element-edit";
   currentHtml?: string;
+}
+
+interface ChatRequestBody {
+  conversation_id: number | null;
+  messages: Array<{ role: string; content: string }>;
+  provider: string;
+  model_id: string | null;
+  project_id: number | null;
+  format: string;
+  network: string;
+  mode: "plan" | "build" | "element-edit";
+  current_html: string;
+}
+
+function readString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function readOptionalString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function readObject(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function buildRequestBody(params: ChatStreamParams): ChatRequestBody {
+  return {
+    conversation_id: params.conversationId,
+    messages: params.messages,
+    provider: params.provider,
+    model_id: params.modelId ?? null,
+    project_id: params.projectId,
+    format: params.formatKey,
+    network: params.network ?? "",
+    mode: params.mode,
+    current_html: params.currentHtml ?? "",
+  };
+}
+
+function handleStreamEvent(
+  event: ChatStreamEvent,
+  callbacks: ChatStreamCallbacks,
+): boolean {
+  switch (event.type) {
+    case "token":
+      callbacks.onToken(event.text);
+      return false;
+    case "html_block":
+      callbacks.onHtmlBlock(event.slide_index, event.html);
+      return false;
+    case "element_patch":
+      callbacks.onElementPatch(
+        event.slide_index,
+        event.css_path,
+        event.updated_outer_html,
+      );
+      return false;
+    case "done":
+      callbacks.onDone();
+      return true;
+    case "error":
+      callbacks.onError(event);
+      return true;
+  }
+}
+
+async function consumeStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  callbacks: ChatStreamCallbacks,
+): Promise<void> {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    streamDone = done;
+
+    if (streamDone) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split("\n\n");
+    buffer = blocks.pop() ?? "";
+
+    for (const block of blocks) {
+      if (!block.trim()) continue;
+      const event = parseSSEBlock(block);
+      if (event && handleStreamEvent(event, callbacks)) {
+        return;
+      }
+    }
+  }
+
+  callbacks.onDone();
+}
+
+async function requestStream(
+  params: ChatStreamParams,
+  csrf: string,
+  signal?: AbortSignal,
+): Promise<Response> {
+  return fetch("/api/v1/generation/chat/stream", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": csrf,
+    },
+    body: JSON.stringify(buildRequestBody(params)),
+    signal,
+  });
 }
 
 async function ensureCsrf(): Promise<string> {
@@ -44,32 +156,33 @@ function parseSSEBlock(block: string): ChatStreamEvent | null {
   if (!eventType || !dataStr) return null;
 
   try {
-    const data = JSON.parse(dataStr) as Record<string, unknown>;
+    const data = readObject(JSON.parse(dataStr));
+    if (!data) return null;
     switch (eventType) {
       case "token":
-        return { type: "token", text: String(data.text ?? "") };
+        return { type: "token", text: readString(data.text) };
       case "html_block":
         return {
           type: "html_block",
           slide_index: Number(data.slide_index ?? 0),
-          html: String(data.html ?? ""),
+          html: readString(data.html),
         };
       case "element_patch":
         return {
           type: "element_patch",
           slide_index: Number(data.slide_index ?? 0),
-          css_path: String(data.css_path ?? ""),
-          updated_outer_html: String(data.updated_outer_html ?? ""),
+          css_path: readString(data.css_path),
+          updated_outer_html: readString(data.updated_outer_html),
         };
       case "done":
         return { type: "done" };
       case "error":
         return {
           type: "error",
-          message: String(data.message ?? "Unknown error"),
-          code: data.code ? String(data.code) : undefined,
-          category: data.category ? String(data.category) : undefined,
-          hint: data.hint ? String(data.hint) : undefined,
+          message: readString(data.message, "Unknown error"),
+          code: readOptionalString(data.code),
+          category: readOptionalString(data.category),
+          hint: readOptionalString(data.hint),
           retryable:
             typeof data.retryable === "boolean" ? data.retryable : undefined,
         };
@@ -97,26 +210,7 @@ export function useChatStream() {
 
       let response: Response;
       try {
-        response = await fetch("/api/v1/generation/chat/stream", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": csrf,
-          },
-          body: JSON.stringify({
-            conversation_id: params.conversationId,
-            messages: params.messages,
-            provider: params.provider,
-            model_id: params.modelId ?? null,
-            project_id: params.projectId,
-            format: params.formatKey,
-            network: params.network ?? "",
-            mode: params.mode,
-            current_html: params.currentHtml ?? "",
-          }),
-          signal: controller.signal,
-        });
+        response = await requestStream(params, csrf, controller.signal);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           callbacks.onError({
@@ -136,57 +230,9 @@ export function useChatStream() {
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
 
       try {
-        let streamDone = false;
-
-        while (!streamDone) {
-          const { done, value } = await reader.read();
-          streamDone = done;
-
-          if (streamDone) {
-            break;
-          }
-
-          buffer += decoder.decode(value, { stream: true });
-
-          // SSE events are separated by double newlines
-          const blocks = buffer.split("\n\n");
-          // Keep last incomplete block in buffer
-          buffer = blocks.pop() ?? "";
-
-          for (const block of blocks) {
-            if (!block.trim()) continue;
-            const event = parseSSEBlock(block);
-            if (!event) continue;
-
-            switch (event.type) {
-              case "token":
-                callbacks.onToken(event.text);
-                break;
-              case "html_block":
-                callbacks.onHtmlBlock(event.slide_index, event.html);
-                break;
-              case "element_patch":
-                callbacks.onElementPatch(
-                  event.slide_index,
-                  event.css_path,
-                  event.updated_outer_html,
-                );
-                break;
-              case "done":
-                callbacks.onDone();
-                return;
-              case "error":
-                callbacks.onError(event as ChatStreamErrorEvent);
-                return;
-            }
-          }
-        }
-        // Stream ended without explicit done
-        callbacks.onDone();
+        await consumeStream(reader, callbacks);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           callbacks.onError({
@@ -219,25 +265,7 @@ export async function streamChatMessage(
 
   let response: Response;
   try {
-    response = await fetch("/api/v1/generation/chat/stream", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrf,
-      },
-      body: JSON.stringify({
-        conversation_id: params.conversationId,
-        messages: params.messages,
-        provider: params.provider,
-        model_id: params.modelId ?? null,
-        project_id: params.projectId,
-        format: params.formatKey,
-        network: params.network ?? "",
-        mode: params.mode,
-        current_html: params.currentHtml ?? "",
-      }),
-    });
+    response = await requestStream(params, csrf);
   } catch {
     callbacks.onError({
       type: "error",
@@ -255,52 +283,9 @@ export async function streamChatMessage(
   }
 
   const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
 
   try {
-    let streamDone = false;
-
-    while (!streamDone) {
-      const { done, value } = await reader.read();
-      streamDone = done;
-
-      if (streamDone) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const blocks = buffer.split("\n\n");
-      buffer = blocks.pop() ?? "";
-
-      for (const block of blocks) {
-        if (!block.trim()) continue;
-        const event = parseSSEBlock(block);
-        if (!event) continue;
-
-        switch (event.type) {
-          case "token":
-            callbacks.onToken(event.text);
-            break;
-          case "html_block":
-            callbacks.onHtmlBlock(event.slide_index, event.html);
-            break;
-          case "element_patch":
-            callbacks.onElementPatch(
-              event.slide_index,
-              event.css_path,
-              event.updated_outer_html,
-            );
-            break;
-          case "done":
-            callbacks.onDone();
-            return;
-          case "error":
-            callbacks.onError(event as ChatStreamErrorEvent);
-            return;
-        }
-      }
-    }
-
-    callbacks.onDone();
+    await consumeStream(reader, callbacks);
   } catch {
     callbacks.onError({
       type: "error",

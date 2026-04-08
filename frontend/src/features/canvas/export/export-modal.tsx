@@ -12,7 +12,7 @@ interface ExportModalProps {
   onClose: () => void;
 }
 
-export function ExportModal({ onClose }: ExportModalProps) {
+export function ExportModal({ onClose }: Readonly<ExportModalProps>) {
   const slides = useCanvasStore((s) => s.slides);
   const config = useCanvasStore((s) => s.config);
   const globalStyles = useCanvasStore((s) => s.globalStyles);
@@ -25,6 +25,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
   const slideEntries = Array.from(slides.entries()).sort(
     ([, a], [, b]) => a.slideIndex - b.slideIndex,
   );
+  const slideLabel = slideEntries.length === 1 ? "slide" : "slides";
 
   const handleExport = useCallback(async () => {
     if (slideEntries.length === 0) return;
@@ -87,14 +88,14 @@ export function ExportModal({ onClose }: ExportModalProps) {
         </div>
 
         <p className="mb-4 text-xs text-zinc-400">
-          {slideEntries.length} slide{slideEntries.length !== 1 ? "s" : ""} -{" "}
-          {config.formatWidth}x{config.formatHeight}px
+          {slideEntries.length} {slideLabel} - {config.formatWidth}x
+          {config.formatHeight}px
         </p>
 
         <div className="mb-4">
-          <label className="mb-1.5 block text-xs font-medium text-zinc-200">
+          <p className="mb-1.5 block text-xs font-medium text-zinc-200">
             Format
-          </label>
+          </p>
           <div className="flex gap-2">
             {(["png", "jpeg", "webp"] as ExportFormat[]).map((f) => (
               <button
@@ -123,7 +124,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               max={1}
               step={0.01}
               value={quality}
-              onChange={(e) => setQuality(parseFloat(e.target.value))}
+              onChange={(e) => setQuality(Number.parseFloat(e.target.value))}
               className="w-full accent-zinc-200"
             />
           </div>

@@ -125,7 +125,7 @@ export function renameHtmlShape(slideId: string) {
     throw new Error("Slide not found");
   }
 
-  const nextName = window.prompt(
+  const nextName = globalThis.prompt(
     "Renombrar frame",
     slide.name ?? `Frame ${slide.slideIndex + 1}`,
   );
@@ -148,7 +148,7 @@ export function toggleHtmlShapeFavorite(slideId: string) {
 
 export function addHtmlShapeAnnotation(slideId: string) {
   const state = useCanvasStore.getState();
-  const note = window.prompt("New annotation", "");
+  const note = globalThis.prompt("New annotation", "");
   if (!note) {
     state.openAnnotationEditor(slideId);
     return null;
@@ -177,7 +177,7 @@ export function renameCurrentHtmlShapeVariant(slideId: string) {
     (variant) => variant.id === slide.activeVariantId,
   );
   if (!currentVariant) return null;
-  const nextName = window.prompt(
+  const nextName = globalThis.prompt(
     "Renombrar variant",
     currentVariant.name ?? "",
   );

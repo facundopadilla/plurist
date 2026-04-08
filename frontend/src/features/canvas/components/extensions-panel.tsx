@@ -46,10 +46,10 @@ export function ExtensionsPanel() {
       if (!htmlShape) return;
 
       const slide = slides.get(selectedSlideId);
-      if (!slide || slide.activeVariantId == null) return;
-      const variantId = slide.activeVariantId;
+      const variantId = slide?.activeVariantId;
+      if (variantId == null) return;
 
-      const activeVariant = slide.variants.find(
+      const activeVariant = slide?.variants.find(
         (variant) => variant.id === variantId,
       );
       if (!activeVariant) return;
@@ -58,10 +58,8 @@ export function ExtensionsPanel() {
         activeVariant.html,
         "text/html",
       );
-      const target = parsed.querySelector(
-        selector ?? "img",
-      ) as HTMLImageElement | null;
-      if (!target) return;
+      const target = parsed.querySelector(selector ?? "img");
+      if (!(target instanceof HTMLImageElement)) return;
 
       target.src = imageUrl;
       updateSlideHtml(
@@ -150,10 +148,10 @@ export function ExtensionsPanel() {
 function ExtensionListItem({
   extension,
   onActivate,
-}: {
+}: Readonly<{
   extension: CanvasExtension;
   onActivate: () => void;
-}) {
+}>) {
   const { meta } = extension;
   return (
     <li>

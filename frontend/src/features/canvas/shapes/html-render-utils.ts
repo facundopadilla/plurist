@@ -17,7 +17,7 @@ function sanitizeNodeTree(root: ParentNode) {
       }
       if (
         ["href", "src", "xlink:href", "formaction"].includes(attrName) &&
-        attrValue.startsWith("javascript:")
+        attrValue.startsWith("javascript:") // NOSONAR - explicit sanitizer blocklist for dangerous URL schemes
       ) {
         element.removeAttribute(attribute.name);
       }
@@ -66,10 +66,9 @@ export function renderHtmlIntoShadowHost(
   const scaleY = height / formatHeight;
   const scale = Math.min(scaleX, scaleY);
 
-  // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method
   // Intentional: this is the canvas HTML renderer. The Shadow DOM provides style isolation.
   // Content is workspace-owned HTML (not raw user input) rendered in a sandboxed tldraw shape.
-  root.innerHTML = `
+  root.innerHTML = ` // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method -- renderer consumes sanitized workspace HTML
     ${globalStyleBlock}
     ${headMarkup}
     <style>

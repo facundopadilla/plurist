@@ -6,7 +6,12 @@ interface OIDCProvidersProps {
 export function OIDCProviders({
   googleLinked,
   googleEmail,
-}: OIDCProvidersProps) {
+}: Readonly<OIDCProvidersProps>) {
+  let googleStatus = "Not linked";
+  if (googleLinked) {
+    googleStatus = googleEmail ? `Linked as ${googleEmail}` : "Linked";
+  }
+
   return (
     <section className="space-y-2" data-testid="oidc-providers">
       <h2 className="text-sm font-semibold">Linked sign-in providers</h2>
@@ -19,9 +24,7 @@ export function OIDCProviders({
           className="text-muted-foreground"
           data-testid="oidc-provider-google-message"
         >
-          {googleLinked
-            ? `Linked${googleEmail ? ` as ${googleEmail}` : ""}`
-            : "Not linked"}
+          {googleStatus}
         </p>
       </div>
     </section>

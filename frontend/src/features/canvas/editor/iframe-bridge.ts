@@ -47,13 +47,15 @@ export function enableEditing(
 ): boolean {
   try {
     const doc = iframe.contentDocument;
-    if (!doc || !doc.body) return false;
+    if (!doc?.body) return false;
 
     // Make text elements editable
     const selector = EDITABLE_SELECTORS.join(", ");
     const elements = doc.querySelectorAll(selector);
     elements.forEach((el) => {
-      (el as HTMLElement).contentEditable = "true";
+      if (el instanceof HTMLElement) {
+        el.contentEditable = "true";
+      }
     });
 
     // Also enable on body itself as fallback
@@ -86,12 +88,14 @@ export function enableEditing(
 export function disableEditing(iframe: HTMLIFrameElement): void {
   try {
     const doc = iframe.contentDocument;
-    if (!doc || !doc.body) return;
+    if (!doc?.body) return;
 
     const selector = EDITABLE_SELECTORS.join(", ");
     const elements = doc.querySelectorAll(selector);
     elements.forEach((el) => {
-      (el as HTMLElement).contentEditable = "false";
+      if (el instanceof HTMLElement) {
+        el.contentEditable = "false";
+      }
     });
 
     doc.body.contentEditable = "false";
@@ -112,7 +116,7 @@ export function disableEditing(iframe: HTMLIFrameElement): void {
 export function getHtml(iframe: HTMLIFrameElement): string {
   try {
     const doc = iframe.contentDocument;
-    if (!doc || !doc.documentElement) return "";
+    if (!doc?.documentElement) return "";
     return doc.documentElement.outerHTML;
   } catch {
     return "";
@@ -132,8 +136,8 @@ export function setElementColor(
   try {
     const doc = iframe.contentDocument;
     if (!doc) return false;
-    const el = doc.querySelector(selector) as HTMLElement | null;
-    if (!el) return false;
+    const el = doc.querySelector(selector);
+    if (!(el instanceof HTMLElement)) return false;
     el.style[property] = color;
     return true;
   } catch {
@@ -152,8 +156,8 @@ export function replaceImage(
   try {
     const doc = iframe.contentDocument;
     if (!doc) return false;
-    const img = doc.querySelector(selector) as HTMLImageElement | null;
-    if (!img) return false;
+    const img = doc.querySelector(selector);
+    if (!(img instanceof HTMLImageElement)) return false;
     img.src = newSrc;
     return true;
   } catch {

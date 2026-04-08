@@ -5,7 +5,6 @@ import {
   Palette,
   Type,
   FileText,
-  ImageIcon,
   Loader2,
   Trash2,
   Plus,
@@ -14,12 +13,6 @@ import {
   XCircle,
   LayoutGrid,
   List,
-  AlignLeft,
-  Code,
-  Paintbrush,
-  Braces,
-  FileCode,
-  File,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,29 +28,16 @@ import {
   deleteSource,
   getSourceFileUrl,
 } from "../design-bank/api";
+import {
+  DESIGN_BANK_INPUT_CLASSNAME,
+  SourceTypeIcon,
+  UploadResourceField,
+} from "../design-bank/resource-ui";
 import { SourceDetailModal } from "../design-bank/source-detail-modal";
 import type { DesignBankSource } from "../design-bank/types";
 
 type AddTab = "upload" | "url" | "color" | "font" | "text";
 type ViewMode = "grid" | "list";
-
-function sourceIcon(type: string) {
-  const t = type.toLowerCase();
-  if (["image", "jpg", "jpeg", "png", "gif", "svg", "webp", "logo"].includes(t))
-    return <ImageIcon size={14} className="text-zinc-500" />;
-  if (t === "pdf") return <FileText size={14} className="text-red-500" />;
-  if (t === "color") return <Palette size={14} className="text-zinc-500" />;
-  if (t === "font") return <Type size={14} className="text-zinc-500" />;
-  if (t === "text") return <AlignLeft size={14} className="text-zinc-500" />;
-  if (t === "html") return <Code size={14} className="text-zinc-500" />;
-  if (["css", "design_system"].includes(t))
-    return <Paintbrush size={14} className="text-zinc-500" />;
-  if (["js", "javascript"].includes(t))
-    return <Braces size={14} className="text-zinc-500" />;
-  if (t === "markdown") return <FileCode size={14} className="text-zinc-500" />;
-  if (t === "url") return <Globe size={14} className="text-zinc-500" />;
-  return <File size={14} className="text-zinc-500" />;
-}
 
 function statusBadge(status: string) {
   if (status === "ready")
@@ -85,17 +65,54 @@ function statusBadge(status: string) {
   );
 }
 
+function ResourceThumbnail({
+  showThumbnail,
+  sourceId,
+  label,
+  sourceType,
+  colorHex,
+}: Readonly<{
+  showThumbnail: boolean;
+  sourceId: number;
+  label: string;
+  sourceType: string;
+  colorHex?: string;
+}>) {
+  if (showThumbnail) {
+    return (
+      <img
+        src={getSourceFileUrl(sourceId)}
+        alt={label}
+        className="h-12 w-12 shrink-0 rounded-lg border border-zinc-800/70 object-cover"
+      />
+    );
+  }
+  if (colorHex) {
+    return (
+      <div
+        className="mt-0.5 h-8 w-8 shrink-0 rounded-lg border border-zinc-800/70"
+        style={{ background: colorHex }}
+      />
+    );
+  }
+  return (
+    <div className="mt-0.5 shrink-0">
+      <SourceTypeIcon sourceType={sourceType} size={14} />
+    </div>
+  );
+}
+
 function ResourceCard({
   source,
   canDelete,
   onDelete,
   onClick,
-}: {
+}: Readonly<{
   source: DesignBankSource;
   canDelete: boolean;
   onDelete: () => void;
   onClick?: () => void;
-}) {
+}>) {
   const rd = (source.resource_data ?? {}) as Record<string, string>;
   const label =
     source.name || source.original_filename || source.url || `#${source.id}`;
@@ -115,39 +132,43 @@ function ResourceCard({
 
   return (
     <div
-      onClick={onClick}
       className={cn(
-        "flex items-start gap-3 rounded-2xl border border-zinc-800/60 bg-zinc-900/25 p-3 text-zinc-100",
+        "relative flex items-start gap-3 rounded-2xl border border-zinc-800/60 bg-zinc-900/25 p-3 text-zinc-100",
         onClick && "cursor-pointer transition-colors hover:bg-white/[0.03]",
       )}
     >
-      {showThumbnail ? (
-        <img
-          src={getSourceFileUrl(source.id)}
-          alt={label}
-          className="h-12 w-12 shrink-0 rounded-lg border border-zinc-800/70 object-cover"
+      {onClick && (
+        <button
+          type="button"
+          aria-label={`Open ${label}`}
+          className="absolute inset-0 rounded-2xl"
+          onClick={onClick}
         />
-      ) : t === "color" && rd.hex ? (
-        <div
-          className="mt-0.5 h-8 w-8 shrink-0 rounded-lg border border-zinc-800/70"
-          style={{ background: rd.hex }}
-        />
-      ) : (
-        <div className="mt-0.5 shrink-0">{sourceIcon(source.source_type)}</div>
       )}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground truncate">{label}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {statusBadge(source.status)}
-          <span className="text-xs uppercase tracking-wide text-zinc-500">
-            {source.source_type}
-          </span>
-          {t === "color" && rd.role && (
-            <span className="text-xs text-zinc-500">{rd.role}</span>
-          )}
-          {t === "font" && rd.family && (
-            <span className="text-xs text-zinc-500">{rd.family}</span>
-          )}
+      <div className="pointer-events-none flex min-w-0 flex-1 items-start gap-3">
+        <ResourceThumbnail
+          showThumbnail={!!showThumbnail}
+          sourceId={source.id}
+          label={label}
+          sourceType={source.source_type}
+          colorHex={t === "color" ? rd.hex : undefined}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground truncate">
+            {label}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {statusBadge(source.status)}
+            <span className="text-xs uppercase tracking-wide text-zinc-500">
+              {source.source_type}
+            </span>
+            {t === "color" && rd.role && (
+              <span className="text-xs text-zinc-500">{rd.role}</span>
+            )}
+            {t === "font" && rd.family && (
+              <span className="text-xs text-zinc-500">{rd.family}</span>
+            )}
+          </div>
         </div>
       </div>
       {canDelete && (
@@ -156,7 +177,7 @@ function ResourceCard({
             e.stopPropagation();
             onDelete();
           }}
-          className="shrink-0 rounded-lg p-1 text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
+          className="pointer-events-auto shrink-0 rounded-lg p-1 text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
           title="Remove resource"
         >
           <Trash2 size={13} />
@@ -171,12 +192,12 @@ function ResourceRow({
   canDelete,
   onDelete,
   onClick,
-}: {
+}: Readonly<{
   source: DesignBankSource;
   canDelete: boolean;
   onDelete: () => void;
   onClick?: () => void;
-}) {
+}>) {
   const rd = (source.resource_data ?? {}) as Record<string, string>;
   const label =
     source.name || source.original_filename || source.url || `#${source.id}`;
@@ -184,50 +205,61 @@ function ResourceRow({
 
   return (
     <div
-      onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 transition-colors",
+        "relative flex items-center gap-3 px-3 py-2.5 transition-colors",
         onClick
           ? "cursor-pointer hover:bg-white/[0.03]"
           : "hover:bg-white/[0.02]",
       )}
     >
-      <div className="shrink-0">{sourceIcon(source.source_type)}</div>
-      {t === "color" && rd.hex && (
-        <span
-          className="inline-block h-4 w-4 shrink-0 rounded-full border border-zinc-800/70"
-          style={{ background: rd.hex }}
+      {onClick && (
+        <button
+          type="button"
+          aria-label={`Open ${label}`}
+          className="absolute inset-0 rounded-xl"
+          onClick={onClick}
         />
       )}
-      <p className="text-sm text-foreground truncate flex-1">{label}</p>
-      <div className="flex items-center gap-2 shrink-0">
-        {statusBadge(source.status)}
-        <span className="hidden text-xs uppercase tracking-wide text-zinc-500 sm:inline">
-          {source.source_type}
-        </span>
-        {t === "font" && rd.family && (
-          <span className="hidden text-xs text-zinc-500 sm:inline">
-            {rd.family}
+      <div className="pointer-events-none flex min-w-0 flex-1 items-center gap-3">
+        <div className="shrink-0">
+          <SourceTypeIcon sourceType={source.source_type} size={14} />
+        </div>
+        {t === "color" && rd.hex && (
+          <span
+            className="inline-block h-4 w-4 shrink-0 rounded-full border border-zinc-800/70"
+            style={{ background: rd.hex }}
+          />
+        )}
+        <p className="text-sm text-foreground truncate flex-1">{label}</p>
+        <div className="flex items-center gap-2 shrink-0">
+          {statusBadge(source.status)}
+          <span className="hidden text-xs uppercase tracking-wide text-zinc-500 sm:inline">
+            {source.source_type}
           </span>
-        )}
-        {canDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="rounded-lg p-1 text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
-            title="Remove resource"
-          >
-            <Trash2 size={13} />
-          </button>
-        )}
+          {t === "font" && rd.family && (
+            <span className="hidden text-xs text-zinc-500 sm:inline">
+              {rd.family}
+            </span>
+          )}
+          {canDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="pointer-events-auto rounded-lg p-1 text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-300"
+              title="Remove resource"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function AddResourcePanel({ projectId }: { projectId: number }) {
+function AddResourcePanel({ projectId }: Readonly<{ projectId: number }>) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<AddTab>("upload");
@@ -310,6 +342,13 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
     { key: "font", label: "Font", icon: <Type size={13} /> },
     { key: "text", label: "Text", icon: <FileText size={13} /> },
   ];
+  let fileErrorMessage: string | null = null;
+  if (fileMutation.isError) {
+    fileErrorMessage =
+      fileMutation.error instanceof Error
+        ? fileMutation.error.message
+        : "Upload failed";
+  }
 
   return (
     <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/25 backdrop-blur-xl">
@@ -333,35 +372,13 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
 
       <div className="p-4">
         {activeTab === "upload" && (
-          <div>
-            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-zinc-800/70 px-3 py-3 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100">
-              {fileMutation.isPending ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Upload size={16} />
-              )}
-              {fileMutation.isPending
-                ? "Uploading..."
-                : "Choose a file (image, PDF, and more)"}
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="sr-only"
-                disabled={fileMutation.isPending}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) fileMutation.mutate(f);
-                }}
-              />
-            </label>
-            {fileMutation.isError && (
-              <p className="mt-1 text-xs text-destructive">
-                {fileMutation.error instanceof Error
-                  ? fileMutation.error.message
-                  : "Upload failed"}
-              </p>
-            )}
-          </div>
+          <UploadResourceField
+            fileInputRef={fileInputRef}
+            isPending={fileMutation.isPending}
+            onFileSelect={(file) => fileMutation.mutate(file)}
+            labelClassName="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-zinc-800/70 px-3 py-3 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100"
+            errorMessage={fileErrorMessage}
+          />
         )}
 
         {activeTab === "url" && (
@@ -473,7 +490,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
               <select
                 value={textKind}
                 onChange={(e) => setTextKind(e.target.value)}
-                className="flex w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 shadow-none transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+                className={`${DESIGN_BANK_INPUT_CLASSNAME} disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 <option value="copy">Copy</option>
                 <option value="tagline">Tagline</option>
@@ -487,7 +504,7 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
                 onChange={(e) => setTextContent(e.target.value)}
                 placeholder="Write your brand copy here..."
                 rows={2}
-                className="flex w-full flex-1 resize-none rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 shadow-none transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+                className={`${DESIGN_BANK_INPUT_CLASSNAME} flex-1 resize-none disabled:cursor-not-allowed disabled:opacity-50`}
               />
               <Button
                 onClick={() => textMutation.mutate()}
@@ -513,7 +530,9 @@ function AddResourcePanel({ projectId }: { projectId: number }) {
   );
 }
 
-export function ProjectDesignBank({ projectId }: { projectId: number }) {
+export function ProjectDesignBank({
+  projectId,
+}: Readonly<{ projectId: number }>) {
   const { isOwner, isEditor } = useAuth();
   const canEdit = isOwner || isEditor;
   const queryClient = useQueryClient();
@@ -540,8 +559,8 @@ export function ProjectDesignBank({ projectId }: { projectId: number }) {
     queryFn: () => fetchProjectSources(projectId),
     refetchOnMount: true,
     refetchInterval: (query) => {
-      const data = query.state.data as DesignBankSource[] | undefined;
-      if (!data) return false;
+      const data = query.state.data;
+      if (!Array.isArray(data)) return false;
       const hasTransient = data.some(
         (s) => s.status === "pending" || s.status === "processing",
       );
@@ -556,6 +575,11 @@ export function ProjectDesignBank({ projectId }: { projectId: number }) {
         queryKey: ["project-sources", projectId],
       }),
   });
+  let resourceSummary = "No resources";
+  if (sources && sources.length > 0) {
+    const resourceLabel = sources.length === 1 ? "resource" : "resources";
+    resourceSummary = `${sources.length} ${resourceLabel}`;
+  }
 
   return (
     <div className="space-y-4">
@@ -576,11 +600,7 @@ export function ProjectDesignBank({ projectId }: { projectId: number }) {
         <>
           {/* Toolbar */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-400">
-              {sources.length === 0
-                ? "No resources"
-                : `${sources.length} resource${sources.length !== 1 ? "s" : ""}`}
-            </span>
+            <span className="text-sm text-zinc-400">{resourceSummary}</span>
             <div className="flex gap-0.5 overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-950/80 p-0.5">
               <button
                 onClick={() => setView("grid")}

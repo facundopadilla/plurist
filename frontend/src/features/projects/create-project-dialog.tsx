@@ -16,7 +16,7 @@ interface Props {
   onClose: () => void;
 }
 
-export function CreateProjectDialog({ onClose }: Props) {
+export function CreateProjectDialog({ onClose }: Readonly<Props>) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

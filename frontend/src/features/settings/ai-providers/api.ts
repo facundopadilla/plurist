@@ -35,4 +35,4 @@ export function testOllamaConnection(): Promise<OllamaModel[]> {
   return apiRequest<OllamaModel[]>("/api/v1/generation/ollama/models");
 }
 
-export type { OllamaModel };
+export type { OllamaModel } from "../../generation/types";

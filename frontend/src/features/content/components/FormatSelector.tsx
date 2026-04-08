@@ -10,7 +10,7 @@ interface FormatSelectorProps {
 export function FormatSelector({
   formatKey,
   onFormatChange,
-}: FormatSelectorProps) {
+}: Readonly<FormatSelectorProps>) {
   const { data: formats = [] } = useQuery({
     queryKey: ["formats"],
     queryFn: fetchFormats,
@@ -21,7 +21,7 @@ export function FormatSelector({
 
   return (
     <div className="space-y-3">
-      <label className="text-sm font-medium">Format</label>
+      <p className="text-sm font-medium">Format</p>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
         {formats.map((fmt) => {

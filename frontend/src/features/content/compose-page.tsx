@@ -117,8 +117,11 @@ export function ComposePage() {
       </h1>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Title</label>
+        <label htmlFor="compose-title" className="text-sm font-medium">
+          Title
+        </label>
         <Input
+          id="compose-title"
           data-testid="post-title"
           type="text"
           value={title}
@@ -145,8 +148,11 @@ export function ComposePage() {
       <SlideCountInput value={slideCount} onChange={setSlideCount} />
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Campaign brief</label>
+        <label htmlFor="compose-campaign-brief" className="text-sm font-medium">
+          Campaign brief
+        </label>
         <textarea
+          id="compose-campaign-brief"
           data-testid="campaign-brief"
           value={brief}
           onChange={(e) => setBrief(e.target.value)}
@@ -157,7 +163,7 @@ export function ComposePage() {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">AI providers</label>
+        <p className="text-sm font-medium">AI providers</p>
         <div className="flex flex-wrap gap-2">
           {(providers ?? DEFAULT_PROVIDERS).map((k) => (
             <ProviderCard

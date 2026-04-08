@@ -56,6 +56,234 @@ function getStoredView(key: string, fallback: string): string {
   return fallback;
 }
 
+function setStoredView(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}
+
+function getActiveFolderProject(
+  activeFolder: string | null,
+  projects: Project[],
+): Project | null {
+  if (!activeFolder || activeFolder === "unassigned") return null;
+  const id = Number(activeFolder);
+  return projects.find((project) => project.id === id) ?? null;
+}
+
+function getFolderPosts(
+  activeFolder: string | null,
+  postsByProject: Map<number | null, DraftPost[]>,
+): DraftPost[] {
+  if (!activeFolder) return [];
+  if (activeFolder === "unassigned") return postsByProject.get(null) ?? [];
+  return postsByProject.get(Number(activeFolder)) ?? [];
+}
+
+function sortPostsByKey(posts: DraftPost[], sortKey: SortKey): DraftPost[] {
+  const list = [...posts];
+  switch (sortKey) {
+    case "name-asc":
+      return list.sort((a, b) => a.title.localeCompare(b.title));
+    case "name-desc":
+      return list.sort((a, b) => b.title.localeCompare(a.title));
+    case "date-desc":
+      return list.sort(
+        (a, b) =>
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+      );
+    case "date-asc":
+      return list.sort(
+        (a, b) =>
+          new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
+      );
+  }
+}
+
+function buildRootSections(
+  projects: Project[],
+  postsByProject: Map<number | null, DraftPost[]>,
+): Array<{ project: Project | null; posts: DraftPost[]; key: string }> {
+  const sections = projects.map((project) => ({
+    project,
+    posts: postsByProject.get(project.id) ?? [],
+    key: String(project.id),
+  }));
+  const unassignedPosts = postsByProject.get(null) ?? [];
+  if (unassignedPosts.length > 0) {
+    sections.push({ project: null, posts: unassignedPosts, key: "unassigned" });
+  }
+  return sections;
+}
+
+function sortRootSections(
+  rootSections: Array<{
+    project: Project | null;
+    posts: DraftPost[];
+    key: string;
+  }>,
+  sortKey: SortKey,
+  search: string,
+) {
+  const query = search.trim().toLowerCase();
+  const list = query
+    ? rootSections.filter(({ project }) =>
+        (project?.name ?? "No project").toLowerCase().includes(query),
+      )
+    : rootSections;
+
+  switch (sortKey) {
+    case "name-asc":
+      return [...list].sort((a, b) =>
+        (a.project?.name ?? "").localeCompare(b.project?.name ?? ""),
+      );
+    case "name-desc":
+      return [...list].sort((a, b) =>
+        (b.project?.name ?? "").localeCompare(a.project?.name ?? ""),
+      );
+    case "date-desc":
+      return [...list].sort(
+        (a, b) => (b.project?.id ?? 0) - (a.project?.id ?? 0),
+      );
+    case "date-asc":
+      return [...list].sort(
+        (a, b) => (a.project?.id ?? 0) - (b.project?.id ?? 0),
+      );
+  }
+}
+
+function renderFolderPostsContent(
+  posts: DraftPost[],
+  contentViewMode: ContentViewMode,
+  formatMap: Map<string, string>,
+): React.ReactNode {
+  if (posts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12 text-center">
+        <FileText size={24} className="mb-2 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          No content in this folder.
+        </p>
+      </div>
+    );
+  }
+
+  if (contentViewMode === "grid") {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            formatMap={formatMap}
+            viewMode="grid"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          formatMap={formatMap}
+          viewMode="list"
+        />
+      ))}
+    </div>
+  );
+}
+
+function ReviewPageHeader({
+  activeFolder,
+  folderLabel,
+  composePath,
+  contentViewMode,
+  switchContentView,
+  exitFolder,
+  onNavigate,
+}: Readonly<{
+  activeFolder: string | null;
+  folderLabel: string | null;
+  composePath: string;
+  contentViewMode: ContentViewMode;
+  switchContentView: (mode: ContentViewMode) => void;
+  exitFolder: () => void;
+  onNavigate: (path: string) => void;
+}>) {
+  if (activeFolder == null) {
+    return (
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Content</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Review and manage content by project.
+          </p>
+        </div>
+        <Button onClick={() => onNavigate(composePath)}>
+          <Plus size={14} />
+          New content
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={exitFolder}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft size={16} />
+          <span>Content</span>
+        </Button>
+        <span className="text-muted-foreground">/</span>
+        <span className="font-semibold text-foreground">{folderLabel}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
+          <button
+            onClick={() => switchContentView("grid")}
+            title="Grid view"
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              contentViewMode === "grid"
+                ? "bg-background shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <LayoutGrid size={14} />
+          </button>
+          <button
+            onClick={() => switchContentView("list")}
+            title="List view"
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              contentViewMode === "list"
+                ? "bg-background shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <LayoutList size={14} />
+          </button>
+        </div>
+        <Button onClick={() => onNavigate(composePath)}>
+          <Plus size={14} />
+          New content
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function relativeTime(iso: string): string {
   const now = Date.now();
   const then = new Date(iso).getTime();
@@ -98,15 +326,180 @@ const statusConfig: Record<
 // PostCard
 // ---------------------------------------------------------------------------
 
+function PostStatusAction({
+  status,
+  compact,
+  isCompletePending,
+  isRevertPending,
+  onComplete,
+  onRevert,
+}: Readonly<{
+  status: DraftPost["status"];
+  compact: boolean;
+  isCompletePending: boolean;
+  isRevertPending: boolean;
+  onComplete: React.MouseEventHandler<HTMLButtonElement>;
+  onRevert: React.MouseEventHandler<HTMLButtonElement>;
+}>) {
+  if (status !== "draft" && status !== "completed") return null;
+
+  const isDraft = status === "draft";
+  const iconSize = compact ? 11 : 12;
+  const actionClassName = compact ? "gap-1 h-7 px-2 text-xs" : "gap-1.5";
+  const isPending = isDraft ? isCompletePending : isRevertPending;
+  const actionVariant = isDraft || compact ? "ghost" : "outline";
+  let actionLabel = "Revert to draft";
+  if (isDraft) {
+    actionLabel = compact ? "Verify" : "Mark verified";
+  } else if (compact) {
+    actionLabel = "Revert";
+  }
+  const actionHandler = isDraft ? onComplete : onRevert;
+  let actionIcon = <PenLine size={iconSize} />;
+  if (isPending) {
+    actionIcon = <Loader2 size={iconSize} className="animate-spin" />;
+  } else if (isDraft) {
+    actionIcon = <ShieldCheck size={iconSize} />;
+  }
+
+  return (
+    <Button
+      onClick={actionHandler}
+      disabled={isPending}
+      size="sm"
+      variant={actionVariant}
+      className={actionClassName}
+    >
+      {actionIcon}
+      {actionLabel}
+    </Button>
+  );
+}
+
+function PostDeleteAction({
+  confirmDelete,
+  compact,
+  isDeletePending,
+  onConfirmDelete,
+  onCancelDelete,
+  onDelete,
+}: Readonly<{
+  confirmDelete: boolean;
+  compact: boolean;
+  isDeletePending: boolean;
+  onConfirmDelete: React.MouseEventHandler<HTMLButtonElement>;
+  onCancelDelete: React.MouseEventHandler<HTMLButtonElement>;
+  onDelete: React.MouseEventHandler<HTMLButtonElement>;
+}>) {
+  const confirmDeleteWrapperClassName = compact
+    ? "flex items-center gap-1"
+    : "ml-auto flex items-center gap-1.5";
+  const deleteButtonClassName = compact
+    ? "h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+    : "ml-auto gap-1.5 text-muted-foreground hover:text-destructive";
+  let deleteActionContent: React.ReactNode = <Trash2 size={12} />;
+  if (isDeletePending) {
+    deleteActionContent = (
+      <Loader2 size={compact ? 11 : 12} className="animate-spin" />
+    );
+  } else if (compact) {
+    deleteActionContent = "Delete";
+  }
+
+  if (!confirmDelete) {
+    return (
+      <Button
+        onClick={onConfirmDelete}
+        size="sm"
+        variant="ghost"
+        className={deleteButtonClassName}
+      >
+        <Trash2 size={12} />
+        {!compact && "Delete"}
+      </Button>
+    );
+  }
+
+  return (
+    <div className={confirmDeleteWrapperClassName}>
+      <Button
+        onClick={onDelete}
+        disabled={isDeletePending}
+        size="sm"
+        variant="destructive"
+        className={compact ? "h-7 px-2 text-xs" : "gap-1.5"}
+      >
+        {deleteActionContent}
+        {!compact && "Confirm delete"}
+      </Button>
+      <Button
+        onClick={onCancelDelete}
+        size="sm"
+        variant="ghost"
+        className={compact ? "h-7 px-2 text-xs" : undefined}
+      >
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+function PostCardActions({
+  status,
+  confirmDelete,
+  compact = false,
+  isCompletePending,
+  isRevertPending,
+  isDeletePending,
+  onComplete,
+  onRevert,
+  onConfirmDelete,
+  onCancelDelete,
+  onDelete,
+}: Readonly<{
+  status: DraftPost["status"];
+  confirmDelete: boolean;
+  compact?: boolean;
+  isCompletePending: boolean;
+  isRevertPending: boolean;
+  isDeletePending: boolean;
+  onComplete: React.MouseEventHandler<HTMLButtonElement>;
+  onRevert: React.MouseEventHandler<HTMLButtonElement>;
+  onConfirmDelete: React.MouseEventHandler<HTMLButtonElement>;
+  onCancelDelete: React.MouseEventHandler<HTMLButtonElement>;
+  onDelete: React.MouseEventHandler<HTMLButtonElement>;
+}>) {
+  return (
+    <>
+      <PostStatusAction
+        status={status}
+        compact={compact}
+        isCompletePending={isCompletePending}
+        isRevertPending={isRevertPending}
+        onComplete={onComplete}
+        onRevert={onRevert}
+      />
+      <PostDeleteAction
+        confirmDelete={confirmDelete}
+        compact={compact}
+        isDeletePending={isDeletePending}
+        onConfirmDelete={onConfirmDelete}
+        onCancelDelete={onCancelDelete}
+        onDelete={onDelete}
+      />
+    </>
+  );
+}
+
 function PostCard({
   post,
   formatMap,
   viewMode,
-}: {
+}: Readonly<{
   post: DraftPost;
   formatMap: Map<string, string>;
   viewMode: ContentViewMode;
-}) {
+}>) {
   const { isOwner, isEditor } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -135,124 +528,82 @@ function PostCard({
   const formatLabel = post.format
     ? (formatMap.get(post.format) ?? post.format)
     : null;
-
-  function handleCardClick(e: React.MouseEvent) {
-    // Don't navigate if clicking on a button/interactive element
-    const target = e.target as HTMLElement;
-    if (target.closest("button")) return;
-    navigate(`/compose?postId=${post.id}`);
-  }
+  const handleComplete: React.MouseEventHandler<HTMLButtonElement> = (
+    event,
+  ) => {
+    event.stopPropagation();
+    completeMutation.mutate();
+  };
+  const handleRevert: React.MouseEventHandler<HTMLButtonElement> = (event) => {
+    event.stopPropagation();
+    revertMutation.mutate();
+  };
+  const handleDeleteConfirm: React.MouseEventHandler<HTMLButtonElement> = (
+    event,
+  ) => {
+    event.stopPropagation();
+    deleteMutation.mutate();
+  };
+  const handleDeleteStart: React.MouseEventHandler<HTMLButtonElement> = (
+    event,
+  ) => {
+    event.stopPropagation();
+    setConfirmDelete(true);
+  };
+  const handleDeleteCancel: React.MouseEventHandler<HTMLButtonElement> = (
+    event,
+  ) => {
+    event.stopPropagation();
+    setConfirmDelete(false);
+  };
 
   if (viewMode === "list") {
     return (
-      <div
-        onClick={handleCardClick}
-        className="group flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 text-card-foreground transition-colors hover:bg-accent/30 cursor-pointer"
-      >
-        <div className="min-w-0 flex-1">
-          <span className="font-medium text-sm text-foreground truncate block">
-            {post.title}
+      <div className="group relative flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 text-card-foreground transition-colors hover:bg-accent/30 cursor-pointer">
+        <button
+          type="button"
+          aria-label={`Open ${post.title}`}
+          className="absolute inset-0 rounded-lg"
+          onClick={() => navigate(`/compose?postId=${post.id}`)}
+        />
+        <div className="pointer-events-none flex min-w-0 flex-1 items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-foreground">
+              {post.title}
+            </span>
+          </div>
+          {formatLabel && (
+            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+              {formatLabel}
+            </span>
+          )}
+          <Badge variant={cfg.tone} className="gap-1 shrink-0">
+            {cfg.icon}
+            {cfg.label}
+          </Badge>
+          <span
+            className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground"
+            title={`Updated ${post.updated_at}`}
+          >
+            <Clock size={11} />
+            {relativeTime(post.updated_at)}
           </span>
         </div>
-        {formatLabel && (
-          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-            {formatLabel}
-          </span>
-        )}
-        <Badge variant={cfg.tone} className="gap-1 shrink-0">
-          {cfg.icon}
-          {cfg.label}
-        </Badge>
-        <span
-          className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground"
-          title={`Updated ${post.updated_at}`}
-        >
-          <Clock size={11} />
-          {relativeTime(post.updated_at)}
-        </span>
         {canEdit && (
-          <div className="shrink-0 flex items-center gap-1">
-            {post.status === "draft" && (
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  completeMutation.mutate();
-                }}
-                disabled={completeMutation.isPending}
-                size="sm"
-                variant="ghost"
-                className="gap-1 h-7 px-2 text-xs"
-              >
-                {completeMutation.isPending ? (
-                  <Loader2 size={11} className="animate-spin" />
-                ) : (
-                  <ShieldCheck size={11} />
-                )}
-                Verify
-              </Button>
-            )}
-            {post.status === "completed" && (
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  revertMutation.mutate();
-                }}
-                disabled={revertMutation.isPending}
-                size="sm"
-                variant="ghost"
-                className="gap-1 h-7 px-2 text-xs"
-              >
-                {revertMutation.isPending ? (
-                  <Loader2 size={11} className="animate-spin" />
-                ) : (
-                  <PenLine size={11} />
-                )}
-                Revert
-              </Button>
-            )}
-            {confirmDelete ? (
-              <div className="flex items-center gap-1">
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteMutation.mutate();
-                  }}
-                  disabled={deleteMutation.isPending}
-                  size="sm"
-                  variant="destructive"
-                  className="h-7 px-2 text-xs"
-                >
-                  {deleteMutation.isPending ? (
-                    <Loader2 size={11} className="animate-spin" />
-                  ) : (
-                    "Delete"
-                  )}
-                </Button>
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmDelete(false);
-                  }}
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs"
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmDelete(true);
-                }}
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 size={12} />
-              </Button>
-            )}
+          <div className="relative z-10 shrink-0 flex items-center gap-1">
+            <PostCardActions
+              status={post.status}
+              confirmDelete={confirmDelete}
+              compact
+              isCompletePending={completeMutation.isPending}
+              isRevertPending={revertMutation.isPending}
+              isDeletePending={deleteMutation.isPending}
+              onComplete={handleComplete}
+              onRevert={handleRevert}
+              onConfirmDelete={handleDeleteStart}
+              onCancelDelete={handleDeleteCancel}
+              onDelete={handleDeleteConfirm}
+            />
           </div>
         )}
       </div>
@@ -261,128 +612,66 @@ function PostCard({
 
   // Grid / card mode
   return (
-    <div
-      onClick={handleCardClick}
-      className="group space-y-3 rounded-lg border border-border bg-card p-4 text-card-foreground transition-colors hover:bg-accent/30 cursor-pointer"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate font-medium text-foreground text-sm">
-            {post.title}
-          </h3>
-          {post.body_text && (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-              {post.body_text}
-            </p>
+    <div className="group relative space-y-3 rounded-lg border border-border bg-card p-4 text-card-foreground transition-colors hover:bg-accent/30 cursor-pointer">
+      <button
+        type="button"
+        aria-label={`Open ${post.title}`}
+        className="absolute inset-0 rounded-lg"
+        onClick={() => navigate(`/compose?postId=${post.id}`)}
+      />
+      <div className="pointer-events-none space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate font-medium text-foreground text-sm">
+              {post.title}
+            </h3>
+            {post.body_text && (
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                {post.body_text}
+              </p>
+            )}
+          </div>
+          <Badge variant={cfg.tone} className="gap-1 shrink-0">
+            {cfg.icon}
+            {cfg.label}
+          </Badge>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          {formatLabel && (
+            <span className="rounded bg-muted px-1.5 py-0.5">
+              {formatLabel}
+            </span>
+          )}
+          <span
+            className="flex items-center gap-1"
+            title={`Updated ${post.updated_at}`}
+          >
+            <Clock size={11} />
+            {relativeTime(post.updated_at)}
+          </span>
+          {post.created_at && (
+            <span title={`Created ${post.created_at}`}>
+              Created {new Date(post.created_at).toLocaleDateString()}
+            </span>
           )}
         </div>
-        <Badge variant={cfg.tone} className="gap-1 shrink-0">
-          {cfg.icon}
-          {cfg.label}
-        </Badge>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        {formatLabel && (
-          <span className="rounded bg-muted px-1.5 py-0.5">{formatLabel}</span>
-        )}
-        <span
-          className="flex items-center gap-1"
-          title={`Updated ${post.updated_at}`}
-        >
-          <Clock size={11} />
-          {relativeTime(post.updated_at)}
-        </span>
-        {post.created_at && (
-          <span title={`Created ${post.created_at}`}>
-            Created {new Date(post.created_at).toLocaleDateString()}
-          </span>
-        )}
       </div>
 
       {canEdit && (
-        <div className="flex items-center gap-2">
-          {post.status === "draft" && (
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                completeMutation.mutate();
-              }}
-              disabled={completeMutation.isPending}
-              size="sm"
-              className="gap-1.5"
-            >
-              {completeMutation.isPending ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <ShieldCheck size={12} />
-              )}
-              Mark verified
-            </Button>
-          )}
-          {post.status === "completed" && (
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                revertMutation.mutate();
-              }}
-              disabled={revertMutation.isPending}
-              size="sm"
-              variant="outline"
-              className="gap-1.5"
-            >
-              {revertMutation.isPending ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <PenLine size={12} />
-              )}
-              Revert to draft
-            </Button>
-          )}
-          {confirmDelete ? (
-            <div className="flex items-center gap-1.5 ml-auto">
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteMutation.mutate();
-                }}
-                disabled={deleteMutation.isPending}
-                size="sm"
-                variant="destructive"
-                className="gap-1.5"
-              >
-                {deleteMutation.isPending ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Trash2 size={12} />
-                )}
-                Confirm delete
-              </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmDelete(false);
-                }}
-                size="sm"
-                variant="ghost"
-              >
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmDelete(true);
-              }}
-              size="sm"
-              variant="ghost"
-              className="ml-auto gap-1.5 text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 size={12} />
-              Delete
-            </Button>
-          )}
+        <div className="relative z-10 flex items-center gap-2">
+          <PostCardActions
+            status={post.status}
+            confirmDelete={confirmDelete}
+            isCompletePending={completeMutation.isPending}
+            isRevertPending={revertMutation.isPending}
+            isDeletePending={deleteMutation.isPending}
+            onComplete={handleComplete}
+            onRevert={handleRevert}
+            onConfirmDelete={handleDeleteStart}
+            onCancelDelete={handleDeleteCancel}
+            onDelete={handleDeleteConfirm}
+          />
         </div>
       )}
     </div>
@@ -400,16 +689,50 @@ function ProjectSection({
   onToggle,
   formatMap,
   contentViewMode,
-}: {
+}: Readonly<{
   project: Project | null;
   posts: DraftPost[];
   open: boolean;
   onToggle: () => void;
   formatMap: Map<string, string>;
   contentViewMode: ContentViewMode;
-}) {
+}>) {
   const label = project ? project.name : "No project";
-  const color = project?.color || "#6b7280";
+  const color = project?.color ?? "#6b7280";
+  let sectionContent: React.ReactNode;
+  if (posts.length === 0) {
+    sectionContent = (
+      <p className="py-4 text-center text-sm text-muted-foreground">
+        No content in this section.
+      </p>
+    );
+  } else if (contentViewMode === "grid") {
+    sectionContent = (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            formatMap={formatMap}
+            viewMode="grid"
+          />
+        ))}
+      </div>
+    );
+  } else {
+    sectionContent = (
+      <div className="space-y-2">
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            formatMap={formatMap}
+            viewMode="list"
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-border overflow-hidden">
@@ -431,7 +754,7 @@ function ProjectSection({
           ) : (
             <span
               style={{ color: project ? color : undefined }}
-              className={!project ? "text-muted-foreground" : ""}
+              className={project == null ? "text-muted-foreground" : ""}
             >
               {open ? <FolderOpen size={18} /> : <Folder size={18} />}
             </span>
@@ -441,7 +764,7 @@ function ProjectSection({
           {label}
         </span>
         <span className="text-xs text-muted-foreground shrink-0">
-          {posts.length} item{posts.length !== 1 ? "s" : ""}
+          {posts.length} {posts.length === 1 ? "item" : "items"}
         </span>
         <ChevronRight
           size={14}
@@ -454,33 +777,7 @@ function ProjectSection({
 
       {open && (
         <div className="border-t border-border bg-background/50 p-4">
-          {posts.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No content in this section.
-            </p>
-          ) : contentViewMode === "grid" ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  formatMap={formatMap}
-                  viewMode="grid"
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  formatMap={formatMap}
-                  viewMode="list"
-                />
-              ))}
-            </div>
-          )}
+          {sectionContent}
         </div>
       )}
     </div>
@@ -524,20 +821,12 @@ export function ReviewPage() {
 
   function switchView(mode: ViewMode) {
     setViewMode(mode);
-    try {
-      localStorage.setItem("review-global-view", mode);
-    } catch {
-      // ignore
-    }
+    setStoredView("review-global-view", mode);
   }
 
   function switchContentView(mode: ContentViewMode) {
     setContentViewMode(mode);
-    try {
-      localStorage.setItem("review-content-view", mode);
-    } catch {
-      // ignore
-    }
+    setStoredView("review-content-view", mode);
   }
 
   function enterFolder(folderId: string) {
@@ -597,26 +886,22 @@ export function ReviewPage() {
   }, [statusFiltered]);
 
   // Project for the active folder
-  const activeFolderProject = useMemo<Project | null>(() => {
-    if (!activeFolder || activeFolder === "unassigned") return null;
-    const id = Number(activeFolder);
-    return projects.find((p) => p.id === id) ?? null;
-  }, [activeFolder, projects]);
+  const activeFolderProject = useMemo(
+    () => getActiveFolderProject(activeFolder, projects),
+    [activeFolder, projects],
+  );
 
   // Label for the active folder breadcrumb
-  const folderLabel = activeFolderProject
-    ? activeFolderProject.name
-    : activeFolder === "unassigned"
-      ? "No project"
-      : null;
+  let folderLabel: string | null = activeFolderProject?.name ?? null;
+  if (!folderLabel && activeFolder === "unassigned") {
+    folderLabel = "No project";
+  }
 
   // Posts inside the active folder (unfiltered by search/network)
-  const folderPostsRaw = useMemo<DraftPost[]>(() => {
-    if (!activeFolder) return [];
-    if (activeFolder === "unassigned") return postsByProject.get(null) ?? [];
-    const id = Number(activeFolder);
-    return postsByProject.get(id) ?? [];
-  }, [activeFolder, postsByProject]);
+  const folderPostsRaw = useMemo(
+    () => getFolderPosts(activeFolder, postsByProject),
+    [activeFolder, postsByProject],
+  );
 
   // Apply search filter inside folder
   const folderPostsFiltered = useMemo(() => {
@@ -625,73 +910,28 @@ export function ReviewPage() {
       const matchSearch =
         !q ||
         p.title.toLowerCase().includes(q) ||
-        (p.body_text || "").toLowerCase().includes(q);
+        (p.body_text ?? "").toLowerCase().includes(q);
       return matchSearch;
     });
   }, [folderPostsRaw, search]);
 
   // Sort posts inside folder — use actual timestamps
-  const folderPostsSorted = useMemo(() => {
-    const list = [...folderPostsFiltered];
-    switch (sortKey) {
-      case "name-asc":
-        return list.sort((a, b) => a.title.localeCompare(b.title));
-      case "name-desc":
-        return list.sort((a, b) => b.title.localeCompare(a.title));
-      case "date-desc":
-        return list.sort(
-          (a, b) =>
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-        );
-      case "date-asc":
-        return list.sort(
-          (a, b) =>
-            new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
-        );
-    }
-  }, [folderPostsFiltered, sortKey]);
+  const folderPostsSorted = useMemo(
+    () => sortPostsByKey(folderPostsFiltered, sortKey),
+    [folderPostsFiltered, sortKey],
+  );
 
   // Build root sections — todos los proyectos, incluso sin posts
-  const rootSections = useMemo(() => {
-    const sections: Array<{
-      project: Project | null;
-      posts: DraftPost[];
-      key: string;
-    }> = [];
-    for (const project of projects) {
-      const projectPosts = postsByProject.get(project.id) ?? [];
-      sections.push({ project, posts: projectPosts, key: String(project.id) });
-    }
-    const unassigned = postsByProject.get(null) ?? [];
-    if (unassigned.length > 0) {
-      sections.push({ project: null, posts: unassigned, key: "unassigned" });
-    }
-    return sections;
-  }, [projects, postsByProject]);
+  const rootSections = useMemo(
+    () => buildRootSections(projects, postsByProject),
+    [projects, postsByProject],
+  );
 
   // Sort root sections (for both folders-grid and list modes)
-  const sortedRootSections = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = q
-      ? [...rootSections].filter(({ project }) =>
-          (project?.name ?? "No project").toLowerCase().includes(q),
-        )
-      : [...rootSections];
-    switch (sortKey) {
-      case "name-asc":
-        return list.sort((a, b) =>
-          (a.project?.name ?? "").localeCompare(b.project?.name ?? ""),
-        );
-      case "name-desc":
-        return list.sort((a, b) =>
-          (b.project?.name ?? "").localeCompare(a.project?.name ?? ""),
-        );
-      case "date-desc":
-        return list.sort((a, b) => (b.project?.id ?? 0) - (a.project?.id ?? 0));
-      case "date-asc":
-        return list.sort((a, b) => (a.project?.id ?? 0) - (b.project?.id ?? 0));
-    }
-  }, [rootSections, sortKey, search]);
+  const sortedRootSections = useMemo(
+    () => sortRootSections(rootSections, sortKey, search),
+    [rootSections, sortKey, search],
+  );
 
   const isEmpty =
     !isLoading && rootSections.length === 0 && activeFolder == null;
@@ -700,94 +940,29 @@ export function ReviewPage() {
     rootSections.length > 0 &&
     sortedRootSections.length === 0 &&
     activeFolder == null;
+  const composePath =
+    activeFolder != null && activeFolder !== "unassigned"
+      ? `/compose?project=${activeFolder}`
+      : "/compose";
+  const folderContent = renderFolderPostsContent(
+    folderPostsSorted,
+    contentViewMode,
+    formatMap,
+  );
 
   return (
     <div className="space-y-6 animate-page-in">
       {/* Top bar */}
       <div>
-        {activeFolder != null ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={exitFolder}
-                className="gap-1.5 text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft size={16} />
-                <span>Content</span>
-              </Button>
-              <span className="text-muted-foreground">/</span>
-              <span className="font-semibold text-foreground">
-                {folderLabel}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Content view toggle inside folder */}
-              <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
-                <button
-                  onClick={() => switchContentView("grid")}
-                  title="Grid view"
-                  className={cn(
-                    "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    contentViewMode === "grid"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <LayoutGrid size={14} />
-                </button>
-                <button
-                  onClick={() => switchContentView("list")}
-                  title="List view"
-                  className={cn(
-                    "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    contentViewMode === "list"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <LayoutList size={14} />
-                </button>
-              </div>
-              <Button
-                onClick={() =>
-                  navigate(
-                    activeFolder !== "unassigned"
-                      ? `/compose?project=${activeFolder}`
-                      : "/compose",
-                  )
-                }
-              >
-                <Plus size={14} />
-                New content
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Content</h1>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Review and manage content by project.
-                </p>
-              </div>
-              <Button
-                onClick={() =>
-                  navigate(
-                    activeFolder && activeFolder !== "unassigned"
-                      ? `/compose?project=${activeFolder}`
-                      : "/compose",
-                  )
-                }
-              >
-                <Plus size={14} />
-                New content
-              </Button>
-            </div>
-          </>
-        )}
+        <ReviewPageHeader
+          activeFolder={activeFolder}
+          folderLabel={folderLabel}
+          composePath={composePath}
+          contentViewMode={contentViewMode}
+          switchContentView={switchContentView}
+          exitFolder={exitFolder}
+          onNavigate={navigate}
+        />
       </div>
 
       {/* Controls row */}
@@ -868,40 +1043,7 @@ export function ReviewPage() {
       {!isLoading && (
         <>
           {/* ── INSIDE A FOLDER ── */}
-          {activeFolder != null && (
-            <div>
-              {folderPostsSorted.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12 text-center">
-                  <FileText size={24} className="text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    No content in this folder.
-                  </p>
-                </div>
-              ) : contentViewMode === "grid" ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {folderPostsSorted.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      formatMap={formatMap}
-                      viewMode="grid"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {folderPostsSorted.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      formatMap={formatMap}
-                      viewMode="list"
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {activeFolder != null && <div>{folderContent}</div>}
 
           {/* ── ROOT — empty state ── */}
           {isEmpty && (

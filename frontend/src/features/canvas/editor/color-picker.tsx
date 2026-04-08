@@ -25,7 +25,7 @@ export function ColorPicker({
   projectId,
   onColorSelect,
   currentColor,
-}: ColorPickerProps) {
+}: Readonly<ColorPickerProps>) {
   const [hexInput, setHexInput] = useState(currentColor ?? "#000000");
 
   const { data: sources = [] } = useQuery({

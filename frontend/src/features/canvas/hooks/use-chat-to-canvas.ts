@@ -24,17 +24,9 @@ export function useChatToCanvas() {
         if (isSelectedForEdit) {
           // User explicitly selected this slide → update it
           updateSlideVariant(slideIndex, html, provider);
-        } else if (selectedSlideIds.length > 0) {
+        } else {
           // Respect the user's explicit scope. If the model returns an index
           // outside the selected set, treat it as new generated content.
-          const maxIndex = Math.max(
-            ...Array.from(slides.values()).map((s) => s.slideIndex),
-            -1,
-          );
-          addSlideFromChat(maxIndex + 1, html, provider);
-        } else {
-          // No slides selected and a slide already exists at this index
-          // → create a new slide at the next available index
           const maxIndex = Math.max(
             ...Array.from(slides.values()).map((s) => s.slideIndex),
             -1,

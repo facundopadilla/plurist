@@ -29,7 +29,7 @@ interface ProviderKeyRowProps {
   isSaving: boolean;
 }
 
-function StatusPill({ hasKey }: { hasKey: boolean }) {
+function StatusPill({ hasKey }: Readonly<{ hasKey: boolean }>) {
   return hasKey ? (
     <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-400">
       <Check size={10} />
@@ -49,10 +49,16 @@ function ProviderKeyRow({
   fieldName,
   onSave,
   isSaving,
-}: ProviderKeyRowProps) {
+}: Readonly<ProviderKeyRowProps>) {
   const [value, setValue] = useState("");
   const [visible, setVisible] = useState(false);
   const [saved, setSaved] = useState(false);
+  let saveIcon = <ArrowRight size={14} />;
+  if (isSaving) {
+    saveIcon = <Loader2 size={14} className="animate-spin" />;
+  } else if (saved) {
+    saveIcon = <Check size={14} />;
+  }
 
   const handleSave = async () => {
     await onSave(fieldName, value);
@@ -111,13 +117,7 @@ function ProviderKeyRow({
             disabled={isSaving || !value.trim()}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-50 px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           >
-            {isSaving ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : saved ? (
-              <Check size={14} />
-            ) : (
-              <ArrowRight size={14} />
-            )}
+            {saveIcon}
             Save
           </button>
           {hasKey && (
@@ -142,7 +142,11 @@ interface OllamaSectionProps {
   isSaving: boolean;
 }
 
-function OllamaSection({ currentUrl, onSave, isSaving }: OllamaSectionProps) {
+function OllamaSection({
+  currentUrl,
+  onSave,
+  isSaving,
+}: Readonly<OllamaSectionProps>) {
   const [url, setUrl] = useState(currentUrl);
   const [testStatus, setTestStatus] = useState<
     "idle" | "testing" | "ok" | "error"
@@ -159,10 +163,9 @@ function OllamaSection({ currentUrl, onSave, isSaving }: OllamaSectionProps) {
     try {
       const models = await testOllamaConnection();
       if (models.length > 0) {
+        const modelLabel = models.length === 1 ? "model" : "models";
         setTestStatus("ok");
-        setTestMessage(
-          `Connected. ${models.length} model${models.length !== 1 ? "s" : ""} available.`,
-        );
+        setTestMessage(`Connected. ${models.length} ${modelLabel} available.`);
       } else {
         setTestStatus("ok");
         setTestMessage("Connected. No models installed yet.");
@@ -184,7 +187,7 @@ function OllamaSection({ currentUrl, onSave, isSaving }: OllamaSectionProps) {
           <code className="rounded-md bg-zinc-950 px-1.5 py-0.5 text-zinc-300">
             http://localhost:11434
           </code>
-          .
+          {"."}
         </p>
       </div>
 

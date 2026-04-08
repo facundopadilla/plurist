@@ -60,4 +60,4 @@ export function devSeed() {
   });
 }
 
-export { ApiError };
+export { ApiError } from "../../lib/api/client";

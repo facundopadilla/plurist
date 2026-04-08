@@ -37,7 +37,7 @@ export function AiImagePanel({
   selectedShapeId,
   onInjectImage,
   onReplaceHtml,
-}: ExtensionPanelProps) {
+}: Readonly<ExtensionPanelProps>) {
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   const handleInjectImage = () => {

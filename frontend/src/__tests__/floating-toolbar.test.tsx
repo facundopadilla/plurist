@@ -11,15 +11,16 @@ function createSelection(element: HTMLElement): ElementSelection {
     type: "text",
     rect: new DOMRect(100, 100, 120, 24),
     styles: {
-      fontFamily: window.getComputedStyle(element).fontFamily,
-      fontSize: window.getComputedStyle(element).fontSize || "16px",
-      fontWeight: window.getComputedStyle(element).fontWeight || "400",
-      fontStyle: window.getComputedStyle(element).fontStyle || "normal",
-      textDecoration: window.getComputedStyle(element).textDecoration || "none",
-      textAlign: window.getComputedStyle(element).textAlign || "left",
-      color: window.getComputedStyle(element).color || "rgb(0, 0, 0)",
+      fontFamily: globalThis.getComputedStyle(element).fontFamily,
+      fontSize: globalThis.getComputedStyle(element).fontSize || "16px",
+      fontWeight: globalThis.getComputedStyle(element).fontWeight || "400",
+      fontStyle: globalThis.getComputedStyle(element).fontStyle || "normal",
+      textDecoration:
+        globalThis.getComputedStyle(element).textDecoration || "none",
+      textAlign: globalThis.getComputedStyle(element).textAlign || "left",
+      color: globalThis.getComputedStyle(element).color || "rgb(0, 0, 0)",
       backgroundColor:
-        window.getComputedStyle(element).backgroundColor || "transparent",
+        globalThis.getComputedStyle(element).backgroundColor || "transparent",
     },
   };
 }
@@ -62,14 +63,14 @@ describe("FloatingToolbar", () => {
 
     act(() => {
       boldButton?.dispatchEvent(
-        new window.PointerEvent("pointerdown", {
+        new globalThis.PointerEvent("pointerdown", {
           bubbles: true,
           cancelable: true,
           button: 0,
         }),
       );
       boldButton?.dispatchEvent(
-        new window.PointerEvent("pointerup", {
+        new globalThis.PointerEvent("pointerup", {
           bubbles: true,
           cancelable: true,
           button: 0,
@@ -113,7 +114,7 @@ describe("FloatingToolbar", () => {
 
     act(() => {
       boldButton?.dispatchEvent(
-        new window.PointerEvent("pointerdown", {
+        new globalThis.PointerEvent("pointerdown", {
           bubbles: true,
           cancelable: true,
           button: 0,
@@ -155,14 +156,14 @@ describe("FloatingToolbar", () => {
 
     act(() => {
       sparklesButton?.dispatchEvent(
-        new window.PointerEvent("pointerdown", {
+        new globalThis.PointerEvent("pointerdown", {
           bubbles: true,
           cancelable: true,
           button: 0,
         }),
       );
       sparklesButton?.dispatchEvent(
-        new window.PointerEvent("pointerup", {
+        new globalThis.PointerEvent("pointerup", {
           bubbles: true,
           cancelable: true,
           button: 0,

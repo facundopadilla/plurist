@@ -22,7 +22,7 @@ function ProductMockup() {
         </div>
         <div className="mx-auto flex items-center gap-2 rounded-md bg-white px-3 py-1 text-[11px] text-neutral-400 shadow-sm ring-1 ring-neutral-200">
           <span className="h-2 w-2 rounded-full bg-indigo-500" />
-          plurist.app/compose
+          {"plurist.app/compose"}
         </div>
       </div>
 
@@ -38,29 +38,38 @@ function ProductMockup() {
             "LinkedIn Article",
             "Twitter Thread",
             "TikTok Script",
-          ].map((item, i) => (
-            <div
-              key={item}
-              className={`mb-1.5 flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] ${
+          ].map((item, i) =>
+            (() => {
+              const itemClassName =
                 i === 0
                   ? "bg-indigo-500 font-semibold text-white"
-                  : "text-neutral-600 hover:bg-neutral-100"
-              }`}
-            >
-              <div
-                className={`h-2 w-2 flex-shrink-0 rounded-full ${
-                  i === 0
-                    ? "bg-white"
-                    : i === 1
-                      ? "bg-blue-400"
-                      : i === 2
-                        ? "bg-sky-400"
-                        : "bg-pink-400"
-                }`}
-              />
-              {item}
-            </div>
-          ))}
+                  : "text-neutral-600 hover:bg-neutral-100";
+              let dotColorClassName = "bg-pink-400";
+              if (i === 0) {
+                dotColorClassName = "bg-white";
+              } else if (i === 1) {
+                dotColorClassName = "bg-blue-400";
+              } else if (i === 2) {
+                dotColorClassName = "bg-sky-400";
+              }
+
+              return (
+                <div
+                  key={item}
+                  className={`mb-1.5 flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] ${
+                    itemClassName
+                  }`}
+                >
+                  <div
+                    className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                      dotColorClassName
+                    }`}
+                  />
+                  {item}
+                </div>
+              );
+            })(),
+          )}
         </div>
 
         {/* Main content */}
@@ -92,27 +101,32 @@ function ProductMockup() {
 
           {/* Platform previews */}
           <div className="flex gap-2">
-            {["IG", "LinkedIn", "X"].map((platform, i) => (
-              <div
-                key={platform}
-                className={`flex-1 rounded-lg border p-2.5 ${
-                  i === 0
-                    ? "border-pink-200 bg-pink-50"
-                    : i === 1
-                      ? "border-blue-200 bg-blue-50"
-                      : "border-neutral-200 bg-neutral-50"
-                }`}
-              >
-                <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-neutral-500">
-                  {platform}
-                </div>
-                <div className="space-y-1">
-                  <div className="h-1.5 w-full rounded bg-neutral-200" />
-                  <div className="h-1.5 w-3/4 rounded bg-neutral-200" />
-                  <div className="h-1.5 w-1/2 rounded bg-neutral-200" />
-                </div>
-              </div>
-            ))}
+            {["IG", "LinkedIn", "X"].map((platform, i) =>
+              (() => {
+                let previewClassName = "border-neutral-200 bg-neutral-50";
+                if (i === 0) {
+                  previewClassName = "border-pink-200 bg-pink-50";
+                } else if (i === 1) {
+                  previewClassName = "border-blue-200 bg-blue-50";
+                }
+
+                return (
+                  <div
+                    key={platform}
+                    className={`flex-1 rounded-lg border p-2.5 ${previewClassName}`}
+                  >
+                    <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-neutral-500">
+                      {platform}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="h-1.5 w-full rounded bg-neutral-200" />
+                      <div className="h-1.5 w-3/4 rounded bg-neutral-200" />
+                      <div className="h-1.5 w-1/2 rounded bg-neutral-200" />
+                    </div>
+                  </div>
+                );
+              })(),
+            )}
           </div>
 
           {/* Schedule bar */}

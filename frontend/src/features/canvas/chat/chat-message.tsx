@@ -24,11 +24,20 @@ const THINKING_TEXTS = [
   "Crafting...",
 ];
 
+function getSecureRandomIndex(max: number) {
+  if (max <= 0) {
+    return 0;
+  }
+  const values = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(values);
+  return values[0] % max;
+}
+
 function ThinkingIndicator() {
   const [text, setText] = useState("Thinking...");
 
   useEffect(() => {
-    setText(THINKING_TEXTS[Math.floor(Math.random() * THINKING_TEXTS.length)]);
+    setText(THINKING_TEXTS[getSecureRandomIndex(THINKING_TEXTS.length)]);
   }, []);
 
   return (
@@ -70,10 +79,10 @@ function renderAssistantContent(content: string, isStreaming: boolean) {
 
     elements.push(
       <ul key={key} className="list-disc space-y-1 pl-5">
-        {listItems.map((item, index) => {
-          const isLastItem = isLast && index === listItems.length - 1;
+        {listItems.map((item) => {
+          const isLastItem = isLast && item === listItems.at(-1);
           return (
-            <li key={`${key}-${index}`}>
+            <li key={`${key}-${item}`}>
               {renderInline(item)}
               {isLastItem && cursor}
             </li>
@@ -88,26 +97,29 @@ function renderAssistantContent(content: string, isStreaming: boolean) {
   lines.forEach((rawLine, index) => {
     const isLast = index === lines.length - 1;
     const line = rawLine.trim();
+    const keyBase = `${line}-${elements.length}`;
 
     if (!line) {
-      flushList(`list-${index}`);
+      flushList(`list-${keyBase}`);
       return;
     }
 
-    const bulletMatch = line.match(/^[-*]\s+(.*)$/);
-    if (bulletMatch) {
-      listItems.push(bulletMatch[1]);
+    if (line.startsWith("- ") || line.startsWith("* ")) {
+      listItems.push(line.slice(2).trim());
       if (isLast) {
-        flushList(`list-${index}`, true);
+        flushList(`list-${keyBase}`, true);
       }
       return;
     }
 
-    flushList(`list-${index}`);
+    flushList(`list-${keyBase}`);
 
     if (line.startsWith("### ")) {
       elements.push(
-        <h4 key={`h3-${index}`} className="text-sm font-semibold text-zinc-50">
+        <h4
+          key={`h3-${keyBase}`}
+          className="text-sm font-semibold text-zinc-50"
+        >
           {renderInline(line.slice(4))}
           {isLast && cursor}
         </h4>,
@@ -117,7 +129,10 @@ function renderAssistantContent(content: string, isStreaming: boolean) {
 
     if (line.startsWith("## ")) {
       elements.push(
-        <h3 key={`h2-${index}`} className="text-sm font-semibold text-zinc-50">
+        <h3
+          key={`h2-${keyBase}`}
+          className="text-sm font-semibold text-zinc-50"
+        >
           {renderInline(line.slice(3))}
           {isLast && cursor}
         </h3>,
@@ -127,7 +142,10 @@ function renderAssistantContent(content: string, isStreaming: boolean) {
 
     if (line.startsWith("# ")) {
       elements.push(
-        <h2 key={`h1-${index}`} className="text-sm font-semibold text-zinc-50">
+        <h2
+          key={`h1-${keyBase}`}
+          className="text-sm font-semibold text-zinc-50"
+        >
           {renderInline(line.slice(2))}
           {isLast && cursor}
         </h2>,
@@ -136,7 +154,7 @@ function renderAssistantContent(content: string, isStreaming: boolean) {
     }
 
     elements.push(
-      <p key={`p-${index}`} className="whitespace-pre-wrap break-words">
+      <p key={`p-${keyBase}`} className="whitespace-pre-wrap break-words">
         {renderInline(line)}
         {isLast && cursor}
       </p>,
@@ -184,14 +202,14 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
 function ErrorCard({
   message,
   onRetry,
-}: {
+}: Readonly<{
   message: ChatMessage;
   onRetry?: () => void;
-}) {
+}>) {
   const error = message.error;
   if (!error) return null;
 
-  const category = error.category || "provider";
+  const category = error.category ?? "provider";
   const icon = CATEGORY_ICONS[category] ?? <AlertTriangle size={16} />;
   const borderBg =
     CATEGORY_COLORS[category] ?? "border-red-500/30 bg-red-500/[0.06]";
@@ -236,7 +254,7 @@ function ErrorCard({
   );
 }
 
-export function ChatMessageBubble({ message }: ChatMessageProps) {
+export function ChatMessageBubble({ message }: Readonly<ChatMessageProps>) {
   const isUser = message.role === "user";
 
   const targetContent = useMemo(() => {
@@ -244,7 +262,7 @@ export function ChatMessageBubble({ message }: ChatMessageProps) {
     let text = message.content;
 
     // Remover bloques de código markdown de la vista (dejando solo el texto conversacional)
-    text = text.replace(/```[\s\S]*?(?:```|$)/g, "").trim();
+    text = text.replaceAll(/```[\s\S]*?(?:```|$)/g, "").trim();
 
     // Si el texto restante parece ser HTML crudo que se filtró sin backticks
     if (
@@ -294,7 +312,7 @@ export function ChatMessageBubble({ message }: ChatMessageProps) {
       const timeout = setTimeout(() => {
         setDisplayedContent((prev) => {
           // Simulamos velocidad de escritura rápida de a 2-5 caracteres por tick
-          const charsToAdd = Math.floor(Math.random() * 4) + 2;
+          const charsToAdd = getSecureRandomIndex(4) + 2;
           return targetContent.slice(0, prev.length + charsToAdd);
         });
       }, 15); // Cada 15ms entra un "chunk"
@@ -306,6 +324,10 @@ export function ChatMessageBubble({ message }: ChatMessageProps) {
   // Consideramos que está escribiendo si el streaming de la red está activo O si nuestra animación local no terminó
   const isTyping =
     message.isStreaming || displayedContent.length < targetContent.length;
+  let assistantBubbleContent = <ThinkingIndicator />;
+  if (!isTyping || displayedContent) {
+    assistantBubbleContent = renderAssistantContent(displayedContent, isTyping);
+  }
 
   // Error messages get a dedicated card instead of the normal bubble
   if (!isUser && message.error) {
@@ -333,10 +355,8 @@ export function ChatMessageBubble({ message }: ChatMessageProps) {
       >
         {isUser ? (
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
-        ) : isTyping && !displayedContent ? (
-          <ThinkingIndicator />
         ) : (
-          renderAssistantContent(displayedContent, isTyping)
+          assistantBubbleContent
         )}
       </div>
 

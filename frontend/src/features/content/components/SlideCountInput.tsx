@@ -5,7 +5,10 @@ interface SlideCountInputProps {
   onChange: (n: number | null) => void;
 }
 
-export function SlideCountInput({ value, onChange }: SlideCountInputProps) {
+export function SlideCountInput({
+  value,
+  onChange,
+}: Readonly<SlideCountInputProps>) {
   const aiDecides = value === null;
 
   const handleToggle = () => {
@@ -13,18 +16,21 @@ export function SlideCountInput({ value, onChange }: SlideCountInputProps) {
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const n = parseInt(e.target.value, 10);
-    if (!isNaN(n) && n >= 1 && n <= 10) {
+    const n = Number.parseInt(e.target.value, 10);
+    if (!Number.isNaN(n) && n >= 1 && n <= 10) {
       onChange(n);
     }
   };
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Slide count</label>
+      <label htmlFor="slide-count-input" className="text-sm font-medium">
+        Slide count
+      </label>
 
       <div className="flex items-center gap-4">
         <input
+          id="slide-count-input"
           type="number"
           min={1}
           max={10}

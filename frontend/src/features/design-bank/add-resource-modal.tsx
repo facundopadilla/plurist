@@ -20,6 +20,10 @@ import {
   createFontResource,
   createTextResource,
 } from "./api";
+import {
+  DESIGN_BANK_INPUT_CLASSNAME,
+  UploadResourceField,
+} from "./resource-ui";
 import type { Project } from "../projects/types";
 
 type AddTab = "upload" | "url" | "color" | "font" | "text";
@@ -38,7 +42,7 @@ export function AddResourceModal({
   onAdded,
   projects,
   projectId: initialProjectId,
-}: AddResourceModalProps) {
+}: Readonly<AddResourceModalProps>) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<AddTab>("upload");
@@ -135,9 +139,6 @@ export function AddResourceModal({
 
   if (!open) return null;
 
-  const inputClassName =
-    "flex w-full rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-100 shadow-none transition-colors placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.04]";
-
   const showProjectSelector = initialProjectId == null;
 
   const tabs: { key: AddTab; label: string; icon: React.ReactNode }[] = [
@@ -149,13 +150,14 @@ export function AddResourceModal({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="relative w-full max-w-lg rounded-2xl border border-zinc-800/70 bg-zinc-950/95 text-zinc-50 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <button
+        type="button"
+        aria-label="Close add resource modal"
+        className="absolute inset-0"
+        onClick={onClose}
+      />
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-zinc-800/70 bg-zinc-950/95 text-zinc-50 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-800/60 px-5 py-4">
           <h2 className="text-sm font-semibold tracking-[-0.02em] text-zinc-50">
@@ -172,17 +174,21 @@ export function AddResourceModal({
         {/* Project selector */}
         {showProjectSelector && projects.length > 0 && (
           <div className="px-5 pt-4">
-            <label className="mb-1 block text-xs font-medium text-zinc-500">
+            <label
+              htmlFor="add-resource-project"
+              className="mb-1 block text-xs font-medium text-zinc-500"
+            >
               Project (optional)
             </label>
             <select
+              id="add-resource-project"
               value={selectedProjectId ?? ""}
               onChange={(e) =>
                 setSelectedProjectId(
                   e.target.value ? Number(e.target.value) : null,
                 )
               }
-              className={inputClassName}
+              className={DESIGN_BANK_INPUT_CLASSNAME}
             >
               <option value="">No project</option>
               {projects.map((p) => (
@@ -221,36 +227,15 @@ export function AddResourceModal({
         {/* Tab content */}
         <div className="p-5">
           {activeTab === "upload" && (
-            <div>
-              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-zinc-800/70 px-3 py-4 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-100">
-                {fileMutation.isPending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Upload size={16} />
-                )}
-                {fileMutation.isPending
-                  ? "Uploading..."
-                  : "Choose a file (image, PDF, and more)"}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="sr-only"
-                  disabled={fileMutation.isPending}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) fileMutation.mutate(f);
-                  }}
-                />
-              </label>
-              {fileError && (
-                <p className="mt-1 text-xs text-destructive">{fileError}</p>
-              )}
-              {fileMutation.isSuccess && (
-                <p className="mt-1 text-xs text-green-600">
-                  File uploaded successfully.
-                </p>
-              )}
-            </div>
+            <UploadResourceField
+              fileInputRef={fileInputRef}
+              isPending={fileMutation.isPending}
+              onFileSelect={(file) => fileMutation.mutate(file)}
+              errorMessage={fileError}
+              successMessage={
+                fileMutation.isSuccess ? "File uploaded successfully." : null
+              }
+            />
           )}
 
           {activeTab === "url" && (
@@ -260,7 +245,7 @@ export function AddResourceModal({
                 value={urlValue}
                 onChange={(e) => setUrlValue(e.target.value)}
                 placeholder="https://..."
-                className={inputClassName}
+                className={DESIGN_BANK_INPUT_CLASSNAME}
               />
               <Button
                 onClick={() => urlMutation.mutate()}
@@ -283,7 +268,7 @@ export function AddResourceModal({
                 value={colorName}
                 onChange={(e) => setColorName(e.target.value)}
                 placeholder="Name (e.g. Primary)"
-                className={`${inputClassName} min-w-[120px] flex-1`}
+                className={`${DESIGN_BANK_INPUT_CLASSNAME} min-w-[120px] flex-1`}
               />
               <div className="flex items-center gap-1.5 rounded-xl border border-zinc-800/70 bg-zinc-950/80 px-2 py-1">
                 <input
@@ -301,7 +286,7 @@ export function AddResourceModal({
                 value={colorRole}
                 onChange={(e) => setColorRole(e.target.value)}
                 placeholder="Role (optional)"
-                className={`${inputClassName} w-28`}
+                className={`${DESIGN_BANK_INPUT_CLASSNAME} w-28`}
               />
               <Button
                 onClick={() => colorMutation.mutate()}
@@ -324,14 +309,14 @@ export function AddResourceModal({
                 value={fontName}
                 onChange={(e) => setFontName(e.target.value)}
                 placeholder="Name (e.g. Display font)"
-                className={`${inputClassName} min-w-[140px] flex-1`}
+                className={`${DESIGN_BANK_INPUT_CLASSNAME} min-w-[140px] flex-1`}
               />
               <Input
                 type="text"
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
                 placeholder="Family (e.g. Inter)"
-                className={`${inputClassName} min-w-[120px] flex-1`}
+                className={`${DESIGN_BANK_INPUT_CLASSNAME} min-w-[120px] flex-1`}
               />
               <Button
                 onClick={() => fontMutation.mutate()}
@@ -359,12 +344,12 @@ export function AddResourceModal({
                   value={textName}
                   onChange={(e) => setTextName(e.target.value)}
                   placeholder="Name (e.g. Tagline)"
-                  className={`${inputClassName} flex-1`}
+                  className={`${DESIGN_BANK_INPUT_CLASSNAME} flex-1`}
                 />
                 <select
                   value={textKind}
                   onChange={(e) => setTextKind(e.target.value)}
-                  className={inputClassName}
+                  className={DESIGN_BANK_INPUT_CLASSNAME}
                 >
                   <option value="copy">Copy</option>
                   <option value="tagline">Tagline</option>
@@ -378,7 +363,7 @@ export function AddResourceModal({
                   onChange={(e) => setTextContent(e.target.value)}
                   placeholder="Write your brand copy here..."
                   rows={3}
-                  className={`${inputClassName} flex-1 resize-none`}
+                  className={`${DESIGN_BANK_INPUT_CLASSNAME} flex-1 resize-none`}
                 />
                 <Button
                   onClick={() => textMutation.mutate()}

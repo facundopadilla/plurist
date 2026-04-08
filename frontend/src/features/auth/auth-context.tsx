@@ -39,7 +39,9 @@ const AuthContext = createContext<AuthContextValue>({
 
 export { AuthContext };
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const path = window.location.pathname;
+    const path = globalThis.location.pathname;
     const isPublicAuthPath =
       path === "/" || path === "/login" || path.startsWith("/invite/");
 

@@ -5,7 +5,6 @@ import type {
   CanvasConfig,
   ContextualAiMode,
   ElementReference,
-  NetworkId,
   PanelId,
   ResponsiveVariantType,
   SlideData,
@@ -266,6 +265,95 @@ function shouldHydrateDraft(
   return shouldHydrateDraftBase(currentSlides, frameMetadata, variants);
 }
 
+function groupVariantsBySlideIndex(
+  variants: DraftVariant[],
+): Map<number, DraftVariant[]> {
+  const grouped = new Map<number, DraftVariant[]>();
+  for (const variant of variants) {
+    const slideIndex = variant.slide_index ?? 0;
+    if (!grouped.has(slideIndex)) grouped.set(slideIndex, []);
+    grouped.get(slideIndex)!.push(variant);
+  }
+  return grouped;
+}
+
+function getSelectedSlideIdsForHydration(
+  editor: Editor | null,
+  currentSlideEntries: Array<[string, SlideData]>,
+): Set<string> {
+  const selectedShapeIds =
+    editor?.getSelectedShapes?.().map((shape) => String(shape.id)) ?? [];
+  return new Set(
+    selectedShapeIds
+      .map(
+        (shapeId) =>
+          currentSlideEntries.find(
+            ([slideId]) => String(toShapeId(slideId)) === shapeId,
+          )?.[0],
+      )
+      .filter((slideId): slideId is string => Boolean(slideId)),
+  );
+}
+
+function syncHydratedTldrawShapes(
+  editor: Editor | null,
+  currentSlideEntries: Array<[string, SlideData]>,
+  grouped: Map<number, DraftVariant[]>,
+): void {
+  if (!editor) return;
+
+  for (const [slideId, slide] of currentSlideEntries) {
+    if (!grouped.has(slide.slideIndex)) {
+      removeTldrawShape(editor, slideId);
+      continue;
+    }
+
+    const nextVariant = grouped.get(slide.slideIndex)?.at(-1);
+    if (nextVariant) {
+      updateTldrawShapeHtml(editor, slideId, nextVariant.generated_html);
+    }
+  }
+}
+
+function buildHydratedSlides(
+  grouped: Map<number, DraftVariant[]>,
+  frameByIndex: Map<number, DraftFrameMetadata>,
+  previousSlideIdByIndex: Map<number, string>,
+  editor: Editor | null,
+  config: CanvasConfig,
+): Map<string, SlideData> {
+  const newSlides = new Map<string, SlideData>();
+
+  for (const slideIndex of Array.from(grouped.keys()).sort((a, b) => a - b)) {
+    const slideId = previousSlideIdByIndex.get(slideIndex) ?? makeSlideId();
+    const slideVariants = grouped.get(slideIndex)!;
+    const frame = frameByIndex.get(slideIndex);
+    const normalizedVariants = slideVariants.map(normalizeDraftVariant);
+    const activeVariant = normalizedVariants.at(-1) ?? null;
+
+    newSlides.set(slideId, {
+      slideIndex,
+      variants: normalizedVariants,
+      activeVariantId: activeVariant?.id ?? null,
+      name: frame?.name || `Frame ${slideIndex + 1}`,
+      isFavorite: frame?.is_favorite ?? false,
+      annotations: frame?.annotations ?? [],
+      generationMeta: activeVariant?.generationMeta,
+    });
+
+    createTldrawShape(
+      editor,
+      slideId,
+      slideIndex,
+      activeVariant?.html ?? "",
+      config.formatWidth,
+      config.formatHeight,
+    );
+  }
+
+  return newSlides;
+}
+
 type CanvasSet = Parameters<StateCreator<CanvasStore>>[0];
 type CanvasGet = Parameters<StateCreator<CanvasStore>>[1];
 
@@ -318,7 +406,10 @@ function createChatSlice(
       set((state: CanvasStore) => {
         const msgs = [...state.messages];
         if (msgs.length === 0) return {};
-        msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], ...patch };
+        const lastMessage = msgs.at(-1);
+        if (!lastMessage) return {};
+        const lastMessageIndex = msgs.length - 1;
+        msgs[lastMessageIndex] = { ...lastMessage, ...patch };
         return { messages: msgs };
       }),
     setIsStreaming: (v) => set({ isStreaming: v }),
@@ -449,17 +540,11 @@ function createSlidesSlice(
         annotationEditorSlideId,
         contextualAiTarget,
       } = get();
-      const grouped = new Map<number, DraftVariant[]>();
-      for (const variant of variants) {
-        const slideIndex = variant.slide_index ?? 0;
-        if (!grouped.has(slideIndex)) grouped.set(slideIndex, []);
-        grouped.get(slideIndex)!.push(variant);
-      }
+      const grouped = groupVariantsBySlideIndex(variants);
 
       const frameByIndex = new Map(
         frameMetadata.map((frame) => [frame.slide_index, frame]),
       );
-      const newSlides = new Map<string, SlideData>();
       const currentSlideEntries = Array.from(currentSlides.entries());
       const previousSlideIdByIndex = new Map(
         currentSlideEntries.map(([slideId, slide]) => [
@@ -467,65 +552,23 @@ function createSlidesSlice(
           slideId,
         ]),
       );
-      const selectedShapeIds =
-        editor?.getSelectedShapes?.().map((shape) => String(shape.id)) ?? [];
-      const selectedSlideIds = new Set(
-        selectedShapeIds
-          .map(
-            (shapeId) =>
-              currentSlideEntries.find(
-                ([slideId]) => String(toShapeId(slideId)) === shapeId,
-              )?.[0],
-          )
-          .filter((slideId): slideId is string => Boolean(slideId)),
+      const selectedSlideIds = getSelectedSlideIdsForHydration(
+        editor,
+        currentSlideEntries,
       );
 
       if (!shouldHydrateDraft(currentSlides, frameMetadata, variants)) {
         return;
       }
 
-      if (editor) {
-        for (const [slideId, slide] of currentSlideEntries) {
-          if (!grouped.has(slide.slideIndex)) {
-            removeTldrawShape(editor, slideId);
-            continue;
-          }
-          const nextVariant = grouped.get(slide.slideIndex)?.at(-1);
-          if (nextVariant) {
-            updateTldrawShapeHtml(editor, slideId, nextVariant.generated_html);
-          }
-        }
-      }
-
-      for (const slideIndex of Array.from(grouped.keys()).sort(
-        (a, b) => a - b,
-      )) {
-        const slideId = previousSlideIdByIndex.get(slideIndex) ?? makeSlideId();
-        const slideVariants = grouped.get(slideIndex)!;
-        const frame = frameByIndex.get(slideIndex);
-        const normalizedVariants = slideVariants.map(normalizeDraftVariant);
-        const activeVariant =
-          normalizedVariants[normalizedVariants.length - 1] ?? null;
-
-        newSlides.set(slideId, {
-          slideIndex,
-          variants: normalizedVariants,
-          activeVariantId: activeVariant?.id ?? null,
-          name: frame?.name || `Frame ${slideIndex + 1}`,
-          isFavorite: frame?.is_favorite ?? false,
-          annotations: frame?.annotations ?? [],
-          generationMeta: activeVariant?.generationMeta,
-        });
-
-        createTldrawShape(
-          editor,
-          slideId,
-          slideIndex,
-          activeVariant?.html ?? "",
-          config.formatWidth,
-          config.formatHeight,
-        );
-      }
+      syncHydratedTldrawShapes(editor, currentSlideEntries, grouped);
+      const newSlides = buildHydratedSlides(
+        grouped,
+        frameByIndex,
+        previousSlideIdByIndex,
+        editor,
+        config,
+      );
 
       set({
         slides: newSlides,
@@ -848,10 +891,12 @@ function createSlidesSlice(
               ? {
                   ...variant,
                   name: trimmed || undefined,
-                  generationMeta: {
-                    ...(variant.generationMeta ?? {}),
-                    variantName: trimmed || undefined,
-                  },
+                  generationMeta: variant.generationMeta
+                    ? {
+                        ...variant.generationMeta,
+                        variantName: trimmed || undefined,
+                      }
+                    : { variantName: trimmed || undefined },
                 }
               : variant,
           ),
@@ -870,7 +915,7 @@ function createSlidesSlice(
         );
         const activeVariantId =
           slide.activeVariantId === variantId
-            ? (remaining[remaining.length - 1]?.id ?? null)
+            ? (remaining.at(-1)?.id ?? null)
             : slide.activeVariantId;
         const activeVariant =
           remaining.find((variant) => variant.id === activeVariantId) ??
@@ -904,11 +949,16 @@ function createSlidesSlice(
           ...source,
           id: duplicatedId,
           name: source.name ? `${source.name} copy` : undefined,
-          generationMeta: {
-            ...(source.generationMeta ?? {}),
-            variantName: source.name ? `${source.name} copy` : undefined,
-            derivedFromVariantId: source.id,
-          },
+          generationMeta: source.generationMeta
+            ? {
+                ...source.generationMeta,
+                variantName: source.name ? `${source.name} copy` : undefined,
+                derivedFromVariantId: source.id,
+              }
+            : {
+                variantName: source.name ? `${source.name} copy` : undefined,
+                derivedFromVariantId: source.id,
+              },
           derivedFromVariantId: source.id,
         };
         const newSlides = new Map(state.slides);
@@ -992,14 +1042,19 @@ function createSlidesSlice(
         );
         if (!existing) return state;
         resolvedId = existing.id;
-        const nextGenerationMeta = {
-          ...(generationMeta ?? {}),
-          variantType,
-          derivedFromVariantId:
-            generationMeta?.derivedFromVariantId ??
-            existing.derivedFromVariantId ??
-            null,
-        };
+        const nextGenerationMeta = generationMeta
+          ? {
+              ...generationMeta,
+              variantType,
+              derivedFromVariantId:
+                generationMeta.derivedFromVariantId ??
+                existing.derivedFromVariantId ??
+                null,
+            }
+          : {
+              variantType,
+              derivedFromVariantId: existing.derivedFromVariantId ?? null,
+            };
         const updatedVariants = slide.variants.map((variant) =>
           variant.id === existing.id
             ? {
@@ -1125,4 +1180,4 @@ export const selectIsStreaming = (s: CanvasStore) => s.isStreaming;
 export const selectActivePanel = (s: CanvasStore) => s.activePanel;
 
 // Re-export NetworkId for convenience
-export type { NetworkId };
+export type { NetworkId } from "./types";

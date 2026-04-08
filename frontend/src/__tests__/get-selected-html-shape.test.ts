@@ -5,14 +5,14 @@ import { getSelectedHtmlShape } from "../features/canvas/context-menu/get-select
 type TestEditor = {
   getSelectedShapes: () => Array<Record<string, unknown>>;
   getShapesAtPoint: () => Array<Record<string, unknown>>;
-  inputs: { currentPagePoint: { x: number; y: number } };
+  inputs: { getCurrentPagePoint: () => { x: number; y: number } };
 };
 
 function makeEditor(shapes: Array<Record<string, unknown>>) {
   return {
     getSelectedShapes: vi.fn(() => shapes),
     getShapesAtPoint: vi.fn(() => shapes),
-    inputs: { currentPagePoint: { x: 0, y: 0 } },
+    inputs: { getCurrentPagePoint: vi.fn(() => ({ x: 0, y: 0 })) },
   } as unknown as TestEditor;
 }
 

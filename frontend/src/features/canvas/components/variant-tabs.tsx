@@ -18,7 +18,7 @@ export function VariantTabs({
   onRename,
   onDuplicate,
   onDelete,
-}: VariantTabsProps) {
+}: Readonly<VariantTabsProps>) {
   if (variants.length <= 1) return null;
 
   const activeVariant =

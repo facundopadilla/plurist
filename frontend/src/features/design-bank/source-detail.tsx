@@ -6,7 +6,7 @@ interface SourceDetailProps {
   sourceId: number;
 }
 
-export function SourceDetail({ sourceId }: SourceDetailProps) {
+export function SourceDetail({ sourceId }: Readonly<SourceDetailProps>) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["design-bank-source", sourceId],
     queryFn: () => fetchSource(sourceId),
@@ -36,7 +36,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
           Filename
         </p>
-        <p className="text-sm">{data.original_filename || "—"}</p>
+        <p className="text-sm">{data.original_filename ?? "—"}</p>
       </div>
       <div className="space-y-1">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">

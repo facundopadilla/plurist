@@ -45,6 +45,3 @@ export interface DraftPost {
 
 /** Semantic alias for UI code — maps 1:1 to DraftPost API shape */
 export type ContentItem = DraftPost;
-
-/** Semantic alias for UI code — maps 1:1 to PostStatus */
-export type ContentStatus = PostStatus;

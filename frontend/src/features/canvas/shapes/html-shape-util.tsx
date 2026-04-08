@@ -14,8 +14,8 @@ import {
 import { HtmlShapeComponent } from "./html-shape-component";
 
 export class HtmlShapeUtil extends ShapeUtil<HtmlShape> {
-  static override type = HTML_SHAPE_TYPE;
-  static override props = htmlShapeProps;
+  static override readonly type = HTML_SHAPE_TYPE;
+  static override readonly props = htmlShapeProps;
 
   getDefaultProps(): HtmlShapeProps {
     return {

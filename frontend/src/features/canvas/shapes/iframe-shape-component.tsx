@@ -22,7 +22,9 @@ interface IframeShapeComponentProps {
   shape: IframeShape;
 }
 
-export function IframeShapeComponent({ shape }: IframeShapeComponentProps) {
+export function IframeShapeComponent({
+  shape,
+}: Readonly<IframeShapeComponentProps>) {
   const { slideId, w, h, html, slideIndex } = shape.props;
 
   const slideData = useCanvasStore((s) => s.slides.get(slideId));
@@ -48,16 +50,12 @@ export function IframeShapeComponent({ shape }: IframeShapeComponentProps) {
       getIframe: () => iframeRef.current,
     });
 
-  const handleDoubleClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!isEditing) {
-        enterEditMode(shape.id);
-        setActivePanel("code");
-      }
-    },
-    [shape.id, isEditing, enterEditMode, setActivePanel],
-  );
+  const openEditMode = useCallback(() => {
+    if (!isEditing) {
+      enterEditMode(shape.id);
+      setActivePanel("code");
+    }
+  }, [shape.id, isEditing, enterEditMode, setActivePanel]);
 
   const handleDone = useCallback(() => {
     const iframe = iframeRef.current;
@@ -103,7 +101,6 @@ export function IframeShapeComponent({ shape }: IframeShapeComponentProps) {
             ? "ring-2 ring-primary ring-offset-1 rounded-md"
             : "rounded-md border border-zinc-800/70",
         )}
-        onDoubleClick={handleDoubleClick}
       >
         {/* Variant tabs (only when multiple variants exist) */}
         {slideData && (
@@ -116,6 +113,14 @@ export function IframeShapeComponent({ shape }: IframeShapeComponentProps) {
 
         {/* Iframe content */}
         <div className="flex-1 relative overflow-hidden">
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={openEditMode}
+              className="absolute inset-0 z-10 cursor-text rounded-md bg-transparent"
+              aria-label="Edit iframe slide"
+            />
+          )}
           <iframe
             ref={iframeRef}
             srcDoc={displayHtml}

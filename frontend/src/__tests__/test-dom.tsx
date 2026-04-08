@@ -126,7 +126,7 @@ export async function waitFor(assertion: () => void, timeout = 2000) {
 export function press(target: Element) {
   act(() => {
     target.dispatchEvent(
-      new window.PointerEvent("pointerdown", {
+      new globalThis.PointerEvent("pointerdown", {
         bubbles: true,
         cancelable: true,
         button: 0,

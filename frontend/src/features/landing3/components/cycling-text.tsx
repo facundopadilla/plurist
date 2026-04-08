@@ -14,7 +14,7 @@ export function CyclingText({
   words,
   interval = 2400,
   className = "",
-}: CyclingTextProps) {
+}: Readonly<CyclingTextProps>) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -48,7 +48,9 @@ export function CyclingText({
 }
 
 /** Static color wave — no cycling, just the animated gradient */
-export function ColorWave({ children }: { children: React.ReactNode }) {
+export function ColorWave({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <span
       className="bg-clip-text text-transparent"
@@ -67,10 +69,10 @@ export function ColorWave({ children }: { children: React.ReactNode }) {
 export function ColorWaveButton({
   children,
   className = "",
-}: {
+}: Readonly<{
   children: React.ReactNode;
   className?: string;
-}) {
+}>) {
   return (
     <span className={`relative inline-flex items-center ${className}`}>
       {/* Normal text */}

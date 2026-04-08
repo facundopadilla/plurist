@@ -37,6 +37,50 @@ const TESTIMONIALS = [
   },
 ];
 
+type Testimonial = (typeof TESTIMONIALS)[number];
+
+const TESTIMONIAL_CARD_CLASSNAME =
+  "h-full rounded-lg border-2 border-black bg-white p-6";
+
+function TestimonialCard({
+  testimonial,
+}: Readonly<{
+  testimonial: Testimonial;
+}>) {
+  return (
+    <div
+      className={TESTIMONIAL_CARD_CLASSNAME}
+      style={{ boxShadow: "5px 5px 0 0 #000" }}
+    >
+      <div className="mb-4 flex items-center gap-0.5">
+        {Array.from({ length: testimonial.stars }).map((_, index) => (
+          <Star
+            key={`${testimonial.name}-star-${index}`}
+            className="h-4 w-4 fill-black text-black"
+          />
+        ))}
+      </div>
+      <p className="text-sm font-medium leading-relaxed text-[#333]">
+        &ldquo;{testimonial.quote}&rdquo;
+      </p>
+      <div className="mt-5 flex items-center gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-black text-xs font-bold text-white"
+          style={{ background: testimonial.color }}
+        >
+          {testimonial.initials}
+        </div>
+        <div>
+          <p className="text-sm font-bold text-black">{testimonial.name}</p>
+          <p className="text-xs font-medium text-[#555]">
+            {testimonial.role} · {testimonial.company}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function TestimonialsSection() {
   return (
     <section className="py-24 sm:py-32 bg-brutal-yellow border-b-2 border-black">
@@ -64,79 +108,27 @@ export function TestimonialsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          {TESTIMONIALS.map((t) => (
+          {TESTIMONIALS.map((testimonial) => (
             <motion.div
-              key={t.name}
+              key={testimonial.name}
               variants={fadeScale}
               whileHover={{ x: -2, y: -2 }}
               whileTap={{ x: 2, y: 2 }}
               transition={{ duration: 0.15 }}
             >
-              <div
-                className="h-full bg-white border-2 border-black rounded-lg p-6"
-                style={{ boxShadow: "5px 5px 0 0 #000" }}
-              >
-                <div className="flex items-center gap-0.5 mb-4">
-                  {Array.from({ length: t.stars }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-black text-black" />
-                  ))}
-                </div>
-                <p className="text-sm text-[#333] leading-relaxed font-medium">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="mt-5 flex items-center gap-3">
-                  <div
-                    className="h-10 w-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 border-2 border-black"
-                    style={{ background: t.color }}
-                  >
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-black">{t.name}</p>
-                    <p className="text-xs text-[#555] font-medium">
-                      {t.role} · {t.company}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <TestimonialCard testimonial={testimonial} />
             </motion.div>
           ))}
         </motion.div>
 
         {/* Mobile scroll */}
         <div className="mt-12 md:hidden flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth -mx-6 px-6">
-          {TESTIMONIALS.map((t) => (
+          {TESTIMONIALS.map((testimonial) => (
             <div
-              key={t.name}
+              key={testimonial.name}
               className="snap-center shrink-0 w-[80vw] max-w-sm"
             >
-              <div
-                className="h-full bg-white border-2 border-black rounded-lg p-6"
-                style={{ boxShadow: "5px 5px 0 0 #000" }}
-              >
-                <div className="flex items-center gap-0.5 mb-4">
-                  {Array.from({ length: t.stars }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-black text-black" />
-                  ))}
-                </div>
-                <p className="text-sm text-[#333] leading-relaxed font-medium">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="mt-5 flex items-center gap-3">
-                  <div
-                    className="h-10 w-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 border-2 border-black"
-                    style={{ background: t.color }}
-                  >
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-black">{t.name}</p>
-                    <p className="text-xs text-[#555] font-medium">
-                      {t.role} · {t.company}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <TestimonialCard testimonial={testimonial} />
             </div>
           ))}
         </div>

@@ -1,8 +1,10 @@
+import { useEffect, useRef } from "react";
 import { MessageSquarePlus, Trash2, X } from "lucide-react";
 import { useCanvasStore } from "../canvas-store";
 
 export function AnnotationPanel() {
   const slideId = useCanvasStore((s) => s.annotationEditorSlideId);
+  const panelRef = useRef<HTMLElement | null>(null);
   const slide = useCanvasStore((s) =>
     slideId ? s.slides.get(slideId) : undefined,
   );
@@ -11,19 +13,31 @@ export function AnnotationPanel() {
   const removeSlideAnnotation = useCanvasStore((s) => s.removeSlideAnnotation);
   const closeAnnotationEditor = useCanvasStore((s) => s.closeAnnotationEditor);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) {
+      return;
+    }
+
+    const stopKeyPropagation = (event: KeyboardEvent) => {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    panel.addEventListener("keydown", stopKeyPropagation);
+    panel.addEventListener("keyup", stopKeyPropagation);
+    return () => {
+      panel.removeEventListener("keydown", stopKeyPropagation);
+      panel.removeEventListener("keyup", stopKeyPropagation);
+    };
+  }, []);
+
   if (!slideId || !slide) return null;
 
   return (
     <aside
+      ref={panelRef}
       className="w-[360px] border-l border-zinc-800/60 bg-zinc-950/92 backdrop-blur-xl"
-      onKeyDown={(e) => {
-        e.stopPropagation();
-        e.nativeEvent.stopImmediatePropagation();
-      }}
-      onKeyUp={(e) => {
-        e.stopPropagation();
-        e.nativeEvent.stopImmediatePropagation();
-      }}
     >
       <div className="flex items-center justify-between border-b border-zinc-800/60 px-4 py-3">
         <div>

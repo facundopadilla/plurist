@@ -55,30 +55,23 @@ export function useSaveDraft() {
           generated_text: variant.text,
           variant_type: variant.variantType ?? "default",
           derived_from_local_id: variant.derivedFromVariantId ?? null,
-          generation_meta: {
-            ...(variant.generationMeta ?? {}),
-            variantName: variant.name ?? variant.generationMeta?.variantName,
-          },
+          generation_meta: variant.generationMeta
+            ? {
+                ...variant.generationMeta,
+                variantName: variant.name ?? variant.generationMeta.variantName,
+              }
+            : {
+                variantName: variant.name,
+              },
         })),
       );
 
       let postId = draftPostId;
 
-      if (!postId) {
-        // Create new DraftPost
-        const post = await createContent({
-          title: config.title || "Canvas Studio Draft",
-          project_id: config.projectId,
-          format: config.formatKey,
-          html_content: htmlContent,
-          global_styles: globalStyles,
-        });
-        postId = post.id;
-        setDraftPostId(postId);
-      } else {
+      if (postId) {
         // Update existing DraftPost
         const post = await updateContent(postId, {
-          title: config.title || "Canvas Studio Draft",
+          title: config.title ?? "Canvas Studio Draft",
           project_id: config.projectId,
           format: config.formatKey,
           html_content: htmlContent,
@@ -90,6 +83,17 @@ export function useSaveDraft() {
           frameMetadata: post.frame_metadata ?? [],
           variants: post.variants ?? [],
         });
+      } else {
+        // Create new DraftPost
+        const post = await createContent({
+          title: config.title ?? "Canvas Studio Draft",
+          project_id: config.projectId,
+          format: config.formatKey,
+          html_content: htmlContent,
+          global_styles: globalStyles,
+        });
+        postId = post.id;
+        setDraftPostId(postId);
       }
 
       if (!draftPostId && postId) {
@@ -141,8 +145,8 @@ export function useSaveDraft() {
       e.preventDefault();
     };
 
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+    globalThis.addEventListener("beforeunload", handler);
+    return () => globalThis.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
   return { save };

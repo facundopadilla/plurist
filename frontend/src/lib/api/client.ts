@@ -56,8 +56,10 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const attempt = async (forceRefresh = false): Promise<T> => {
     const headers: Record<string, string> = { ...options.headers };
+    let requestBody: string | undefined;
     if (options.body !== undefined) {
       headers["Content-Type"] = "application/json";
+      requestBody = JSON.stringify(options.body);
     }
     if (options.method && options.method !== "GET") {
       headers["X-CSRF-Token"] = await ensureCsrfToken(forceRefresh);
@@ -67,29 +69,29 @@ export async function apiRequest<T>(
       method: options.method ?? "GET",
       credentials: "include",
       headers,
-      body:
-        options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body: requestBody,
     });
 
-    if (!response.ok) {
-      const detail = await parseErrorDetail(response, "Request failed");
+    if (response.ok) {
       if (
-        shouldRetryCsrf(options.method, response.status, detail) &&
-        !forceRefresh
+        response.status === 204 ||
+        response.headers.get("content-length") === "0"
       ) {
-        clearCsrfToken();
-        return attempt(true);
+        return undefined as T;
       }
-      throw new ApiError(response.status, detail);
+
+      return (await response.json()) as T;
     }
 
+    const detail = await parseErrorDetail(response, "Request failed");
     if (
-      response.status === 204 ||
-      response.headers.get("content-length") === "0"
+      shouldRetryCsrf(options.method, response.status, detail) &&
+      forceRefresh === false
     ) {
-      return undefined as T;
+      clearCsrfToken();
+      return attempt(true);
     }
-    return (await response.json()) as T;
+    throw new ApiError(response.status, detail);
   };
 
   return attempt();

@@ -12,10 +12,12 @@ import { fetchContentItem } from "../../content/api";
 export function useLoadPost() {
   const [searchParams] = useSearchParams();
   const postIdParam = searchParams.get("postId");
-  const postId = postIdParam ? parseInt(postIdParam, 10) : null;
+  const postId = postIdParam ? Number.parseInt(postIdParam, 10) : null;
 
   const projectParam = searchParams.get("project");
-  const projectIdFromUrl = projectParam ? parseInt(projectParam, 10) : null;
+  const projectIdFromUrl = projectParam
+    ? Number.parseInt(projectParam, 10)
+    : null;
 
   const hydrateDraft = useCanvasStore((s) => s.hydrateDraft);
   const setDraftPostId = useCanvasStore((s) => s.setDraftPostId);

@@ -22,7 +22,7 @@ export function getSelectedHtmlShape(
     }
   }
 
-  const currentPoint = editor.inputs.currentPagePoint;
+  const currentPoint = editor.inputs.getCurrentPagePoint();
   if (!currentPoint) {
     return null;
   }

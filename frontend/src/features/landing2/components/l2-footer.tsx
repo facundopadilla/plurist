@@ -36,12 +36,7 @@ export function L2Footer() {
               <ul className="flex flex-col gap-2.5">
                 {items.map((item) => (
                   <li key={item}>
-                    <a
-                      href="#"
-                      className="text-[13px] text-neutral-500 transition-colors hover:text-neutral-900"
-                    >
-                      {item}
-                    </a>
+                    <span className="text-[13px] text-neutral-500">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -56,13 +51,12 @@ export function L2Footer() {
           </p>
           <div className="flex items-center gap-5">
             {["Twitter", "LinkedIn", "GitHub"].map((social) => (
-              <a
+              <span
                 key={social}
-                href="#"
-                className="text-[13px] font-medium text-neutral-400 transition-colors hover:text-neutral-700"
+                className="text-[13px] font-medium text-neutral-400"
               >
                 {social}
-              </a>
+              </span>
             ))}
           </div>
         </div>

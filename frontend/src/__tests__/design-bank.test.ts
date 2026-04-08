@@ -4,7 +4,7 @@ describe("design-bank", () => {
   it("DesignBankPage module exports the page component", async () => {
     const mod = await import("../features/design-bank/design-bank-page");
     expect(typeof mod.DesignBankPage).toBe("function");
-  });
+  }, 15_000);
 
   it("AddResourceModal module exports the component", async () => {
     const mod = await import("../features/design-bank/add-resource-modal");

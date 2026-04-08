@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Github } from "lucide-react";
+import { ArrowRight, GitHub } from "lucide-react";
 import { fadeUp, stagger } from "../lib/animations";
 import { CyclingText, ColorWaveButton } from "./cycling-text";
 
@@ -130,7 +130,7 @@ export function HeroSection() {
               className="w-full sm:w-auto"
             >
               <button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700/30 bg-zinc-900/20 px-7 text-[13px] font-semibold text-zinc-300 backdrop-blur-sm transition-all duration-300 hover:border-zinc-600/50 hover:bg-zinc-800/30 hover:text-zinc-50 sm:w-auto">
-                <Github size={14} />
+                <GitHub size={14} />
                 Star on GitHub
               </button>
             </a>

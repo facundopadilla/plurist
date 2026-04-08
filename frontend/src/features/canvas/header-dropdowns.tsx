@@ -97,7 +97,7 @@ export function ProjectDropdown() {
           >
             <div
               className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ backgroundColor: p.color || "#6366f1" }}
+              style={{ backgroundColor: p.color ?? "#6366f1" }}
             />
             <span className="flex-1 truncate">{p.name}</span>
             {projectId === p.id && <Check size={13} />}
@@ -233,15 +233,18 @@ export function ProviderDropdown() {
     setConfig({ selectedProviders: next });
   };
 
+  let providerLabel = "Providers";
+  if (selectedProviders.length > 0) {
+    const providerUnit =
+      selectedProviders.length > 1 ? "proveedores" : "proveedor";
+    providerLabel = `${selectedProviders.length} ${providerUnit}`;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className={triggerClassName}>
-          <span>
-            {selectedProviders.length === 0
-              ? "Providers"
-              : `${selectedProviders.length} proveedor${selectedProviders.length > 1 ? "es" : ""}`}
-          </span>
+          <span>{providerLabel}</span>
           <ChevronDown size={12} className="text-zinc-500" />
         </button>
       </DropdownMenuTrigger>
@@ -258,8 +261,8 @@ export function ProviderDropdown() {
               <span className="flex-1">{key}</span>
               {isOllama && ollamaModels.length > 0 && (
                 <span className="text-xs text-zinc-500">
-                  {ollamaModels.length} model
-                  {ollamaModels.length !== 1 ? "s" : ""}
+                  {ollamaModels.length}{" "}
+                  {ollamaModels.length === 1 ? "model" : "models"}
                 </span>
               )}
               {isOllama && ollamaModels.length === 0 && (
@@ -528,11 +531,12 @@ export function ModelDropdown({
     return models.filter((m) => m.toLowerCase().includes(query));
   }, [models, modelSearch]);
 
-  const displayLabel = currentModel
-    ? (currentModel.split("/").pop() ?? currentModel)
-    : activeProvider
-      ? "Modelo"
-      : "Configurar AI";
+  let displayLabel = "Configurar AI";
+  if (currentModel) {
+    displayLabel = currentModel.split("/").pop() ?? currentModel;
+  } else if (activeProvider) {
+    displayLabel = "Modelo";
+  }
 
   return (
     <DropdownMenu>

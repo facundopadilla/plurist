@@ -49,7 +49,7 @@ function makeMockEditor() {
 describe("GenerateVariantsPanel", () => {
   beforeEach(() => {
     useCanvasStore.setState(useCanvasStore.getInitialState());
-    window.sessionStorage.clear();
+    globalThis.sessionStorage.clear();
     fetchProjects.mockResolvedValue([
       {
         id: 7,
@@ -155,7 +155,8 @@ describe("GenerateVariantsPanel", () => {
     });
 
     const storedDrafts = JSON.parse(
-      window.sessionStorage.getItem("plurist:generate-variants-drafts") ?? "{}",
+      globalThis.sessionStorage.getItem("plurist:generate-variants-drafts") ??
+        "{}",
     );
     expect(storedDrafts[firstSlideId].instruction).toBe(
       "Use the attached brand texture",
@@ -163,7 +164,7 @@ describe("GenerateVariantsPanel", () => {
   });
 
   it("prunes stale drafts when saving a fresh one", async () => {
-    window.sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "plurist:generate-variants-drafts",
       JSON.stringify({
         stale: {
@@ -196,7 +197,7 @@ describe("GenerateVariantsPanel", () => {
 
     await waitFor(() => {
       const storedDrafts = JSON.parse(
-        window.sessionStorage.getItem("plurist:generate-variants-drafts") ??
+        globalThis.sessionStorage.getItem("plurist:generate-variants-drafts") ??
           "{}",
       );
       expect(storedDrafts.stale).toBeUndefined();

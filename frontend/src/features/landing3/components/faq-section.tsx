@@ -79,7 +79,7 @@ export function FaqSection() {
         >
           {FAQ.map((item, i) => (
             <motion.div
-              key={i}
+              key={item.q}
               variants={scaleRotate}
               className="overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/20 backdrop-blur-sm transition-colors hover:border-zinc-700/50"
             >

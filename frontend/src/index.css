@@ -3,6 +3,7 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "tw-animate-css";
+/* stylelint-disable-next-line at-rule-no-unknown */
 @config "../tailwind.config.js";
 
 /* Tailwind v4: declarar tokens como CSS variables para que @apply los resuelva */

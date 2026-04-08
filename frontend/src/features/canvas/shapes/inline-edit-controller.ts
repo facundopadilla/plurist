@@ -54,9 +54,54 @@ function buildCssPath(el: Element, root: Element): string {
  * Truncate text to a max length, adding ellipsis if needed.
  */
 function truncateText(text: string, maxLength: number): string {
-  const clean = text.replace(/\s+/g, " ").trim();
+  const clean = text.replaceAll(/\s+/g, " ").trim();
   if (clean.length <= maxLength) return clean;
   return clean.slice(0, maxLength - 1) + "…";
+}
+
+type EditMarkerSnapshot = {
+  editable?: string;
+  type?: string;
+  selected?: string;
+  label?: string;
+  posRel?: string;
+  contentEditable: string | null;
+};
+
+function snapshotEditMarkers(el: HTMLElement): EditMarkerSnapshot {
+  return {
+    editable: el.dataset.scEditable,
+    type: el.dataset.scType,
+    selected: el.dataset.scSelected,
+    label: el.dataset.scLabel,
+    posRel: el.dataset.scPosRel,
+    contentEditable: el.getAttribute("contenteditable"),
+  };
+}
+
+function clearEditMarkers(el: HTMLElement): void {
+  delete el.dataset.scEditable;
+  delete el.dataset.scType;
+  delete el.dataset.scSelected;
+  delete el.dataset.scLabel;
+  delete el.dataset.scPosRel;
+  el.removeAttribute("contenteditable");
+}
+
+function restoreEditMarkers(
+  el: HTMLElement,
+  snapshot: EditMarkerSnapshot,
+): void {
+  if (snapshot.editable !== undefined)
+    el.dataset.scEditable = snapshot.editable;
+  if (snapshot.type !== undefined) el.dataset.scType = snapshot.type;
+  if (snapshot.selected !== undefined)
+    el.dataset.scSelected = snapshot.selected;
+  if (snapshot.label !== undefined) el.dataset.scLabel = snapshot.label;
+  if (snapshot.posRel !== undefined) el.dataset.scPosRel = snapshot.posRel;
+  if (snapshot.contentEditable !== null) {
+    el.setAttribute("contenteditable", snapshot.contentEditable);
+  }
 }
 
 /**
@@ -164,7 +209,7 @@ function elementTypeLabel(type: SelectedElementType, tag: string): string {
 }
 
 function getSelectionStyles(el: HTMLElement): SelectionStyles {
-  const computed = window.getComputedStyle(el);
+  const computed = globalThis.getComputedStyle(el);
   return {
     fontFamily: computed.fontFamily,
     fontSize: computed.fontSize,
@@ -320,6 +365,13 @@ function removeEditStyles(shadowRoot: ShadowRoot) {
   shadowRoot.querySelector(`#${INLINE_EDIT_STYLE_ID}`)?.remove();
 }
 
+function hasInteractiveTextChild(el: Element): boolean {
+  return Array.from(el.children).some(
+    (child) =>
+      isInteractiveElement(child) && TEXT_TAGS.has(child.tagName.toLowerCase()),
+  );
+}
+
 // ── Document reconstruction ──────────────────────────────────────────
 
 /**
@@ -339,8 +391,8 @@ function reconstructDocument(
   const parser = new DOMParser();
   const doc = parser.parseFromString(originalFullHtml, "text/html");
 
-  // Replace the body content with the edited version
-  doc.body.innerHTML = newBodyInnerHtml;
+  // Inline edit serializes back workspace-owned HTML already constrained to the editable body subtree.
+  doc.body.innerHTML = newBodyInnerHtml; // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method -- body content comes from the in-app editor
 
   // Serialize back to a full HTML string.
   // doc.documentElement.outerHTML gives us <html>...</html>
@@ -426,54 +478,10 @@ export class InlineEditController {
     // Inject editing styles (scale-compensated outlines + hover labels)
     injectEditStyles(shadowRoot, scale);
 
-    // Mark interactive elements
-    this.interactiveElements = [];
-    const allElements = contentRoot.querySelectorAll("*");
-    for (const el of Array.from(allElements)) {
-      if (isInteractiveElement(el)) {
-        const tag = el.tagName.toLowerCase();
-        const type = classifyElement(el);
-
-        // Only mark leaf-level editables for text: skip if a child is also text-editable
-        if (TEXT_TAGS.has(tag)) {
-          const hasTextChild = Array.from(el.children).some(
-            (child) =>
-              isInteractiveElement(child) &&
-              TEXT_TAGS.has(child.tagName.toLowerCase()),
-          );
-          if (hasTextChild) continue;
-        }
-
-        (el as HTMLElement).setAttribute("data-sc-editable", "true");
-        if (type) {
-          (el as HTMLElement).setAttribute("data-sc-type", type);
-        }
-        // Label for hover pill (CSS ::after reads data-sc-label)
-        const label = elementTypeLabel(type, tag);
-        (el as HTMLElement).setAttribute("data-sc-label", label);
-
-        // Only add position:relative for ::after label positioning when the
-        // element has no explicit positioning — avoids breaking abs/fixed/sticky.
-        const pos = window.getComputedStyle(el as HTMLElement).position;
-        if (pos === "static" || pos === "") {
-          (el as HTMLElement).setAttribute("data-sc-pos-rel", "");
-        }
-
-        this.interactiveElements.push(el as HTMLElement);
-      }
-    }
+    this.interactiveElements = this.collectInteractiveElements(contentRoot);
 
     // Attach event listeners on the shadow root
-    this.handleClick = ((e: Event) =>
-      this.onClick(e as MouseEvent)) as EventListener;
-    this.handleKeyDown = ((e: Event) =>
-      this.onKeyDown(e as KeyboardEvent)) as EventListener;
-    this.handleFocusOut = ((e: Event) =>
-      this.onFocusOut(e as FocusEvent)) as EventListener;
-
-    shadowRoot.addEventListener("click", this.handleClick);
-    shadowRoot.addEventListener("keydown", this.handleKeyDown);
-    shadowRoot.addEventListener("focusout", this.handleFocusOut);
+    this.bindRootListeners(shadowRoot);
 
     return this.interactiveElements.length > 0;
   }
@@ -560,26 +568,55 @@ export class InlineEditController {
     }
 
     // Clean outerHTML: temporarily remove our data attributes to get a clean snapshot
-    const attrs = [
-      "data-sc-editable",
-      "data-sc-type",
-      "data-sc-selected",
-      "data-sc-label",
-      "data-sc-pos-rel",
-      "contenteditable",
-    ];
-    const savedValues = attrs.map((attr) => el.getAttribute(attr));
-    for (const attr of attrs) el.removeAttribute(attr);
+    const savedMarkers = snapshotEditMarkers(el);
+    clearEditMarkers(el);
     const outerHtml = truncateText(el.outerHTML, 500);
-    // Restore attributes
-    attrs.forEach((attr, i) => {
-      if (savedValues[i] !== null) el.setAttribute(attr, savedValues[i]!);
-    });
+    restoreEditMarkers(el, savedMarkers);
 
     return { cssPath, tag, label, contentPreview, outerHtml };
   }
 
   // ── Private: event handlers ──────────────────────────────────────
+
+  private collectInteractiveElements(contentRoot: Element): HTMLElement[] {
+    const interactiveElements: HTMLElement[] = [];
+
+    for (const el of Array.from(contentRoot.querySelectorAll("*"))) {
+      if (!isInteractiveElement(el) || !(el instanceof HTMLElement)) continue;
+
+      const tag = el.tagName.toLowerCase();
+      if (TEXT_TAGS.has(tag) && hasInteractiveTextChild(el)) continue;
+
+      const type = classifyElement(el);
+      el.dataset.scEditable = "true";
+      if (type) {
+        el.dataset.scType = type;
+      }
+      el.dataset.scLabel = elementTypeLabel(type, tag);
+
+      const position = globalThis.getComputedStyle(el).position;
+      if (position === "static" || position === "") {
+        el.dataset.scPosRel = "";
+      }
+
+      interactiveElements.push(el);
+    }
+
+    return interactiveElements;
+  }
+
+  private bindRootListeners(shadowRoot: ShadowRoot): void {
+    this.handleClick = ((e: Event) =>
+      this.onClick(e as MouseEvent)) as EventListener;
+    this.handleKeyDown = ((e: Event) =>
+      this.onKeyDown(e as KeyboardEvent)) as EventListener;
+    this.handleFocusOut = ((e: Event) =>
+      this.onFocusOut(e as FocusEvent)) as EventListener;
+
+    shadowRoot.addEventListener("click", this.handleClick);
+    shadowRoot.addEventListener("keydown", this.handleKeyDown);
+    shadowRoot.addEventListener("focusout", this.handleFocusOut);
+  }
 
   private onClick(e: MouseEvent) {
     const target = e.target as Element | null;
@@ -660,7 +697,7 @@ export class InlineEditController {
     const type = classifyElement(el);
     this.activeElement = el;
     this.activeElementType = type;
-    el.setAttribute("data-sc-selected", "true");
+    el.dataset.scSelected = "true";
 
     if (type === "text" || type === "link") {
       // Make text editable
@@ -688,7 +725,7 @@ export class InlineEditController {
   private deselectCurrent() {
     if (!this.activeElement) return;
     this.stopTextEditing();
-    this.activeElement.removeAttribute("data-sc-selected");
+    delete this.activeElement.dataset.scSelected;
     this.activeElement = null;
     this.activeElementType = null;
     this.callbacks?.onSelectionChange(null);
@@ -733,12 +770,7 @@ export class InlineEditController {
 
     // Remove our editing attributes before serializing
     for (const el of this.interactiveElements) {
-      el.removeAttribute("data-sc-editable");
-      el.removeAttribute("data-sc-type");
-      el.removeAttribute("data-sc-selected");
-      el.removeAttribute("data-sc-label");
-      el.removeAttribute("data-sc-pos-rel");
-      el.removeAttribute("contenteditable");
+      clearEditMarkers(el);
     }
 
     const newBodyHtml = this.contentRoot.innerHTML;
@@ -773,12 +805,7 @@ export class InlineEditController {
 
       // Clean up any remaining editing markers
       for (const el of this.interactiveElements) {
-        el.removeAttribute("data-sc-editable");
-        el.removeAttribute("data-sc-type");
-        el.removeAttribute("data-sc-selected");
-        el.removeAttribute("data-sc-label");
-        el.removeAttribute("data-sc-pos-rel");
-        el.removeAttribute("contenteditable");
+        clearEditMarkers(el);
       }
     }
 

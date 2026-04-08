@@ -4,6 +4,40 @@ export interface ElementPatchResult {
   error?: string;
 }
 
+const DANGEROUS_URL_SCHEMES = new Set(["javascript"]);
+
+function hasDangerousScheme(value: string) {
+  const scheme = value.split(":", 1)[0];
+  return DANGEROUS_URL_SCHEMES.has(scheme);
+}
+
+function sanitizeMarkup(markup: string) {
+  const parser = new DOMParser();
+  const fragment = parser.parseFromString(markup, "text/html");
+  for (const element of Array.from(fragment.body.querySelectorAll("*"))) {
+    const tagName = element.tagName.toLowerCase();
+    if (["script", "iframe", "object", "embed"].includes(tagName)) {
+      element.remove();
+      continue;
+    }
+    for (const attribute of Array.from(element.attributes)) {
+      const attrName = attribute.name.toLowerCase();
+      const attrValue = attribute.value.trim().toLowerCase();
+      if (attrName.startsWith("on")) {
+        element.removeAttribute(attribute.name);
+        continue;
+      }
+      if (
+        ["href", "src", "xlink:href", "formaction"].includes(attrName) &&
+        hasDangerousScheme(attrValue)
+      ) {
+        element.removeAttribute(attribute.name);
+      }
+    }
+  }
+  return fragment.body.innerHTML;
+}
+
 export function applyElementPatch(
   slideHtml: string,
   cssPath: string,
@@ -22,7 +56,8 @@ export function applyElementPatch(
       };
     }
 
-    target.outerHTML = updatedOuterHtml;
+    const sanitizedOuterHtml = sanitizeMarkup(updatedOuterHtml);
+    target.outerHTML = sanitizedOuterHtml; // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method -- sanitized immediately above
 
     const hasDoctype = /<!doctype/i.test(slideHtml);
     const hasHtmlTag = /<html[\s>]/i.test(slideHtml);

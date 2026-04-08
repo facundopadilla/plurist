@@ -63,7 +63,7 @@ export function ProjectDetailPage() {
   }
 
   const tabLabel = activeTab === "design-bank" ? "Design Bank" : "Content";
-  const accentBg = (project.color || "#6366f1") + "1a";
+  const accentBg = (project.color ?? "#6366f1") + "1a";
 
   return (
     <div className="space-y-5">
@@ -91,7 +91,7 @@ export function ProjectDetailPage() {
           ) : (
             <FolderOpen
               size={22}
-              style={{ color: project.color || "#6366f1" }}
+              style={{ color: project.color ?? "#6366f1" }}
             />
           )}
         </div>
@@ -102,7 +102,7 @@ export function ProjectDetailPage() {
             </h1>
             <div
               className="h-2.5 w-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: project.color || "#6366f1" }}
+              style={{ backgroundColor: project.color ?? "#6366f1" }}
             />
           </div>
           {project.description && (

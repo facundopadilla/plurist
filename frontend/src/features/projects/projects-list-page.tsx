@@ -23,6 +23,7 @@ import { CreateProjectDialog } from "./create-project-dialog";
 import { ProjectEditModal } from "./project-edit-modal";
 import { DeleteConfirmModal } from "./delete-confirm-modal";
 import { Breadcrumb } from "./breadcrumb";
+import { sortByNameOrDate } from "./sort-utils";
 import type { Project } from "./types";
 
 type SortKey = "name-asc" | "name-desc" | "date-desc" | "date-asc";
@@ -75,7 +76,7 @@ export function ProjectsListPage() {
     for (const p of projects ?? []) {
       for (const t of p.tags) names.add(t.name);
     }
-    return Array.from(names).sort();
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [projects]);
 
   const filtered = useMemo(() => {
@@ -90,19 +91,10 @@ export function ProjectsListPage() {
     });
   }, [projects, search, activeTag]);
 
-  const sorted = useMemo(() => {
-    const list = [...filtered];
-    switch (sortKey) {
-      case "name-asc":
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-      case "name-desc":
-        return list.sort((a, b) => b.name.localeCompare(a.name));
-      case "date-desc":
-        return list.sort((a, b) => b.created_at.localeCompare(a.created_at));
-      case "date-asc":
-        return list.sort((a, b) => a.created_at.localeCompare(b.created_at));
-    }
-  }, [filtered, sortKey]);
+  const sorted = useMemo(
+    () => sortByNameOrDate(filtered, sortKey),
+    [filtered, sortKey],
+  );
 
   const hasProjects = (projects?.length ?? 0) > 0;
   const isFiltering = search.trim() !== "" || activeTag !== null;
@@ -293,7 +285,7 @@ export function ProjectsListPage() {
       {!isLoading && sorted.length > 0 && viewMode === "list" && (
         <div className="overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/25">
           {sorted.map((project, index) => {
-            const color = project.color || "#6366f1";
+            const color = project.color ?? "#6366f1";
             return (
               <div
                 key={project.id}

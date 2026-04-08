@@ -1,6 +1,8 @@
 import { Code2 } from "lucide-react";
 
-export function AuthShell({ children }: { children: React.ReactNode }) {
+export function AuthShell({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[#09090b] px-4 py-12 text-zinc-50">
       {/* Ambient glow */}

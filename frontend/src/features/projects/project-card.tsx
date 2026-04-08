@@ -20,7 +20,11 @@ interface ProjectCardProps {
   onDelete?: (project: Project) => void;
 }
 
-export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  onEdit,
+  onDelete,
+}: Readonly<ProjectCardProps>) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -35,7 +39,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
-  const projectColor = project.color || "#6366f1";
+  const projectColor = project.color ?? "#6366f1";
   const accentBg = projectColor + "1a";
   const cardBg = projectColor + "0d";
   const showMenu = onEdit || onDelete;
@@ -43,73 +47,79 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
   return (
     <div className="relative">
       <div
-        onClick={() => navigate(`/projects/${project.id}`)}
-        className="group block cursor-pointer rounded-2xl border border-zinc-800/60 p-5 transition-colors hover:border-zinc-700/80"
+        className="group relative rounded-2xl border border-zinc-800/60 p-5 transition-colors hover:border-zinc-700/80"
         style={{ borderTopColor: projectColor, backgroundColor: cardBg }}
       >
-        <div className="flex items-start gap-3">
-          <div
-            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg"
-            style={{ backgroundColor: accentBg }}
-          >
-            {project.icon_url ? (
-              <img
-                src={getProjectIconUrl(project.id)}
-                alt={project.name}
-                className="h-9 w-9 object-cover"
-              />
-            ) : (
-              <>
-                <Folder
-                  size={18}
-                  className="group-hover:hidden"
-                  style={{ color: projectColor }}
+        <button
+          type="button"
+          aria-label={`Open project ${project.name}`}
+          className="absolute inset-0 rounded-2xl"
+          onClick={() => navigate(`/projects/${project.id}`)}
+        />
+        <div className="pointer-events-none">
+          <div className="flex items-start gap-3">
+            <div
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg"
+              style={{ backgroundColor: accentBg }}
+            >
+              {project.icon_url ? (
+                <img
+                  src={getProjectIconUrl(project.id)}
+                  alt={project.name}
+                  className="h-9 w-9 object-cover"
                 />
-                <FolderOpen
-                  size={18}
-                  className="hidden group-hover:block"
-                  style={{ color: projectColor }}
-                />
-              </>
-            )}
-          </div>
-          <div className="min-w-0 flex-1 pr-6">
-            <p className="truncate font-semibold text-zinc-100">
-              {project.name}
-            </p>
-            {project.description && (
-              <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
-                {project.description}
+              ) : (
+                <>
+                  <Folder
+                    size={18}
+                    className="group-hover:hidden"
+                    style={{ color: projectColor }}
+                  />
+                  <FolderOpen
+                    size={18}
+                    className="hidden group-hover:block"
+                    style={{ color: projectColor }}
+                  />
+                </>
+              )}
+            </div>
+            <div className="min-w-0 flex-1 pr-6">
+              <p className="truncate font-semibold text-zinc-100">
+                {project.name}
               </p>
-            )}
-            {project.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {project.tags.map((tag) => (
-                  <span
-                    key={tag.name}
-                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium"
-                    style={{
-                      backgroundColor: tag.color + "20",
-                      color: tag.color,
-                    }}
-                  >
-                    {tag.icon ? (
-                      <DynamicIcon name={tag.icon} size={10} />
-                    ) : (
-                      <Tag size={10} />
-                    )}
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
+              {project.description && (
+                <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
+                  {project.description}
+                </p>
+              )}
+              {project.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {project.tags.map((tag) => (
+                    <span
+                      key={tag.name}
+                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium"
+                      style={{
+                        backgroundColor: tag.color + "20",
+                        color: tag.color,
+                      }}
+                    >
+                      {tag.icon ? (
+                        <DynamicIcon name={tag.icon} size={10} />
+                      ) : (
+                        <Tag size={10} />
+                      )}
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 flex gap-2 border-t border-zinc-800/50 pt-3">
+        <div className="relative z-10 mt-4 flex gap-2 border-t border-zinc-800/50 pt-3">
           <Link
             to={`/design-bank?folder=${project.id}`}
-            onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800/70 bg-zinc-950/70 px-2.5 py-1 text-xs text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-100"
           >
             <ImageIcon size={11} />
@@ -125,7 +135,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           </Link>
         </div>
 
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="pointer-events-none mt-2 text-xs text-zinc-500">
           Created {new Date(project.created_at).toLocaleDateString()}
         </p>
       </div>

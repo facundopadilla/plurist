@@ -10,7 +10,7 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   text: "text",
 };
 
-function SourceRow({ source }: { source: DesignBankSource }) {
+function SourceRow({ source }: Readonly<{ source: DesignBankSource }>) {
   const label = SOURCE_TYPE_LABELS[source.source_type] ?? source.source_type;
   return (
     <div className="flex items-start gap-2.5 border-b border-zinc-900 px-4 py-3 transition-colors hover:bg-white/[0.03]">
@@ -41,22 +41,20 @@ export function ResourcesPanel() {
     setError(null);
 
     const request =
-      projectId != null ? fetchProjectSources(projectId) : fetchSources();
+      projectId == null ? fetchSources() : fetchProjectSources(projectId);
 
     request
       .then((data) => {
-        if (!cancelled) {
-          setSources(data);
-          setIsLoading(false);
-        }
+        if (cancelled) return;
+        setSources(data);
+        setIsLoading(false);
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load resources",
-          );
-          setIsLoading(false);
-        }
+        if (cancelled) return;
+        setError(
+          err instanceof Error ? err.message : "Failed to load resources",
+        );
+        setIsLoading(false);
       });
 
     return () => {

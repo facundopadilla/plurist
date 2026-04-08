@@ -28,8 +28,8 @@ import {
 import { IframeShapeComponent } from "./iframe-shape-component";
 
 export class IframeShapeUtil extends ShapeUtil<IframeShape> {
-  static override type = IFRAME_SHAPE_TYPE;
-  static override props = iframeShapeProps;
+  static override readonly type = IFRAME_SHAPE_TYPE;
+  static override readonly props = iframeShapeProps;
 
   // ── Defaults ───────────────────────────────────────────────────
   getDefaultProps(): IframeShapeProps {

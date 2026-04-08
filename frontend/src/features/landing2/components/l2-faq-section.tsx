@@ -36,7 +36,9 @@ const faqs = [
   },
 ];
 
-function FaqItem({ faq }: { faq: { question: string; answer: string } }) {
+function FaqItem({
+  faq,
+}: Readonly<{ faq: { question: string; answer: string } }>) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -131,8 +133,8 @@ export function L2FaqSection() {
             viewport={{ once: true }}
             className="flex flex-col gap-2"
           >
-            {faqs.map((faq, i) => (
-              <FaqItem key={i} faq={faq} />
+            {faqs.map((faq) => (
+              <FaqItem key={faq.q} faq={faq} />
             ))}
           </motion.div>
         </div>

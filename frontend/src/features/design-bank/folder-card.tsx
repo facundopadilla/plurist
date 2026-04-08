@@ -14,8 +14,8 @@ export function FolderCard({
   sourceCount,
   onClick,
   countUnit = "resource",
-}: FolderCardProps) {
-  const color = project?.color || "#6b7280";
+}: Readonly<FolderCardProps>) {
+  const color = project?.color ?? "#6b7280";
   const accentBg = color + "1a";
   const cardBg = color + "0d";
 
@@ -61,7 +61,7 @@ export function FolderCard({
           </p>
           <p className="mt-0.5 text-xs text-zinc-500">
             {sourceCount} {countUnit}
-            {sourceCount !== 1 ? "s" : ""}
+            {sourceCount === 1 ? "" : "s"}
           </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { Sparkles, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useCanvasStore } from "../canvas-store";
 import { ModelDropdown, ProviderDropdown } from "../header-dropdowns";
@@ -51,22 +51,26 @@ function buildContextualPrompt(
   instruction: string,
   mode: "generate" | "regenerate" | "mobile" | "tablet" | "desktop",
 ) {
-  const intent =
-    mode === "regenerate"
-      ? "Regenerate"
-      : mode === "mobile" || mode === "tablet" || mode === "desktop"
-        ? `Generate a responsive ${mode} variation`
-        : "Generate a new variation";
-  const detail = instruction.trim()
-    ? `Additional instruction: ${instruction.trim()}`
-    : mode === "mobile" || mode === "tablet" || mode === "desktop"
-      ? `Adapt the same creative concept to a ${mode} layout while preserving clarity and hierarchy.`
-      : "Keep the concept but explore a fresh creative direction.";
+  const isResponsiveMode =
+    mode === "mobile" || mode === "tablet" || mode === "desktop";
+  let intent = "Generate a new variation";
+  if (mode === "regenerate") {
+    intent = "Regenerate";
+  } else if (isResponsiveMode) {
+    intent = `Generate a responsive ${mode} variation`;
+  }
 
-  const responsiveRule =
-    mode === "mobile" || mode === "tablet" || mode === "desktop"
-      ? `This output MUST be tailored for the ${mode} breakpoint. Adjust spacing, hierarchy, line lengths, and composition appropriately.`
-      : "";
+  let detail = "Keep the concept but explore a fresh creative direction.";
+  const trimmedInstruction = instruction.trim();
+  if (trimmedInstruction) {
+    detail = `Additional instruction: ${trimmedInstruction}`;
+  } else if (isResponsiveMode) {
+    detail = `Adapt the same creative concept to a ${mode} layout while preserving clarity and hierarchy.`;
+  }
+
+  const responsiveRule = isResponsiveMode
+    ? `This output MUST be tailored for the ${mode} breakpoint. Adjust spacing, hierarchy, line lengths, and composition appropriately.`
+    : "";
 
   return `${intent} of this single social post HTML. Return ONLY one HTML result wrapped with <!-- SLIDE_START 0 --> and <!-- SLIDE_END -->. Do not add explanations outside the HTML block. Preserve editability and visual polish.
 
@@ -81,6 +85,7 @@ export function ContextualAiPanel() {
   const target = useCanvasStore((s) => s.contextualAiTarget);
   const slides = useCanvasStore((s) => s.slides);
   const config = useCanvasStore((s) => s.config);
+  const panelRef = useRef<HTMLElement | null>(null);
   const closeContextualAi = useCanvasStore((s) => s.closeContextualAi);
   const addGeneratedVariantToSlide = useCanvasStore(
     (s) => s.addGeneratedVariantToSlide,
@@ -94,6 +99,25 @@ export function ContextualAiPanel() {
   const [instruction, setInstruction] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) {
+      return;
+    }
+
+    const stopKeyPropagation = (event: KeyboardEvent) => {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    panel.addEventListener("keydown", stopKeyPropagation);
+    panel.addEventListener("keyup", stopKeyPropagation);
+    return () => {
+      panel.removeEventListener("keydown", stopKeyPropagation);
+      panel.removeEventListener("keyup", stopKeyPropagation);
+    };
+  }, []);
 
   const slide = useMemo(
     () => (target ? slides.get(target.slideId) : undefined),
@@ -225,15 +249,8 @@ export function ContextualAiPanel() {
 
   return (
     <aside
+      ref={panelRef}
       className="w-[360px] border-l border-zinc-800/60 bg-zinc-950/92 backdrop-blur-xl"
-      onKeyDown={(e) => {
-        e.stopPropagation();
-        e.nativeEvent.stopImmediatePropagation();
-      }}
-      onKeyUp={(e) => {
-        e.stopPropagation();
-        e.nativeEvent.stopImmediatePropagation();
-      }}
     >
       <div className="flex items-center justify-between border-b border-zinc-800/60 px-4 py-3">
         <div className="flex items-center gap-2">

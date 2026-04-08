@@ -13,7 +13,7 @@ interface ProjectSearchInputProps {
 export function ProjectSearchInput({
   value,
   onChange,
-}: ProjectSearchInputProps) {
+}: Readonly<ProjectSearchInputProps>) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -48,8 +48,8 @@ export function ProjectSearchInput({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">
-        Project
+      <label htmlFor="project-search-input" className="text-sm font-medium">
+        Project{" "}
         <span className="ml-1 text-xs font-normal text-muted-foreground">
           (optional)
         </span>
@@ -60,7 +60,7 @@ export function ProjectSearchInput({
         <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
           <div
             className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: selectedProject.color || "#6366f1" }}
+            style={{ backgroundColor: selectedProject.color ?? "#6366f1" }}
           />
           <span className="font-medium text-foreground">
             using Design Bank from {selectedProject.name}
@@ -72,6 +72,7 @@ export function ProjectSearchInput({
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
         <input
+          id="project-search-input"
           type="text"
           value={query}
           onChange={(e) => {
@@ -124,7 +125,12 @@ export function ProjectSearchInput({
 
       {/* Close dropdown on outside click */}
       {open && (
-        <div className="fixed inset-0 z-[-1]" onClick={() => setOpen(false)} />
+        <button
+          type="button"
+          aria-label="Close project search"
+          className="fixed inset-0 z-[-1]"
+          onClick={() => setOpen(false)}
+        />
       )}
     </div>
   );
@@ -134,11 +140,11 @@ function ProjectOption({
   project,
   isSelected,
   onSelect,
-}: {
+}: Readonly<{
   project: Project;
   isSelected: boolean;
   onSelect: () => void;
-}) {
+}>) {
   return (
     <button
       onClick={onSelect}
@@ -150,7 +156,7 @@ function ProjectOption({
       {/* Color dot */}
       <div
         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-        style={{ backgroundColor: project.color || "#6366f1" }}
+        style={{ backgroundColor: project.color ?? "#6366f1" }}
       />
 
       {/* Icon if exists */}

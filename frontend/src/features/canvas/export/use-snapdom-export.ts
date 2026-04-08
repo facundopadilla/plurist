@@ -36,7 +36,7 @@ export async function exportSlideToBlob({
   const host = document.createElement("div");
   host.style.width = `${width}px`;
   host.style.height = `${height}px`;
-  host.setAttribute("data-export-target", "offscreen-html-shape");
+  host.dataset.exportTarget = "offscreen-html-shape";
   container.appendChild(host);
   document.body.appendChild(container);
 
@@ -50,7 +50,7 @@ export async function exportSlideToBlob({
       height,
       globalStyles,
     );
-    await new Promise((resolve) => window.setTimeout(resolve, 120));
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 120));
 
     return await snapdom.toBlob(host, {
       type: format,
@@ -61,7 +61,7 @@ export async function exportSlideToBlob({
       outerTransforms: false,
     });
   } finally {
-    document.body.removeChild(container);
+    container.remove();
   }
 }
 
@@ -72,6 +72,6 @@ export function downloadBlob(blob: Blob, filename: string): void {
   anchor.download = filename;
   document.body.appendChild(anchor);
   anchor.click();
-  document.body.removeChild(anchor);
+  anchor.remove();
   URL.revokeObjectURL(url);
 }

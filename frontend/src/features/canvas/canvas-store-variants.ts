@@ -1,6 +1,15 @@
 import type { DraftVariant } from "../content/types";
 import type { SlideData } from "./types";
 
+function readGenerationMeta(
+  value: unknown,
+): Record<string, unknown> | undefined {
+  if (value && typeof value === "object") {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+}
+
 export function getNextVariantId(variants: SlideData["variants"]): number {
   return Math.max(0, ...variants.map((variant) => variant.id)) + 1;
 }
@@ -39,13 +48,15 @@ export function createSlideData(
 }
 
 export function normalizeDraftVariant(variant: DraftVariant) {
+  const generationMeta = readGenerationMeta(variant.generation_meta);
+  const variantName =
+    typeof generationMeta?.variantName === "string"
+      ? generationMeta.variantName
+      : undefined;
+
   return {
     id: variant.id,
-    name:
-      String(
-        (variant.generation_meta as Record<string, unknown> | undefined)
-          ?.variantName ?? "",
-      ) || undefined,
+    name: variantName,
     provider: variant.provider,
     modelId: variant.model_id,
     html: variant.generated_html,

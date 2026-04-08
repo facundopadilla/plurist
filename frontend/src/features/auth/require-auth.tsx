@@ -1,7 +1,9 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./use-auth";
 
-export function RequireAuth({ children }: { children: React.ReactNode }) {
+export function RequireAuth({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const { user, isLoading, error, refresh } = useAuth();
   const location = useLocation();
 

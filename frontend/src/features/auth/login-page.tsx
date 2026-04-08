@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { useState, type BaseSyntheticEvent } from "react";
 import { ArrowRight, CheckCircle2, CircleAlert, LogOut } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { loginWithPassword } from "./api";
@@ -13,17 +13,19 @@ export function LoginPage() {
   const inviteAccepted = searchParams.get("inviteAccepted") === "1";
   const loggedOut = searchParams.get("loggedOut") === "1";
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: BaseSyntheticEvent) => {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
-    try {
-      await loginWithPassword(email, password);
-      window.location.href = "/dashboard";
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-      setIsSubmitting(false);
-    }
+    void (async () => {
+      try {
+        await loginWithPassword(email, password);
+        globalThis.location.href = "/dashboard";
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Login failed");
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   return (

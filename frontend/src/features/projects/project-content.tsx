@@ -10,7 +10,7 @@ const STATUS_STYLES: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
 };
 
-function ContentRow({ post }: { post: DraftPost }) {
+function ContentRow({ post }: Readonly<{ post: DraftPost }>) {
   const statusClass =
     STATUS_STYLES[post.status] ?? "bg-muted text-muted-foreground";
 
@@ -30,13 +30,13 @@ function ContentRow({ post }: { post: DraftPost }) {
       <span
         className={`shrink-0 rounded-[12px] px-2 py-0.5 text-xs font-medium ${statusClass}`}
       >
-        {post.status.replace(/_/g, " ")}
+        {post.status.replaceAll("_", " ")}
       </span>
     </div>
   );
 }
 
-export function ProjectContent({ projectId }: { projectId: number }) {
+export function ProjectContent({ projectId }: Readonly<{ projectId: number }>) {
   const {
     data: allContent,
     isLoading,

@@ -33,10 +33,15 @@ const testimonials = [
 ];
 
 function Stars() {
+  const starIds = ["one", "two", "three", "four", "five"];
   return (
     <div className="flex gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} size={14} className="fill-amber-400 text-amber-400" />
+      {starIds.map((starId) => (
+        <Star
+          key={starId}
+          size={14}
+          className="fill-amber-400 text-amber-400"
+        />
       ))}
     </div>
   );

@@ -25,7 +25,7 @@ export function EditModeOverlay({
   iframeRef,
   projectId,
   onDone,
-}: EditModeOverlayProps) {
+}: Readonly<EditModeOverlayProps>) {
   const markDirty = useCanvasStore((s) => s.markDirty);
   const [showColorPicker, setShowColorPicker] = useState<PickerTarget>(null);
   const [showImageInput, setShowImageInput] = useState(false);
@@ -59,7 +59,7 @@ export function EditModeOverlay({
       const iframe = iframeRef.current?.getIframe();
       if (!iframe) return;
 
-      const target = selectedSelector || "body";
+      const target = selectedSelector ?? "body";
       const property = type === "color" ? "color" : "backgroundColor";
       setElementColor(iframe, target, hex, property);
       markDirty();
@@ -71,7 +71,7 @@ export function EditModeOverlay({
     const iframe = iframeRef.current?.getIframe();
     if (!iframe || !imageUrl.trim()) return;
 
-    const target = selectedSelector || "img";
+    const target = selectedSelector ?? "img";
     replaceImage(iframe, target, imageUrl.trim());
     setShowImageInput(false);
     setImageUrl("");
@@ -205,7 +205,9 @@ export function EditModeOverlay({
       </div>
 
       {(showColorPicker || showImageInput) && (
-        <div
+        <button
+          type="button"
+          aria-label="Close edit popovers"
           className="fixed inset-0 z-10"
           onClick={() => {
             setShowColorPicker(null);

@@ -62,7 +62,7 @@ vi.mock("../features/canvas/header-dropdowns", () => ({
 describe("ChatSidebar", () => {
   beforeEach(() => {
     useCanvasStore.setState(useCanvasStore.getInitialState());
-    window.localStorage.clear();
+    globalThis.localStorage.clear();
     fetchProjects.mockResolvedValue([
       {
         id: 7,

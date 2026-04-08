@@ -112,8 +112,8 @@ export function FeaturesSection() {
             variants={fadeUp}
             className="mt-4 text-[clamp(1.8rem,4vw,3rem)] font-bold tracking-[-0.03em] text-zinc-50"
           >
-            Everything you need.
-            <span className="text-zinc-100"> Nothing you don't.</span>
+            Everything you need.{" "}
+            <span className="text-zinc-100">Nothing you don't.</span>
           </motion.h2>
         </motion.div>
 

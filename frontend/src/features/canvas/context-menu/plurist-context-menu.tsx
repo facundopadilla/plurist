@@ -101,21 +101,21 @@ function HtmlShapeContextMenuContent() {
               id="html-shape-copy-html"
               label="Copy HTML code"
               onSelect={() => {
-                void copyHtmlShapeCode(shape.props.slideId);
+                copyHtmlShapeCode(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-copy-png"
               label="Copy as PNG"
               onSelect={() => {
-                void copyHtmlShapeAsPng(shape.props.slideId);
+                copyHtmlShapeAsPng(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-copy-jpg"
               label="Copy as JPG"
               onSelect={() => {
-                void copyHtmlShapeAsJpg(shape.props.slideId);
+                copyHtmlShapeAsJpg(shape.props.slideId);
               }}
             />
           </MenuGroup>
@@ -126,35 +126,35 @@ function HtmlShapeContextMenuContent() {
               id="html-shape-download-png"
               label="Download PNG"
               onSelect={() => {
-                void exportHtmlShapeToPng(shape.props.slideId);
+                exportHtmlShapeToPng(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-jpg"
               label="Download JPG"
               onSelect={() => {
-                void exportHtmlShapeToJpg(shape.props.slideId);
+                exportHtmlShapeToJpg(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-html"
               label="Download HTML"
               onSelect={() => {
-                void downloadHtmlShapeCode(shape.props.slideId);
+                downloadHtmlShapeCode(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-svg"
               label="Download SVG"
               onSelect={() => {
-                void exportHtmlShapeToSvg(shape.props.slideId);
+                exportHtmlShapeToSvg(shape.props.slideId);
               }}
             />
             <TldrawUiMenuItem
               id="html-shape-download-bundle"
               label="Download bundle"
               onSelect={() => {
-                void downloadHtmlShapeExportBundle(shape.props.slideId);
+                downloadHtmlShapeExportBundle(shape.props.slideId);
               }}
             />
           </MenuGroup>
@@ -262,7 +262,7 @@ function HtmlShapeContextMenuContent() {
   );
 }
 
-export function PluristContextMenu(props: TLUiContextMenuProps) {
+export function PluristContextMenu(props: Readonly<TLUiContextMenuProps>) {
   const editor = useEditor();
   const selectedHtmlShape = getSelectedHtmlShape(editor);
 

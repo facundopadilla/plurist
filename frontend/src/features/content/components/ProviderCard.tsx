@@ -36,7 +36,7 @@ export function ProviderCard({
   name,
   selected,
   onToggle,
-}: ProviderCardProps) {
+}: Readonly<ProviderCardProps>) {
   const logo = PROVIDER_LOGOS[providerKey.toLowerCase()];
   const label = PROVIDER_LABELS[providerKey.toLowerCase()] ?? name;
 
