@@ -102,6 +102,61 @@ def make_error_result(
     )
 
 
+def make_success_result(
+    provider_name: str,
+    model_id: str,
+    generated_text: str,
+    latency_ms: int,
+    token_count: int,
+) -> GenerationResult:
+    return GenerationResult(
+        success=True,
+        provider_name=provider_name,
+        model_id=model_id,
+        generated_text=generated_text,
+        template_variables={},
+        latency_ms=latency_ms,
+        token_count=token_count,
+        cost_estimate=0.0,
+    )
+
+
+def make_mock_result(
+    provider_name: str,
+    model_id: str,
+    prompt: str,
+    latency_ms: int,
+    token_count: int,
+) -> GenerationResult:
+    return make_success_result(
+        provider_name,
+        model_id,
+        f"[{provider_name}-mock] {prompt[:80]}",
+        latency_ms,
+        token_count,
+    )
+
+
+def iter_mock_stream(provider_name: str, prompt: str) -> Iterator[str]:
+    words = f"[{provider_name}-mock] {prompt[:80]}".split()
+    for word in words:
+        yield word + " "
+
+
+def raise_provider_error(exc: Exception, provider_name: str) -> None:
+    from .errors import ProviderError, classify_provider_error
+
+    classified = classify_provider_error(exc, provider_name)
+    raise ProviderError(
+        message=classified.message,
+        code=classified.code,
+        category=classified.category,
+        hint=classified.hint,
+        retryable=classified.retryable,
+        provider=provider_name,
+    ) from exc
+
+
 class BaseProvider(ABC):
     """Abstract base interface for all generation providers."""
 
@@ -126,3 +181,132 @@ class BaseProvider(ABC):
                 retryable=result.error_retryable,
                 provider=result.provider_name,
             )
+
+
+class APIKeyProvider(BaseProvider):
+    """Shared provider behavior for adapters backed by an API key."""
+
+    provider_name: str = ""
+    default_model: str = ""
+    env_var: str = ""
+    enc_field: str = ""
+    mock_latency_ms: int = 10
+    mock_token_count: int = 20
+
+    def __init__(
+        self,
+        model_id: str | None = None,
+        workspace_settings: "WorkspaceAISettings | None" = None,
+    ) -> None:
+        self.model_id = model_id or self.default_model
+        self._api_key = resolve_api_key(self.env_var, self.enc_field, workspace_settings)
+
+    def _is_mock_mode(self) -> bool:
+        return not self._api_key or self._api_key.startswith("mock")
+
+    def generate(self, prompt: str, context: dict[str, Any]) -> GenerationResult:
+        if self._is_mock_mode():
+            return self._mock_result(prompt)
+        return self._live_result(prompt, context)
+
+    def _mock_result(self, prompt: str) -> GenerationResult:
+        return make_mock_result(
+            self.provider_name,
+            self.model_id,
+            prompt,
+            self.mock_latency_ms,
+            self.mock_token_count,
+        )
+
+    @abstractmethod
+    def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:
+        """Provider-specific live request implementation."""
+
+
+def _openai_compatible_payload(
+    model_id: str,
+    prompt: str,
+    context: dict[str, Any],
+    *,
+    stream: bool = False,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "model": model_id,
+        "messages": build_provider_messages(prompt, context),
+    }
+    if stream:
+        payload["stream"] = True
+    return payload
+
+
+def request_openai_compatible_result(
+    *,
+    url: str,
+    headers: dict[str, str] | None,
+    provider_name: str,
+    model_id: str,
+    prompt: str,
+    context: dict[str, Any],
+    timeout: int = 30,
+) -> GenerationResult:
+    import time
+
+    import httpx
+
+    t0 = time.monotonic()
+    response = httpx.post(
+        url,
+        headers=headers,
+        json=_openai_compatible_payload(model_id, prompt, context),
+        timeout=timeout,
+    )
+    latency_ms = int((time.monotonic() - t0) * 1000)
+    response.raise_for_status()
+    data = response.json()
+    text = data["choices"][0]["message"]["content"]
+    usage = data.get("usage", {})
+    return make_success_result(
+        provider_name,
+        model_id,
+        text,
+        latency_ms,
+        usage.get("total_tokens", 0),
+    )
+
+
+def stream_openai_compatible_result(
+    *,
+    url: str,
+    headers: dict[str, str] | None,
+    provider_name: str,
+    model_id: str,
+    prompt: str,
+    context: dict[str, Any],
+    timeout: int = 60,
+) -> Iterator[str]:
+    import json
+
+    import httpx
+
+    try:
+        with httpx.stream(
+            "POST",
+            url,
+            headers=headers,
+            json=_openai_compatible_payload(model_id, prompt, context, stream=True),
+            timeout=timeout,
+        ) as response:
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if not line.startswith("data: "):
+                    continue
+                data = line[6:]
+                if data == "[DONE]":
+                    break
+                chunk = json.loads(data)
+                delta = chunk["choices"][0].get("delta", {})
+                text = delta.get("content", "")
+                if text:
+                    yield text
+    except Exception as exc:
+        raise_provider_error(exc, provider_name)

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any
 
 from .base import (
-    BaseProvider,
+    APIKeyProvider,
     GenerationResult,
     make_error_result,
-    resolve_api_key,
+    make_success_result,
 )
 
 if TYPE_CHECKING:
-    from apps.workspace.models import WorkspaceAISettings
+    pass
 
 _PROVIDER_NAME = "gemini"
 _DEFAULT_MODEL = "gemini-1.5-pro"
@@ -19,7 +19,7 @@ _ENV_VAR = "GEMINI_API_KEY"
 _ENC_FIELD = "gemini_api_key_enc"
 
 
-class GeminiProvider(BaseProvider):
+class GeminiProvider(APIKeyProvider):
     """Google Gemini generation adapter.
 
     Uses a real API call when an API key is present (workspace settings or
@@ -27,51 +27,16 @@ class GeminiProvider(BaseProvider):
     never hit the network.
     """
 
-    def __init__(
-        self,
-        model_id: str = _DEFAULT_MODEL,
-        workspace_settings: "WorkspaceAISettings | None" = None,
-    ) -> None:
-        self.model_id = model_id
-        self._api_key = resolve_api_key(_ENV_VAR, _ENC_FIELD, workspace_settings)
-
-    def generate(self, prompt: str, context: dict[str, Any]) -> GenerationResult:
-        if not self._api_key or self._api_key.startswith("mock"):
-            return self._mock_result(prompt)
-        return self._live_result(prompt, context)
-
-    def generate_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:
-        """Buffered fallback: Gemini does not support token streaming in this adapter."""
-        result = self.generate(prompt, context)
-        if result.success:
-            yield result.generated_text
-        else:
-            from .errors import ProviderError
-
-            raise ProviderError(
-                message=result.error_message,
-                code=result.error_code,
-                category=result.error_category,
-                hint=result.error_hint,
-                retryable=result.error_retryable,
-                provider=result.provider_name,
-            )
+    provider_name = _PROVIDER_NAME
+    default_model = _DEFAULT_MODEL
+    env_var = _ENV_VAR
+    enc_field = _ENC_FIELD
+    mock_latency_ms = 15
+    mock_token_count = 18
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
-
-    def _mock_result(self, prompt: str) -> GenerationResult:
-        return GenerationResult(
-            success=True,
-            provider_name=_PROVIDER_NAME,
-            model_id=self.model_id,
-            generated_text=f"[gemini-mock] {prompt[:80]}",
-            template_variables={},
-            latency_ms=15,
-            token_count=18,
-            cost_estimate=0.0,
-        )
 
     def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:  # pragma: no cover
         try:
@@ -108,15 +73,12 @@ class GeminiProvider(BaseProvider):
             response.raise_for_status()
             data = response.json()
             text = data["candidates"][0]["content"]["parts"][0]["text"]
-            return GenerationResult(
-                success=True,
-                provider_name=_PROVIDER_NAME,
-                model_id=self.model_id,
-                generated_text=text,
-                template_variables={},
-                latency_ms=latency_ms,
-                token_count=0,
-                cost_estimate=0.0,
+            return make_success_result(
+                _PROVIDER_NAME,
+                self.model_id,
+                text,
+                latency_ms,
+                0,
             )
         except Exception as exc:
             return make_error_result(exc, _PROVIDER_NAME, self.model_id)

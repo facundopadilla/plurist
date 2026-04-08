@@ -299,6 +299,49 @@ def _gather_active_skills(project_id: int | None) -> str:
     return context
 
 
+def _append_brand_section(
+    sections: list[str],
+    title: str,
+    lines: list[str],
+) -> None:
+    if lines:
+        sections.append(f"{title}:\n" + "\n".join(lines))
+
+
+def _build_color_section(sources) -> list[str]:
+    color_list = []
+    for source in sources:
+        resource_data = source.resource_data or {}
+        name = source.name or resource_data.get("role", "color")
+        hex_value = resource_data.get("hex", "")
+        color_list.append(f"  - {name}: {hex_value}")
+    return color_list
+
+
+def _build_font_section(sources) -> list[str]:
+    font_list = []
+    for source in sources:
+        resource_data = source.resource_data or {}
+        family = resource_data.get("family", source.name or "unknown")
+        weights = resource_data.get("weights", [])
+        font_list.append(f"  - {family} (weights: {weights})")
+    return font_list
+
+
+def _build_text_section(sources) -> list[str]:
+    text_list = []
+    for source in sources:
+        resource_data = source.resource_data or {}
+        kind = resource_data.get("kind", "text")
+        content = resource_data.get("content", source.name or "")
+        text_list.append(f"  - [{kind}] {content}")
+    return text_list
+
+
+def _build_logo_section(sources) -> list[str]:
+    return [f"  - {source.name or source.original_filename}" for source in sources]
+
+
 def _gather_brand_assets(project_id: int | None) -> str:
     """
     Query DesignBankSource records for the project and format them as brand context.
@@ -326,39 +369,20 @@ def _gather_brand_assets(project_id: int | None) -> str:
         sections: list[str] = ["BRAND ASSETS:"]
 
         colors = sources.filter(source_type=DesignBankSource.SourceType.COLOR)
-        if colors.exists():
-            color_list = []
-            for c in colors:
-                rd = c.resource_data or {}
-                name = c.name or rd.get("role", "color")
-                hex_val = rd.get("hex", "")
-                color_list.append(f"  - {name}: {hex_val}")
-            sections.append("Colors:\n" + "\n".join(color_list))
+        _append_brand_section(sections, "Colors", _build_color_section(colors))
 
         fonts = sources.filter(source_type=DesignBankSource.SourceType.FONT)
-        if fonts.exists():
-            font_list = []
-            for f in fonts:
-                rd = f.resource_data or {}
-                family = rd.get("family", f.name or "unknown")
-                weights = rd.get("weights", [])
-                font_list.append(f"  - {family} (weights: {weights})")
-            sections.append("Fonts:\n" + "\n".join(font_list))
+        _append_brand_section(sections, "Fonts", _build_font_section(fonts))
 
         texts = sources.filter(source_type=DesignBankSource.SourceType.TEXT)
-        if texts.exists():
-            text_list = []
-            for t in texts:
-                rd = t.resource_data or {}
-                kind = rd.get("kind", "text")
-                content = rd.get("content", t.name or "")
-                text_list.append(f"  - [{kind}] {content}")
-            sections.append("Brand Copy:\n" + "\n".join(text_list))
+        _append_brand_section(sections, "Brand Copy", _build_text_section(texts))
 
         logos = sources.filter(source_type=DesignBankSource.SourceType.LOGO)
-        if logos.exists():
-            logo_list = [f"  - {lg.name or lg.original_filename}" for lg in logos]
-            sections.append("Logos available:\n" + "\n".join(logo_list))
+        _append_brand_section(
+            sections,
+            "Logos available",
+            _build_logo_section(logos),
+        )
 
         return "\n\n".join(sections)
 

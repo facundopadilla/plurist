@@ -1,9 +1,9 @@
 """
-Fetch and parse SKILL.md files from GitHub repositories.
+Fetch and parse skill markdown files from GitHub repositories.
 
 Supports:
-- GitHub blob URLs: https://github.com/owner/repo/blob/main/skills/name/SKILL.md
-- GitHub repo URLs: https://github.com/owner/repo (searches for SKILL.md)
+- GitHub blob URLs: https://github.com/owner/repo/blob/main/skills/name/skill-file
+- GitHub repo URLs: https://github.com/owner/repo (searches for the skill file)
 - skills.sh URLs:   https://skills.sh/owner/repo/skill-name (converted to GitHub)
 - Shorthand:        owner/repo or owner/repo --skill name
 """
@@ -28,7 +28,7 @@ class ParsedSkill(TypedDict):
 
 def _extract_yaml_frontmatter(raw: str) -> tuple[dict, str]:
     """
-    Extract YAML frontmatter from a SKILL.md file.
+    Extract YAML frontmatter from a skill markdown file.
     Returns (metadata_dict, markdown_body).
     """
     if not raw.startswith("---"):
@@ -63,12 +63,13 @@ def _try_fetch_raw(url: str) -> str | None:
 
 
 # Common locations where skills live in a repo
+_SKILL_MD_FILENAME = "SKILL.md"
 _SKILL_SEARCH_PATHS = [
-    "skills/{skill}/SKILL.md",
-    "SKILL.md",
-    ".agents/skills/{skill}/SKILL.md",
-    ".claude/skills/{skill}/SKILL.md",
-    "plugins/{skill}/skills/{skill}/SKILL.md",
+    f"skills/{{skill}}/{_SKILL_MD_FILENAME}",
+    _SKILL_MD_FILENAME,
+    f".agents/skills/{{skill}}/{_SKILL_MD_FILENAME}",
+    f".claude/skills/{{skill}}/{_SKILL_MD_FILENAME}",
+    f"plugins/{{skill}}/skills/{{skill}}/{_SKILL_MD_FILENAME}",
 ]
 
 
@@ -109,66 +110,80 @@ def _resolve_github_url(url: str) -> tuple[str, str, str | None, str | None]:
     return owner, repo, None, None
 
 
+def _search_skill_in_repo(owner: str, repo: str, branch: str, skill_name: str) -> str | None:
+    """Try common skill-file locations in a repo. Returns raw text or None."""
+    for pattern in _SKILL_SEARCH_PATHS:
+        search_path = pattern.format(skill=skill_name)
+        raw_url = _github_raw_url(owner, repo, branch, search_path)
+        text = _try_fetch_raw(raw_url)
+        if text:
+            return text
+    return None
+
+
+def _github_skill_candidates(path: str | None) -> list[str]:
+    if not path:
+        return []
+    if path.endswith(_SKILL_MD_FILENAME):
+        return [path]
+    suffix = _SKILL_MD_FILENAME if path.endswith("/") else f"/{_SKILL_MD_FILENAME}"
+    return [path + suffix]
+
+
+def _parse_skill_if_found(
+    owner: str, repo: str, branch: str, path: str, author: str, source_url: str
+) -> ParsedSkill | None:
+    text = _try_fetch_raw(_github_raw_url(owner, repo, branch, path))
+    if not text:
+        return None
+    return _parse_skill_text(text, author, source_url)
+
+
+def _fetch_from_github(url: str, original_url: str, skill_hint: str | None) -> ParsedSkill:
+    owner, repo, branch, path = _resolve_github_url(url)
+    branch = branch or "main"
+    author = f"{owner}/{repo}"
+
+    for candidate in _github_skill_candidates(path):
+        parsed = _parse_skill_if_found(owner, repo, branch, candidate, author, original_url)
+        if parsed:
+            return parsed
+
+    skill_name = skill_hint or repo
+    text = _search_skill_in_repo(owner, repo, branch, skill_name)
+    if text:
+        return _parse_skill_text(text, author, original_url)
+
+    if branch == "main":
+        text = _search_skill_in_repo(owner, repo, "master", skill_name)
+        if text:
+            return _parse_skill_text(text, author, original_url)
+
+    raise ValueError(
+        f"Could not find {_SKILL_MD_FILENAME} in {owner}/{repo}. Tried skill name '{skill_name}' in common locations."
+    )
+
+
 def fetch_skill_from_url(url: str) -> ParsedSkill:
     """
-    Given a URL (GitHub, skills.sh, or shorthand), fetch and parse the SKILL.md.
+    Given a URL (GitHub, skills.sh, or shorthand), fetch and parse the skill file.
     Returns a ParsedSkill dict ready to create a Skill model instance.
     """
     original_url = url
     skill_hint: str | None = None
 
-    # Handle skills.sh URLs
     if "skills.sh" in url:
         owner, repo, skill_hint = _resolve_skills_sh_url(url)
         url = f"https://github.com/{owner}/{repo}"
 
-    # Handle GitHub URLs
     if "github.com" in url or "raw.githubusercontent.com" in url:
-        owner, repo, branch, path = _resolve_github_url(url)
-        branch = branch or "main"
-
-        # If we have a direct path to SKILL.md
-        if path and path.endswith("SKILL.md"):
-            raw_url = _github_raw_url(owner, repo, branch, path)
-            text = _try_fetch_raw(raw_url)
-            if text:
-                return _parse_skill_text(text, f"{owner}/{repo}", original_url)
-
-        # If we have a path to a skill directory
-        if path and not path.endswith("SKILL.md"):
-            skill_path = f"{path}/SKILL.md" if not path.endswith("/") else f"{path}SKILL.md"
-            raw_url = _github_raw_url(owner, repo, branch, skill_path)
-            text = _try_fetch_raw(raw_url)
-            if text:
-                return _parse_skill_text(text, f"{owner}/{repo}", original_url)
-
-        # Search common locations
-        skill_name = skill_hint or repo
-        for pattern in _SKILL_SEARCH_PATHS:
-            search_path = pattern.format(skill=skill_name)
-            raw_url = _github_raw_url(owner, repo, branch, search_path)
-            text = _try_fetch_raw(raw_url)
-            if text:
-                return _parse_skill_text(text, f"{owner}/{repo}", original_url)
-
-        # Try 'main' failed, try 'master'
-        if branch == "main":
-            for pattern in _SKILL_SEARCH_PATHS:
-                search_path = pattern.format(skill=skill_name)
-                raw_url = _github_raw_url(owner, repo, "master", search_path)
-                text = _try_fetch_raw(raw_url)
-                if text:
-                    return _parse_skill_text(text, f"{owner}/{repo}", original_url)
-
-        raise ValueError(
-            f"Could not find SKILL.md in {owner}/{repo}. Tried skill name '{skill_name}' in common locations."
-        )
+        return _fetch_from_github(url, original_url, skill_hint)
 
     raise ValueError(f"Unsupported URL format: {url}. Use a GitHub or skills.sh URL.")
 
 
 def _parse_skill_text(text: str, author: str, source_url: str) -> ParsedSkill:
-    """Parse raw SKILL.md text into a ParsedSkill dict."""
+    """Parse raw skill-file text into a ParsedSkill dict."""
     metadata, body = _extract_yaml_frontmatter(text)
 
     name = metadata.get("name", "")

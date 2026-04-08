@@ -6,7 +6,7 @@ from ninja import Query, Router, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from apps.accounts.auth import get_membership, require_editor_capabilities
+from apps.accounts.auth import MEMBERSHIP_REQUIRED_DETAIL, get_membership, require_editor_capabilities
 from apps.accounts.models import Workspace
 from apps.accounts.session_auth import session_auth as django_auth
 from apps.posts.models import DraftPost
@@ -15,6 +15,7 @@ from .models import RenderJob
 from .templates_registry import list_templates
 
 router = Router(tags=["rendering"])
+RENDER_JOB_NOT_FOUND = "Render job not found"
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +98,7 @@ def list_trusted_templates(request: HttpRequest):
     """List all available trusted templates."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     return list_templates()
 
 
@@ -164,13 +165,13 @@ def get_render_job(request: HttpRequest, job_id: int):
     """Poll render job status."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace()
     try:
         job = RenderJob.objects.get(pk=job_id, workspace=workspace)
     except RenderJob.DoesNotExist:
-        raise HttpError(404, "Render job not found")
+        raise HttpError(404, RENDER_JOB_NOT_FOUND)
 
     return _job_to_out(job)
 
@@ -183,13 +184,13 @@ def get_render_image(request: HttpRequest, job_id: int):
     """
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace()
     try:
         job = RenderJob.objects.get(pk=job_id, workspace=workspace)
     except RenderJob.DoesNotExist:
-        raise HttpError(404, "Render job not found")
+        raise HttpError(404, RENDER_JOB_NOT_FOUND)
 
     if job.status != RenderJob.Status.COMPLETED:
         raise HttpError(409, "Render job is not completed yet")
@@ -230,13 +231,13 @@ def export_render_job(
     """
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace()
     try:
         job = RenderJob.objects.get(pk=job_id, workspace=workspace)
     except RenderJob.DoesNotExist:
-        raise HttpError(404, "Render job not found")
+        raise HttpError(404, RENDER_JOB_NOT_FOUND)
 
     if job.status != RenderJob.Status.COMPLETED:
         raise HttpError(409, "Render job is not completed yet")
@@ -276,7 +277,7 @@ def list_formats(request: HttpRequest):
     """List available post formats with dimensions."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     from .formats import FORMAT_REGISTRY
 
     return [

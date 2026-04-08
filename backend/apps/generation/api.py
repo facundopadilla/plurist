@@ -6,7 +6,7 @@ from ninja import Router, Schema
 from ninja.errors import HttpError
 from pydantic import Field
 
-from apps.accounts.auth import get_membership, require_editor_capabilities
+from apps.accounts.auth import MEMBERSHIP_REQUIRED_DETAIL, get_membership, require_editor_capabilities
 from apps.accounts.session_auth import session_auth as django_auth
 from apps.posts.models import BrandProfileVersion, DraftVariant
 
@@ -178,7 +178,7 @@ def get_compare(request, compare_run_id: int):
     """Retrieve a compare run with all generated variants."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     try:
         compare_run = CompareRun.objects.get(
@@ -252,7 +252,7 @@ def get_providers(request):
     """List all available provider keys."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     return list_providers()
 
 
@@ -276,7 +276,7 @@ def get_ollama_models(request):
 
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     # Resolve base URL from workspace settings
     base_url = "http://localhost:11434"

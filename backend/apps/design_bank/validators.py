@@ -15,10 +15,10 @@ MAX_REDIRECTS = 5
 
 BLOCKED_NETWORKS = [
     ipaddress.ip_network("127.0.0.0/8"),  # loopback
-    ipaddress.ip_network("10.0.0.0/8"),  # RFC1918
-    ipaddress.ip_network("172.16.0.0/12"),  # RFC1918
-    ipaddress.ip_network("192.168.0.0/16"),  # RFC1918
-    ipaddress.ip_network("169.254.0.0/16"),  # link-local / metadata service
+    ipaddress.ip_network("10.0.0.0/8"),  # RFC1918  # NOSONAR - intentionally blocked private network
+    ipaddress.ip_network("172.16.0.0/12"),  # RFC1918  # NOSONAR - intentionally blocked private network
+    ipaddress.ip_network("192.168.0.0/16"),  # RFC1918  # NOSONAR - intentionally blocked private network
+    ipaddress.ip_network("169.254.0.0/16"),  # link-local / metadata service  # NOSONAR
     ipaddress.ip_network("::1/128"),  # IPv6 loopback
     ipaddress.ip_network("fc00::/7"),  # IPv6 unique local
     ipaddress.ip_network("fe80::/10"),  # IPv6 link-local

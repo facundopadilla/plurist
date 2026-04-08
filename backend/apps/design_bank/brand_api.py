@@ -3,7 +3,7 @@ from typing import Any
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
-from apps.accounts.auth import get_membership, require_editor_capabilities
+from apps.accounts.auth import MEMBERSHIP_REQUIRED_DETAIL, get_membership, require_editor_capabilities
 from apps.accounts.models import Workspace
 from apps.accounts.session_auth import session_auth as django_auth
 from apps.posts.models import BrandProfileVersion
@@ -75,7 +75,7 @@ def list_versions(request):
     """List all brand profile versions for the workspace."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     workspace = _workspace()
     versions = BrandProfileVersion.objects.filter(workspace=workspace).order_by("-version")
     return [_version_to_out(v) for v in versions.select_related("created_by")]
@@ -86,7 +86,7 @@ def active_version(request):
     """Get the latest active brand profile version."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     workspace = _workspace()
     version = get_active_version(workspace)
     if not version:
@@ -99,7 +99,7 @@ def get_version(request, version_id: int):
     """Get a specific brand profile version."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     workspace = _workspace()
     try:
         version = BrandProfileVersion.objects.select_related("created_by").get(pk=version_id, workspace=workspace)
@@ -137,7 +137,7 @@ def get_template_inputs(request, version_id: int):
     """Get the trusted template inputs mapped from a brand profile version."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     workspace = _workspace()
     try:
         version = BrandProfileVersion.objects.get(pk=version_id, workspace=workspace)

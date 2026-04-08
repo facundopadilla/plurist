@@ -5,7 +5,7 @@ from ninja import Router, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
-from apps.accounts.auth import get_membership, require_editor_capabilities
+from apps.accounts.auth import MEMBERSHIP_REQUIRED_DETAIL, get_membership, require_editor_capabilities
 from apps.accounts.models import RoleChoices
 from apps.accounts.session_auth import session_auth as django_auth
 
@@ -17,6 +17,9 @@ from .models import DesignBankSource
 from .validators import validate_file_size, validate_url
 
 router = Router(tags=["design_bank"])
+SOURCE_NOT_FOUND = "Source not found"
+IMAGE_UPLOAD_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"}
+MARKDOWN_UPLOAD_EXTENSIONS = {"md", "markdown"}
 
 
 class SourceOut(Schema):
@@ -93,7 +96,7 @@ class DesignSystemSyncOut(Schema):
     reference_brief_source_id: int
 
 
-def _workspace_from_request(request):
+def _workspace_from_request(_request):
     from apps.accounts.models import Workspace
 
     workspace = Workspace.objects.first()
@@ -135,21 +138,8 @@ def upload_source(request: HttpRequest, file: UploadedFile, project_id: int | No
 
     validate_file_size(file.size or 0)
 
-    # Determine source type from extension
     filename = file.name or ""
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    if ext == "pdf":
-        source_type = DesignBankSource.SourceType.PDF
-    elif ext in {"jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"}:
-        source_type = DesignBankSource.SourceType.IMAGE
-    elif ext == "css":
-        source_type = DesignBankSource.SourceType.CSS
-    elif ext == "html":
-        source_type = DesignBankSource.SourceType.HTML
-    elif ext in {"md", "markdown"}:
-        source_type = DesignBankSource.SourceType.MARKDOWN
-    else:
-        source_type = DesignBankSource.SourceType.UPLOAD
+    source_type = _infer_upload_source_type(filename)
 
     source = DesignBankSource.objects.create(
         workspace=workspace,
@@ -163,24 +153,10 @@ def upload_source(request: HttpRequest, file: UploadedFile, project_id: int | No
 
     # Upload to storage and queue extraction task asynchronously
     try:
-        from .storage import generate_storage_key, upload_file
-
-        storage_key = generate_storage_key(filename)
-        upload_file(file.file, storage_key, file.content_type or "application/octet-stream")
-        source.storage_key = storage_key
-        source.save(update_fields=["storage_key", "updated_at"])
-
-        from .tasks import extract_from_file
-
-        extract_from_file.delay(source.pk)
+        _upload_source_file(source, file, filename)
     except Exception as exc:
-        exc_str = str(exc)
         source.delete()
-        if "ConnectionError" in type(exc).__name__ or "Max retries" in exc_str or "Connection refused" in exc_str:
-            raise HttpError(503, "Cannot connect to storage (MinIO unavailable)")
-        if "NoSuchBucket" in exc_str or "does not exist" in exc_str.lower():
-            raise HttpError(503, "Storage bucket does not exist — contact the administrator")
-        raise HttpError(500, f"Failed to upload file: {exc_str[:120]}")
+        _raise_upload_storage_error(exc)
 
     return 201, _source_to_out(source)
 
@@ -229,7 +205,7 @@ def list_sources(request: HttpRequest, project_id: int | None = None):
     """List all sources, optionally filtered by project. All workspace members can read."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace_from_request(request)
     qs = DesignBankSource.objects.filter(workspace=workspace)
@@ -247,7 +223,7 @@ def list_sources(request: HttpRequest, project_id: int | None = None):
 def get_design_system_status(request: HttpRequest, project_id: int):
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace_from_request(request)
     _get_project(workspace, project_id)
@@ -295,13 +271,13 @@ def get_source(request: HttpRequest, source_id: int):
     """Source detail with extraction status. All workspace members can read."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace_from_request(request)
     try:
         source = DesignBankSource.objects.get(pk=source_id, workspace=workspace)
     except DesignBankSource.DoesNotExist:
-        raise HttpError(404, "Source not found")
+        raise HttpError(404, SOURCE_NOT_FOUND)
 
     return _source_to_out(source)
 
@@ -315,13 +291,13 @@ def get_source_file(request: HttpRequest, source_id: int):
     """Redirect to a time-limited presigned URL for the source file (5 min TTL)."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace_from_request(request)
     try:
         source = DesignBankSource.objects.get(pk=source_id, workspace=workspace)
     except DesignBankSource.DoesNotExist:
-        raise HttpError(404, "Source not found")
+        raise HttpError(404, SOURCE_NOT_FOUND)
 
     if not source.storage_key:
         raise HttpError(404, "No file stored for this source")
@@ -343,6 +319,45 @@ def _get_project(workspace, project_id: int | None):
         return Project.objects.get(pk=project_id, workspace=workspace)
     except Project.DoesNotExist:
         raise HttpError(404, "Project not found")
+
+
+def _infer_upload_source_type(filename: str) -> str:
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext == "pdf":
+        return DesignBankSource.SourceType.PDF
+    if ext in IMAGE_UPLOAD_EXTENSIONS:
+        return DesignBankSource.SourceType.IMAGE
+    if ext == "css":
+        return DesignBankSource.SourceType.CSS
+    if ext == "html":
+        return DesignBankSource.SourceType.HTML
+    if ext in MARKDOWN_UPLOAD_EXTENSIONS:
+        return DesignBankSource.SourceType.MARKDOWN
+    return DesignBankSource.SourceType.UPLOAD
+
+
+def _raise_upload_storage_error(exc: Exception) -> None:
+    exc_str = str(exc)
+    exc_name = type(exc).__name__
+    if "ConnectionError" in exc_name or "Max retries" in exc_str or "Connection refused" in exc_str:
+        raise HttpError(503, "Cannot connect to storage (MinIO unavailable)")
+    if "NoSuchBucket" in exc_str or "does not exist" in exc_str.lower():
+        raise HttpError(
+            503,
+            "Storage bucket does not exist — contact the administrator",
+        )
+    raise HttpError(500, f"Failed to upload file: {exc_str[:120]}")
+
+
+def _upload_source_file(source: DesignBankSource, file: UploadedFile, filename: str) -> None:
+    from .storage import generate_storage_key, upload_file
+    from .tasks import extract_from_file
+
+    storage_key = generate_storage_key(filename)
+    upload_file(file.file, storage_key, file.content_type or "application/octet-stream")
+    source.storage_key = storage_key
+    source.save(update_fields=["storage_key", "updated_at"])
+    extract_from_file.delay(source.pk)
 
 
 @router.post(
@@ -430,7 +445,7 @@ def patch_source(request: HttpRequest, source_id: int, payload: ResourcePatchIn)
     try:
         source = DesignBankSource.objects.get(pk=source_id, workspace=workspace)
     except DesignBankSource.DoesNotExist:
-        raise HttpError(404, "Source not found")
+        raise HttpError(404, SOURCE_NOT_FOUND)
 
     update_fields = ["updated_at"]
     if payload.name is not None:
@@ -461,7 +476,7 @@ def update_source_content(request: HttpRequest, source_id: int, payload: Content
     try:
         source = DesignBankSource.objects.get(pk=source_id, workspace=workspace)
     except DesignBankSource.DoesNotExist:
-        raise HttpError(404, "Source not found")
+        raise HttpError(404, SOURCE_NOT_FOUND)
 
     if not source.storage_key:
         raise HttpError(400, "Source has no stored file")
@@ -502,7 +517,7 @@ def delete_source(request: HttpRequest, source_id: int):
     try:
         source = DesignBankSource.objects.get(pk=source_id, workspace=workspace)
     except DesignBankSource.DoesNotExist:
-        raise HttpError(404, "Source not found")
+        raise HttpError(404, SOURCE_NOT_FOUND)
 
     if source.storage_key:
         try:

@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-import json
-import time
 from typing import TYPE_CHECKING, Any, Iterator
 
-from .base import BaseProvider, GenerationResult, build_provider_messages, make_error_result
+from .base import (
+    BaseProvider,
+    GenerationResult,
+    iter_mock_stream,
+    make_error_result,
+    make_mock_result,
+    request_openai_compatible_result,
+    stream_openai_compatible_result,
+)
 
 if TYPE_CHECKING:
     from apps.workspace.models import WorkspaceAISettings
@@ -59,9 +65,7 @@ class OllamaProvider(BaseProvider):
 
     def generate_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:
         if self._is_mock_mode():
-            words = f"[ollama-mock] {prompt[:80]}".split()
-            for word in words:
-                yield word + " "
+            yield from iter_mock_stream(_PROVIDER_NAME, prompt)
             return
         yield from self._live_stream(prompt, context)  # pragma: no cover
 
@@ -78,85 +82,27 @@ class OllamaProvider(BaseProvider):
         return self._api_base == _DEFAULT_BASE_URL
 
     def _mock_result(self, prompt: str) -> GenerationResult:
-        return GenerationResult(
-            success=True,
-            provider_name=_PROVIDER_NAME,
-            model_id=self.model_id,
-            generated_text=f"[ollama-mock] {prompt[:80]}",
-            template_variables={},
-            latency_ms=5,
-            token_count=18,
-            cost_estimate=0.0,
-        )
+        return make_mock_result(_PROVIDER_NAME, self.model_id, prompt, 5, 18)
 
     def _live_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:  # pragma: no cover
-        try:
-            import httpx
-
-            url = f"{self._api_base}/v1/chat/completions"
-            with httpx.stream(
-                "POST",
-                url,
-                json={
-                    "model": self.model_id,
-                    "messages": build_provider_messages(prompt, context),
-                    "stream": True,
-                },
-                timeout=60,
-            ) as response:
-                response.raise_for_status()
-                for line in response.iter_lines():
-                    if not line.startswith("data: "):
-                        continue
-                    data = line[6:]
-                    if data == "[DONE]":
-                        break
-                    chunk = json.loads(data)
-                    delta = chunk["choices"][0].get("delta", {})
-                    text = delta.get("content", "")
-                    if text:
-                        yield text
-        except Exception as exc:
-            from .errors import ProviderError, classify_provider_error
-
-            classified = classify_provider_error(exc, _PROVIDER_NAME)
-            raise ProviderError(
-                message=classified.message,
-                code=classified.code,
-                category=classified.category,
-                hint=classified.hint,
-                retryable=classified.retryable,
-                provider=_PROVIDER_NAME,
-            ) from exc
+        yield from stream_openai_compatible_result(
+            url=f"{self._api_base}/v1/chat/completions",
+            headers=None,
+            provider_name=_PROVIDER_NAME,
+            model_id=self.model_id,
+            prompt=prompt,
+            context=context,
+        )
 
     def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:  # pragma: no cover
         try:
-            import httpx
-
-            url = f"{self._api_base}/v1/chat/completions"
-            t0 = time.monotonic()
-            response = httpx.post(
-                url,
-                json={
-                    "model": self.model_id,
-                    "messages": build_provider_messages(prompt, context),
-                },
-                timeout=30,
-            )
-            latency_ms = int((time.monotonic() - t0) * 1000)
-            response.raise_for_status()
-            data = response.json()
-            text = data["choices"][0]["message"]["content"]
-            usage = data.get("usage", {})
-            return GenerationResult(
-                success=True,
+            return request_openai_compatible_result(
+                url=f"{self._api_base}/v1/chat/completions",
+                headers=None,
                 provider_name=_PROVIDER_NAME,
                 model_id=self.model_id,
-                generated_text=text,
-                template_variables={},
-                latency_ms=latency_ms,
-                token_count=usage.get("total_tokens", 0),
-                cost_estimate=0.0,
+                prompt=prompt,
+                context=context,
             )
         except Exception as exc:
             return make_error_result(exc, _PROVIDER_NAME, self.model_id)

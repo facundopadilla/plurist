@@ -5,6 +5,7 @@ from ninja import Router, Schema
 from ninja.errors import HttpError
 
 from apps.accounts.auth import (
+    MEMBERSHIP_REQUIRED_DETAIL,
     get_membership,
     require_editor_capabilities,
 )
@@ -224,7 +225,7 @@ def _get_post_for_workspace(post_id: int, workspace) -> DraftPost:
 def list_posts(request):
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     posts = DraftPost.objects.filter(workspace=membership.workspace).order_by("-created_at")
     return [_post_out(p) for p in posts]
 
@@ -260,7 +261,7 @@ def create_post(request, payload: DraftPostIn):
 def get_post(request, post_id: int):
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     post = _get_post_for_workspace(post_id, membership.workspace)
     return _post_detail_out(post)
 
@@ -294,7 +295,7 @@ def list_post_variants(request, post_id: int):
     """Return all DraftVariants for a post."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     post = _get_post_for_workspace(post_id, membership.workspace)
 
     variants = post.variants.all().order_by("slide_index", "id")

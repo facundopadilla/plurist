@@ -91,7 +91,7 @@ class Command(BaseCommand):
 
             try:
                 parsed = fetch_skill_from_url(url)
-            except (ValueError, Exception) as e:
+            except Exception as e:
                 self.stdout.write(self.style.ERROR(f"FAILED ({e})"))
                 error_count += 1
                 continue

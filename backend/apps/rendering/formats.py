@@ -2,10 +2,12 @@
 Format registry for post/render dimensions.
 """
 
+PROFILE_PHOTO_LABEL = "Profile photo"
+
 FORMAT_REGISTRY: dict[str, dict] = {
     # Instagram (10)
     "ig_profile": {
-        "label": "Profile photo",
+        "label": PROFILE_PHOTO_LABEL,
         "width": 320,
         "height": 320,
         "network": "instagram",
@@ -76,7 +78,7 @@ FORMAT_REGISTRY: dict[str, dict] = {
     },
     # LinkedIn (5)
     "li_profile": {
-        "label": "Profile photo",
+        "label": PROFILE_PHOTO_LABEL,
         "width": 400,
         "height": 400,
         "network": "linkedin",
@@ -112,7 +114,7 @@ FORMAT_REGISTRY: dict[str, dict] = {
     },
     # X / Twitter (7)
     "x_profile": {
-        "label": "Profile photo",
+        "label": PROFILE_PHOTO_LABEL,
         "width": 400,
         "height": 400,
         "network": "x",
@@ -198,7 +200,7 @@ FORMAT_REGISTRY: dict[str, dict] = {
     },
     # TikTok (3)
     "tt_profile": {
-        "label": "Profile photo",
+        "label": PROFILE_PHOTO_LABEL,
         "width": 200,
         "height": 200,
         "network": "tiktok",
@@ -220,7 +222,7 @@ FORMAT_REGISTRY: dict[str, dict] = {
     },
     # Pinterest (3)
     "pin_profile": {
-        "label": "Profile photo",
+        "label": PROFILE_PHOTO_LABEL,
         "width": 165,
         "height": 165,
         "network": "pinterest",

@@ -468,12 +468,7 @@ Rules:
 """
 
 
-def _extract_artifact_payload(text: str) -> dict[str, str] | None:
-    candidate = text.strip()
-    fenced_match = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", candidate, re.IGNORECASE)
-    if fenced_match:
-        candidate = fenced_match.group(1).strip()
-
+def _parse_json_object_from_text(candidate: str) -> dict[str, Any] | None:
     payload: dict[str, Any] | None = None
     try:
         parsed = json.loads(candidate)
@@ -489,10 +484,10 @@ def _extract_artifact_payload(text: str) -> dict[str, str] | None:
             if isinstance(parsed, dict):
                 payload = parsed
                 break
+    return payload
 
-    if payload is None:
-        return None
 
+def _validate_artifact_payload(payload: dict[str, Any]) -> dict[str, str] | None:
     design_system = payload.get("design_system_markdown")
     reference_brief = payload.get("reference_brief_markdown")
     summary = payload.get("summary", "")
@@ -509,6 +504,19 @@ def _extract_artifact_payload(text: str) -> dict[str, str] | None:
         "reference_brief_markdown": reference_brief.strip(),
         "summary": summary.strip(),
     }
+
+
+def _extract_artifact_payload(text: str) -> dict[str, str] | None:
+    candidate = text.strip()
+    fenced_match = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", candidate, re.IGNORECASE)
+    if fenced_match:
+        candidate = fenced_match.group(1).strip()
+
+    payload = _parse_json_object_from_text(candidate)
+    if payload is None:
+        return None
+
+    return _validate_artifact_payload(payload)
 
 
 def _heuristic_synthesis(source_bundle: str, guidance: str) -> dict[str, str]:

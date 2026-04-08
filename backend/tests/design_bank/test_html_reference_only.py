@@ -108,14 +108,11 @@ def test_html_source_stored_with_reference_only_flag(client, monkeypatch):
     from django.core.files.uploadedfile import SimpleUploadedFile
 
     import apps.design_bank.storage as storage_mod
+    from apps.design_bank import tasks as tasks_mod
 
     monkeypatch.setattr(storage_mod, "upload_file", lambda *a, **kw: "design-bank/html-key")
     monkeypatch.setattr(storage_mod, "generate_storage_key", lambda fn: "design-bank/html-key")
-    monkeypatch.setattr(
-        "apps.design_bank.api.extract_from_file",
-        type("T", (), {"delay": staticmethod(lambda *a, **kw: None)})(),
-        raising=False,
-    )
+    monkeypatch.setattr(tasks_mod.extract_from_file, "delay", lambda *a, **kw: None)
 
     html_content = b"<html><body><h1>Brand Guide</h1></body></html>"
     f = SimpleUploadedFile("brand.html", html_content, content_type="text/html")

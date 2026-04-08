@@ -28,6 +28,11 @@ class NoOpScanner(BaseScannerBackend):
         return ScanResult(clean=True, detail="no-op scanner: skipped")
 
 
+SCANNER_BACKENDS: dict[str, type[BaseScannerBackend]] = {
+    "apps.design_bank.scanners.NoOpScanner": NoOpScanner,
+}
+
+
 def get_scanner() -> BaseScannerBackend:
     """Return the configured scanner backend (defaults to NoOpScanner)."""
     from django.conf import settings
@@ -35,10 +40,7 @@ def get_scanner() -> BaseScannerBackend:
     backend_path = getattr(settings, "DESIGN_BANK_SCANNER_BACKEND", None)
     if not backend_path:
         return NoOpScanner()
-
-    module_path, class_name = backend_path.rsplit(".", 1)
-    import importlib
-
-    module = importlib.import_module(module_path)  # nosec B108 -- value comes from Django settings (operator-controlled), not user input
-    cls = getattr(module, class_name)
-    return cls()
+    try:
+        return SCANNER_BACKENDS[backend_path]()
+    except KeyError as exc:
+        raise ValueError(f"Unsupported scanner backend: {backend_path}") from exc

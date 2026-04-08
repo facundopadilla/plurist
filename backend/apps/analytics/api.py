@@ -4,7 +4,7 @@ from django.http import HttpRequest
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
-from apps.accounts.auth import get_membership
+from apps.accounts.auth import MEMBERSHIP_REQUIRED_DETAIL, get_membership
 from apps.accounts.session_auth import session_auth as django_auth
 
 from .models import AuditEvent
@@ -29,7 +29,7 @@ class AuditEventOut(Schema):
     created_at: str
 
 
-def _workspace_from_request(request):
+def _workspace_from_request(_request):
     from apps.accounts.models import Workspace
 
     workspace = Workspace.objects.first()
@@ -60,7 +60,7 @@ def operational_summary(request: HttpRequest):
     """Return counts of workflow events. All workspace members can access."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace_from_request(request)
     summary = get_operational_summary(workspace)
@@ -77,7 +77,7 @@ def audit_timeline(request: HttpRequest, limit: int = 50):
     """List recent audit events. All workspace members can access."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace_from_request(request)
     events = AuditEvent.objects.filter(workspace=workspace).order_by("-created_at")[:limit]
@@ -94,7 +94,7 @@ def target_timeline(request: HttpRequest, target_type: str, target_id: int):
     """List audit events for a specific target object. All workspace members can access."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
 
     workspace = _workspace_from_request(request)
     events = AuditEvent.objects.filter(

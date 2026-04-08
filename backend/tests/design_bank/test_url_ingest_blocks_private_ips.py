@@ -174,6 +174,7 @@ def test_api_blocks_private_ip_url(client, monkeypatch):
 
 
 def test_api_accepts_public_url(client, monkeypatch):
+    from apps.design_bank import tasks as tasks_mod
     from tests.accounts.factories import (
         MembershipFactory,
         UserFactory,
@@ -191,9 +192,9 @@ def test_api_accepts_public_url(client, monkeypatch):
         lambda host, port, **kw: [(None, None, None, None, ("93.184.216.34", 80))],
     )
     monkeypatch.setattr(
-        "apps.design_bank.api.extract_from_url",
-        type("T", (), {"delay": staticmethod(lambda *a, **kw: None)})(),
-        raising=False,
+        tasks_mod.extract_from_url,
+        "delay",
+        lambda *a, **kw: None,
     )
 
     response = client.post(

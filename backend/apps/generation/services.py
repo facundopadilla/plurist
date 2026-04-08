@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import concurrent.futures
-from typing import TYPE_CHECKING
 
 from apps.posts.models import DraftPost, DraftVariant
 
 from .models import CompareRun
 from .providers.base import GenerationResult
 from .providers.registry import get_provider
-
-if TYPE_CHECKING:
-    pass
 
 
 def _estimate_slide_count(brief: str, default: int = 3, max_slides: int = 10) -> int:
@@ -93,6 +89,75 @@ def _run_single_provider(
     return provider_key, result
 
 
+def _build_compare_tasks(
+    compare_run: CompareRun,
+    provider_keys: list[str],
+    slide_count: int,
+) -> list[tuple[str, int, str]]:
+    tasks: list[tuple[str, int, str]] = []
+    for slide_idx in range(slide_count):
+        prompt = _build_prompt(compare_run, slide_index=slide_idx, total_slides=slide_count)
+        for key in provider_keys:
+            tasks.append((key, slide_idx, prompt))
+    return tasks
+
+
+def _run_compare_tasks(
+    tasks: list[tuple[str, int, str]],
+    context: dict,
+) -> list[tuple[str, int, str, GenerationResult]]:
+    max_concurrent = 8
+    raw_results: list[tuple[str, int, str, GenerationResult]] = []
+    max_workers = min(len(tasks), max_concurrent) or 1
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_task = {
+            executor.submit(_run_single_provider, key, prompt, context): (key, slide_idx, prompt)
+            for key, slide_idx, prompt in tasks
+        }
+        for future in concurrent.futures.as_completed(future_to_task):
+            key, slide_idx, prompt = future_to_task[future]
+            _, result = future.result()
+            raw_results.append((key, slide_idx, prompt, result))
+    return raw_results
+
+
+def _persist_generation_results(
+    raw_results: list[tuple[str, int, str, GenerationResult]],
+    draft_post: DraftPost,
+    is_html: bool,
+) -> tuple[int, int, list[GenerationResult]]:
+    successes = 0
+    failures = 0
+    generation_results: list[GenerationResult] = []
+
+    for _provider_key, slide_idx, prompt_text, result in raw_results:
+        generation_results.append(result)
+        if not result.success:
+            failures += 1
+            continue
+
+        successes += 1
+        generated_html = ""
+        generated_text = result.generated_text
+        if is_html:
+            from .sanitizer import sanitize_html
+
+            generated_html = sanitize_html(result.generated_text)
+            generated_text = ""
+
+        DraftVariant.objects.create(
+            draft_post=draft_post,
+            provider=result.provider_name,
+            model_id=result.model_id,
+            prompt_text=prompt_text,
+            generated_text=generated_text,
+            generated_html=generated_html,
+            slide_index=slide_idx,
+        )
+
+    return successes, failures, generation_results
+
+
 def run_compare(compare_run: CompareRun) -> list[GenerationResult]:
     """Run generation across all selected providers in parallel.
 
@@ -113,63 +178,19 @@ def run_compare(compare_run: CompareRun) -> list[GenerationResult]:
 
     is_html = _is_html_prompt(compare_run)
 
-    # Build task list: (provider_key, slide_index, prompt)
-    tasks: list[tuple[str, int, str]] = []
-    for slide_idx in range(slide_count):
-        prompt = _build_prompt(compare_run, slide_index=slide_idx, total_slides=slide_count)
-        for key in provider_keys:
-            tasks.append((key, slide_idx, prompt))
-
-    # Run all tasks in parallel — cap threads to avoid resource exhaustion
-    MAX_CONCURRENT = 8
-    raw_results: list[tuple[str, int, str, GenerationResult]] = []
-    max_workers = min(len(tasks), MAX_CONCURRENT) or 1
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_task = {
-            executor.submit(_run_single_provider, key, prompt, context): (key, slide_idx, prompt)
-            for key, slide_idx, prompt in tasks
-        }
-        for future in concurrent.futures.as_completed(future_to_task):
-            key, slide_idx, prompt = future_to_task[future]
-            _, result = future.result()
-            raw_results.append((key, slide_idx, prompt, result))
+    tasks = _build_compare_tasks(compare_run, provider_keys, slide_count)
+    raw_results = _run_compare_tasks(tasks, context)
 
     # Create placeholder DraftPost to anchor variants
     draft_post = _get_or_create_draft_post(compare_run)
-
-    successes = 0
-    failures = 0
-    generation_results: list[GenerationResult] = []
-
-    for provider_key, slide_idx, prompt_text, result in raw_results:
-        generation_results.append(result)
-        if result.success:
-            successes += 1
-            generated_html = ""
-            generated_text = result.generated_text
-
-            if is_html:
-                from .sanitizer import sanitize_html
-
-                generated_html = sanitize_html(result.generated_text)
-                generated_text = ""
-
-            DraftVariant.objects.create(
-                draft_post=draft_post,
-                provider=result.provider_name,
-                model_id=result.model_id,
-                prompt_text=prompt_text,
-                generated_text=generated_text,
-                generated_html=generated_html,
-                slide_index=slide_idx,
-            )
-        else:
-            failures += 1
+    _, failures, generation_results = _persist_generation_results(
+        raw_results,
+        draft_post,
+        is_html,
+    )
 
     if failures == 0:
         compare_run.status = CompareRun.Status.COMPLETED
-    elif successes > 0:
-        compare_run.status = CompareRun.Status.PARTIAL_FAILURE
     else:
         compare_run.status = CompareRun.Status.PARTIAL_FAILURE
 

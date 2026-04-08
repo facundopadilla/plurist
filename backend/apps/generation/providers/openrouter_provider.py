@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import time
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any
 
 from .base import (
-    BaseProvider,
+    APIKeyProvider,
     GenerationResult,
-    build_provider_messages,
     make_error_result,
-    resolve_api_key,
+    request_openai_compatible_result,
 )
 
 if TYPE_CHECKING:
-    from apps.workspace.models import WorkspaceAISettings
+    pass
 
 _PROVIDER_NAME = "openrouter"
 _DEFAULT_MODEL = "openai/gpt-4o"
@@ -20,7 +18,7 @@ _ENV_VAR = "OPENROUTER_API_KEY"
 _ENC_FIELD = "openrouter_api_key_enc"
 
 
-class OpenRouterProvider(BaseProvider):
+class OpenRouterProvider(APIKeyProvider):
     """OpenRouter generation adapter.
 
     OpenRouter is treated as a standard provider adapter — it routes to various
@@ -31,80 +29,26 @@ class OpenRouterProvider(BaseProvider):
     tests never hit the network.
     """
 
-    def __init__(
-        self,
-        model_id: str = _DEFAULT_MODEL,
-        workspace_settings: "WorkspaceAISettings | None" = None,
-    ) -> None:
-        self.model_id = model_id
-        self._api_key = resolve_api_key(_ENV_VAR, _ENC_FIELD, workspace_settings)
-
-    def generate(self, prompt: str, context: dict[str, Any]) -> GenerationResult:
-        if not self._api_key or self._api_key.startswith("mock"):
-            return self._mock_result(prompt)
-        return self._live_result(prompt, context)
-
-    def generate_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:
-        """Buffered fallback: OpenRouter streaming not implemented in this adapter."""
-        result = self.generate(prompt, context)
-        if result.success:
-            yield result.generated_text
-        else:
-            from .errors import ProviderError
-
-            raise ProviderError(
-                message=result.error_message,
-                code=result.error_code,
-                category=result.error_category,
-                hint=result.error_hint,
-                retryable=result.error_retryable,
-                provider=result.provider_name,
-            )
+    provider_name = _PROVIDER_NAME
+    default_model = _DEFAULT_MODEL
+    env_var = _ENV_VAR
+    enc_field = _ENC_FIELD
+    mock_latency_ms = 11
+    mock_token_count = 21
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _mock_result(self, prompt: str) -> GenerationResult:
-        return GenerationResult(
-            success=True,
-            provider_name=_PROVIDER_NAME,
-            model_id=self.model_id,
-            generated_text=f"[openrouter-mock] {prompt[:80]}",
-            template_variables={},
-            latency_ms=11,
-            token_count=21,
-            cost_estimate=0.0,
-        )
-
     def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:  # pragma: no cover
         try:
-            import httpx
-
-            t0 = time.monotonic()
-            response = httpx.post(
-                "https://openrouter.ai/api/v1/chat/completions",
+            return request_openai_compatible_result(
+                url="https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}"},
-                json={
-                    "model": self.model_id,
-                    "messages": build_provider_messages(prompt, context),
-                },
-                timeout=30,
-            )
-            latency_ms = int((time.monotonic() - t0) * 1000)
-            response.raise_for_status()
-            data = response.json()
-            text = data["choices"][0]["message"]["content"]
-            usage = data.get("usage", {})
-            return GenerationResult(
-                success=True,
                 provider_name=_PROVIDER_NAME,
                 model_id=self.model_id,
-                generated_text=text,
-                template_variables={},
-                latency_ms=latency_ms,
-                token_count=usage.get("total_tokens", 0),
-                cost_estimate=0.0,
+                prompt=prompt,
+                context=context,
             )
         except Exception as exc:
             return make_error_result(exc, _PROVIDER_NAME, self.model_id)

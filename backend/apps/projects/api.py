@@ -7,6 +7,7 @@ from ninja.files import UploadedFile
 from pydantic import field_validator
 
 from apps.accounts.auth import (
+    MEMBERSHIP_REQUIRED_DETAIL,
     get_membership,
     require_editor_capabilities,
     require_owner,
@@ -25,6 +26,7 @@ router = Router(tags=["projects"])
 _ALLOWED_ICON_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 _MAX_ICON_SIZE = 2 * 1024 * 1024  # 2 MB
 _HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+PROJECT_NOT_FOUND = "Project not found"
 
 
 def _validate_hex_color(v: str) -> str:
@@ -85,7 +87,7 @@ class ProjectOut(Schema):
 # ---------------------------------------------------------------------------
 
 
-def _workspace_from_request(request):
+def _workspace_from_request(_request):
     from apps.accounts.models import Workspace
 
     workspace = Workspace.objects.first()
@@ -131,7 +133,7 @@ def list_projects(request: HttpRequest):
     """List all projects for the workspace."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     workspace = _workspace_from_request(request)
     return [_project_out(p) for p in Project.objects.filter(workspace=workspace)]
 
@@ -157,12 +159,12 @@ def get_project(request: HttpRequest, project_id: int):
     """Get project detail."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     workspace = _workspace_from_request(request)
     try:
         project = Project.objects.get(pk=project_id, workspace=workspace)
     except Project.DoesNotExist:
-        raise HttpError(404, "Project not found")
+        raise HttpError(404, PROJECT_NOT_FOUND)
     return _project_out(project)
 
 
@@ -174,7 +176,7 @@ def update_project(request: HttpRequest, project_id: int, payload: ProjectPatchI
     try:
         project = Project.objects.get(pk=project_id, workspace=workspace)
     except Project.DoesNotExist:
-        raise HttpError(404, "Project not found")
+        raise HttpError(404, PROJECT_NOT_FOUND)
 
     update_fields = ["updated_at"]
     if payload.name is not None:
@@ -202,7 +204,7 @@ def upload_project_icon(request: HttpRequest, project_id: int, file: UploadedFil
     try:
         project = Project.objects.get(pk=project_id, workspace=workspace)
     except Project.DoesNotExist:
-        raise HttpError(404, "Project not found")
+        raise HttpError(404, PROJECT_NOT_FOUND)
 
     filename = file.name or ""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -236,12 +238,12 @@ def get_project_icon(request: HttpRequest, project_id: int):
     """Redirect to a presigned URL for the project icon (5 min TTL)."""
     membership = get_membership(request)
     if not membership:
-        raise HttpError(403, "Membership required")
+        raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
     workspace = _workspace_from_request(request)
     try:
         project = Project.objects.get(pk=project_id, workspace=workspace)
     except Project.DoesNotExist:
-        raise HttpError(404, "Project not found")
+        raise HttpError(404, PROJECT_NOT_FOUND)
 
     if not project.icon_storage_key:
         raise HttpError(404, "No icon for this project")
@@ -262,7 +264,7 @@ def delete_project(request: HttpRequest, project_id: int, cascade_posts: bool = 
     try:
         project = Project.objects.get(pk=project_id, workspace=workspace)
     except Project.DoesNotExist:
-        raise HttpError(404, "Project not found")
+        raise HttpError(404, PROJECT_NOT_FOUND)
 
     if cascade_posts:
         from apps.posts.models import DraftPost

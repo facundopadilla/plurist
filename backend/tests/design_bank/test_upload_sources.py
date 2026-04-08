@@ -27,14 +27,11 @@ def _login(client, email, password="testpassword123"):
 
 def _mock_storage(monkeypatch):
     import apps.design_bank.storage as storage_mod
+    from apps.design_bank import tasks as tasks_mod
 
     monkeypatch.setattr(storage_mod, "upload_file", lambda *a, **kw: "design-bank/test-key")
     monkeypatch.setattr(storage_mod, "generate_storage_key", lambda fn: "design-bank/test-key")
-    monkeypatch.setattr(
-        "apps.design_bank.api.extract_from_file",
-        type("T", (), {"delay": staticmethod(lambda *a, **kw: None)})(),
-        raising=False,
-    )
+    monkeypatch.setattr(tasks_mod.extract_from_file, "delay", lambda *a, **kw: None)
 
 
 def test_owner_can_upload(client, monkeypatch):
