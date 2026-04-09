@@ -5,6 +5,24 @@ Este repo ahora usa una estrategia en dos capas:
 - `pre-commit` para orquestar checks de backend y frontend.
 - `husky` para enganchar esos checks al flujo de Git sin tocar `git config`.
 
+## Pre-commit en cada commit (obligatorio)
+
+Cada `git commit` debe ejecutar el **stage `pre-commit`** (ruff, formato, eslint en staged, hygiene, secrets, etc.). Eso es intencional: corrige problemas **antes** de que entren al historial.
+
+- **No uses `git commit --no-verify`** para saltear el hook salvo una emergencia real (por ejemplo un incidente de producción y un parche mínimo acordado). Si el hook falla, arreglá el código o el staging; anular el hook destruye el sentido de tenerlo.
+- El **pre-push** (bandit, mypy, scans completos) corre al `git push` y complementa al pre-commit; no lo sustituye.
+
+### Si modificás `.pre-commit-config.yaml`
+
+Husky/pre-commit exige que ese archivo **quede incluido en el commit** cuando está modificado respecto a `HEAD`. Si intentás commitear **solo** otros archivos mientras `.pre-commit-config.yaml` sigue cambiado y sin stage, verás un error del estilo _configuration is unstaged_.
+
+Para commits atómicos **sin** usar `--no-verify`:
+
+1. **Incluí** `.pre-commit-config.yaml` en el **mismo** commit que el resto de cambios de tooling/hooks que lo motivan, **o**
+2. Hacé un **primer commit** que contenga solo `.pre-commit-config.yaml`, y después los commits de código.
+
+Así el pre-commit sigue corriendo en cada commit y nadie necesita `--no-verify` por orden de staging.
+
 ## Qué corre en cada etapa
 
 ### Pre-commit (rápido, sobre archivos staged)
