@@ -7,7 +7,7 @@ name = "plurist-backend"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=4.2",
+    "django>=6.0.4",
     "django-ninja>=1.1",
     "celery[redis]>=5.3",
     "gunicorn>=21.2",
@@ -21,7 +21,7 @@ dependencies = [
     "boto3>=1.34",
     "factory-boy>=3.3",
     "pillow>=10.0",
-    "cryptography>=42.0",
+    "cryptography>=46.0.7",
     "mcp>=1.9",
 ]
 
@@ -37,6 +37,8 @@ dev = [
     "mypy>=1.10",
     "pre-commit>=3.7",
     "ruff>=0.4",
+    "import-linter>=2.11",
+    "pip-audit>=2.10.0",
 ]
 
 [tool.ruff]
@@ -114,6 +116,44 @@ disallow_untyped_defs = true
 django_settings_module = "config.settings.test"
 strict_settings = false
 strict_model_abstract_attrs = true
+
+[tool.importlinter]
+# Grimp needs these roots on PYTHONPATH (see Makefile audit-backend).
+root_packages = ["apps"]
+
+[[tool.importlinter.contracts]]
+name = "Accounts stays independent of other domain apps"
+type = "forbidden"
+source_modules = ["apps.accounts"]
+forbidden_modules = [
+    "apps.analytics",
+    "apps.common",
+    "apps.design_bank",
+    "apps.generation",
+    "apps.meta",
+    "apps.mcp",
+    "apps.posts",
+    "apps.projects",
+    "apps.rendering",
+    "apps.skills",
+]
+
+[[tool.importlinter.contracts]]
+name = "Workspace stays independent of other domain apps"
+type = "forbidden"
+source_modules = ["apps.workspace"]
+forbidden_modules = [
+    "apps.analytics",
+    "apps.common",
+    "apps.design_bank",
+    "apps.generation",
+    "apps.meta",
+    "apps.mcp",
+    "apps.posts",
+    "apps.projects",
+    "apps.rendering",
+    "apps.skills",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["config", "apps"]
