@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AppShell } from "./layout/app-shell";
 import { AuthShell } from "./layout/auth-shell";
@@ -171,6 +171,8 @@ export function AppRouter() {
             </RequireAuth>
           }
         />
+        <Route path="/contenido" element={<Navigate to="/content" replace />} />
+        <Route path="/posts" element={<Navigate to="/content" replace />} />
         <Route
           path="/compose"
           element={
