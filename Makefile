@@ -39,4 +39,5 @@ coverage: coverage-backend coverage-frontend
 
 test-e2e:
 	@docker compose ps | grep -q "Up" || (echo "Run make up first" && exit 1)
-	docker compose run --rm -e BASE_URL=http://frontend:5173 -e BACKEND_URL=http://backend:8000 frontend pnpm exec playwright test --project=chromium
+	docker compose build frontend
+	docker compose run --rm -e CI=1 -e BASE_URL=http://frontend:5173 -e BACKEND_URL=http://backend:8000 frontend pnpm exec playwright test --project=chromium
