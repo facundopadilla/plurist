@@ -159,3 +159,4 @@ ops/static-analysis/reports/
 
 # Local frontend audit notes (not product source)
 frontend/CHANGES_FRONTEND.md
+frontend/CHANGES_CODE.md

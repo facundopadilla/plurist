@@ -16,14 +16,17 @@ async function getCsrf(page: import("@playwright/test").Page) {
 }
 
 test.describe("Network integrations (Task 13)", () => {
-  test("owner navigates to /settings/integrations and the page loads", async ({
+  test("owner navigates to /settings/ai-providers (workspace settings)", async ({
     page,
   }) => {
     await loginAs(page, "owner@test.com");
-    await page.goto("/settings/integrations");
-    await expect(page).toHaveURL("/settings/integrations");
+    await page.goto("/settings/ai-providers");
+    await expect(page).toHaveURL("/settings/ai-providers");
+    await expect(
+      page.getByRole("heading", { name: "AI Providers", exact: true }),
+    ).toBeVisible();
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-13-integrations-page.png",
+      path: "../.sisyphus/evidence/task-13-ai-providers-page.png",
     });
   });
 
