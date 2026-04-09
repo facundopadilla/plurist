@@ -144,14 +144,14 @@ def _build_html_prompt(
         "2. The raw HTML/CSS wrapped in a markdown code block (```html ... ```).\n\n"
         "CRITICAL RULES FOR THE CONVERSATIONAL MESSAGE:\n"
         "- The user will NEVER see your code. The design renders automatically on a visual canvas beside the chat.\n"
-        "- Therefore, NEVER say 'here is', 'aquí te dejo', 'acá tenés', 'here you go',\n"
+        "- Therefore, NEVER say 'here is', 'here you go', 'below is',\n"
         "  or similar presentation phrases.\n"
         "- NEVER end your message with a colon (:). This is strictly forbidden.\n"
         "- Write as if you just finished painting something and you're telling the user about it.\n"
         "- Good examples: 'I went with warm tones and a playful layout to match the puppy theme.', "
         "'Used a bold gradient background with centered typography for maximum impact.', "
         "'Designed a clean grid with rounded cards highlighting each puppy breed.'\n"
-        "- Bad examples: 'Here is your design:', 'Aquí te dejo el diseño:', 'Here is what I created:'\n\n"
+        "- Bad examples: 'Here is your design:', 'Here is what I created:'\n\n"
         "Inside the code block, start directly with <!DOCTYPE html> or <html>."
     )
 
