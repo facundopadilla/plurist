@@ -40,6 +40,10 @@ function readObject(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function isAbortError(err: unknown): boolean {
+  return err instanceof Error && err.name === "AbortError";
+}
+
 function buildRequestBody(params: ChatStreamParams): ChatRequestBody {
   return {
     conversation_id: params.conversationId,
@@ -211,8 +215,8 @@ export function useChatStream() {
       let response: Response;
       try {
         response = await requestStream(params, csrf, controller.signal);
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
+      } catch (err: unknown) {
+        if (!isAbortError(err)) {
           callbacks.onError({
             type: "error",
             message: "Server connection error",
@@ -233,8 +237,8 @@ export function useChatStream() {
 
       try {
         await consumeStream(reader, callbacks);
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
+      } catch (err: unknown) {
+        if (!isAbortError(err)) {
           callbacks.onError({
             type: "error",
             message: "Stream interrupted",
@@ -266,11 +270,13 @@ export async function streamChatMessage(
   let response: Response;
   try {
     response = await requestStream(params, csrf);
-  } catch {
-    callbacks.onError({
-      type: "error",
-      message: "Server connection error",
-    });
+  } catch (err: unknown) {
+    if (!isAbortError(err)) {
+      callbacks.onError({
+        type: "error",
+        message: "Server connection error",
+      });
+    }
     return;
   }
 
@@ -286,11 +292,13 @@ export async function streamChatMessage(
 
   try {
     await consumeStream(reader, callbacks);
-  } catch {
-    callbacks.onError({
-      type: "error",
-      message: "Stream interrupted",
-    });
+  } catch (err: unknown) {
+    if (!isAbortError(err)) {
+      callbacks.onError({
+        type: "error",
+        message: "Stream interrupted",
+      });
+    }
   } finally {
     reader.releaseLock();
   }
