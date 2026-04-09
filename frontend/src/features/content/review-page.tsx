@@ -925,7 +925,7 @@ export function ReviewPage() {
     [folderPostsFiltered, sortKey],
   );
 
-  // Build root sections — todos los proyectos, incluso sin posts
+  // Build root sections — all projects, including those with no posts
   const rootSections = useMemo(
     () => buildRootSections(projects, postsByProject),
     [projects, postsByProject],

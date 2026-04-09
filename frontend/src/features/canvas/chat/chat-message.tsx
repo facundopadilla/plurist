@@ -261,10 +261,10 @@ export function ChatMessageBubble({ message }: Readonly<ChatMessageProps>) {
     if (isUser) return message.content;
     let text = message.content;
 
-    // Remover bloques de código markdown de la vista (dejando solo el texto conversacional)
+    // Strip markdown code blocks from the view (keep conversational text only)
     text = text.replace(/```[\s\S]*?(?:```|$)/g, "").trim();
 
-    // Si el texto restante parece ser HTML crudo que se filtró sin backticks
+    // If the remainder looks like raw HTML that leaked without backticks
     if (
       message.htmlBlocks.length > 0 &&
       /<(div|svg|section|main|button|nav|header|form)\b/i.test(text)
@@ -272,7 +272,7 @@ export function ChatMessageBubble({ message }: Readonly<ChatMessageProps>) {
       text = "";
     }
 
-    // Si quedó vacío pero sabemos que está generando o generó código
+    // Empty conversational text but we know code was generated or is in flight
     if (
       !text &&
       (message.htmlBlocks.length > 0 ||
@@ -280,9 +280,9 @@ export function ChatMessageBubble({ message }: Readonly<ChatMessageProps>) {
         /<(div|svg|section|main|button|nav)\b/i.test(message.content))
     ) {
       if (message.isStreaming) {
-        return "Construyendo la interfaz...";
+        return "Building the interface...";
       }
-      return "✨ He generado el contenido como lo pediste.";
+      return "✨ Generated the content as requested.";
     }
 
     return text;
@@ -290,7 +290,7 @@ export function ChatMessageBubble({ message }: Readonly<ChatMessageProps>) {
 
   const [displayedContent, setDisplayedContent] = useState(() => {
     if (isUser) return targetContent;
-    // Si ya no está streameando y tiene contenido (ej: historial), lo mostramos de una
+    // Not streaming and we have content (e.g. history): show full text immediately
     if (!message.isStreaming && message.content) return targetContent;
     return "";
   });
@@ -301,27 +301,27 @@ export function ChatMessageBubble({ message }: Readonly<ChatMessageProps>) {
       return;
     }
 
-    // Si el texto cambió por completo (ej: pasó del "Construyendo..." al fallback final), hacemos un snap
+    // Full text swap (e.g. from "Building..." to final fallback): snap to new content
     if (!targetContent.startsWith(displayedContent)) {
       setDisplayedContent(targetContent);
       return;
     }
 
-    // Efecto Typewriter sobre el texto parseado y limpio
+    // Typewriter effect on parsed, cleaned text
     if (displayedContent.length < targetContent.length) {
       const timeout = setTimeout(() => {
         setDisplayedContent((prev) => {
-          // Simulamos velocidad de escritura rápida de a 2-5 caracteres por tick
+          // Fast typing: add 2–5 characters per tick
           const charsToAdd = getSecureRandomIndex(4) + 2;
           return targetContent.slice(0, prev.length + charsToAdd);
         });
-      }, 15); // Cada 15ms entra un "chunk"
+      }, 15); // One chunk every ~15ms
 
       return () => clearTimeout(timeout);
     }
   }, [targetContent, displayedContent, isUser]);
 
-  // Consideramos que está escribiendo si el streaming de la red está activo O si nuestra animación local no terminó
+  // Typing if network stream is active OR local typewriter animation has not caught up
   const isTyping =
     message.isStreaming || displayedContent.length < targetContent.length;
   let assistantBubbleContent = <ThinkingIndicator />;

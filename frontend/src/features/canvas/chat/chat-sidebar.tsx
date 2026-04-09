@@ -373,7 +373,7 @@ function startChatSidebarStream(params: {
         if (result.applied) {
           patchApplied = true;
           params.updateLastMessage({
-            content: `Apliqué el cambio sobre ${params.currentElementRef.label.toLowerCase()} seleccionado.`,
+            content: `Applied the change to the selected ${params.currentElementRef.label.toLowerCase()}.`,
           });
           return;
         }
@@ -381,7 +381,7 @@ function startChatSidebarStream(params: {
         params.updateLastMessage({
           content:
             result.error ??
-            "No pude aplicar el cambio sobre el elemento seleccionado.",
+            "Could not apply the change to the selected element.",
         });
       },
       onDone: () => {
