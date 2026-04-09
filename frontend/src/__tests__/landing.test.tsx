@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { TestimonialsSection } from "../features/landing/components/testimonials-section";
+import { HeroSection } from "../features/landing/components/hero-section";
 import { cleanupDom, render, textExists } from "./test-dom";
 
 if (!("IntersectionObserver" in window)) {
@@ -19,14 +19,12 @@ describe("landing page sections", () => {
     cleanupDom();
   });
 
-  it("renders the testimonial section copy", () => {
-    render(<TestimonialsSection />);
+  it("renders the hero headline copy", () => {
+    render(<HeroSection />);
 
-    expect(textExists("Social proof")).toBe(true);
-    expect(textExists("Teams that")).toBe(true);
-    expect(textExists("ship faster.")).toBe(true);
-    expect(textExists("Sofia Reyes")).toBe(true);
-    expect(textExists("Marcus Chen")).toBe(true);
-    expect(textExists("Ana Volkov")).toBe(true);
+    expect(textExists("Create content")).toBe(true);
+    expect(
+      textExists("The open-source alternative to Google Stitch and Banani."),
+    ).toBe(true);
   });
 });
