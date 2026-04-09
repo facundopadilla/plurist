@@ -1,17 +1,21 @@
 import { test, expect } from "@playwright/test";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
+async function loginAndOpenCompose(page: import("@playwright/test").Page) {
+  await page.goto("/login");
+  await page.getByTestId("login-email").fill("editor@test.com");
+  await page.getByTestId("login-password").fill("testpassword123");
+  await page.getByTestId("login-submit").click();
+  await expectPostPasswordLoginUrl(page);
+  await page.goto("/compose");
+}
+
 test.describe("Canvas Code Editor panel", () => {
   test("opens Code panel and shows file tree with styles.css", async ({
     page,
   }) => {
-    await page.goto("/compose");
-
-    const url = page.url();
-    // Skip if redirected to auth
-    if (url.includes("/login") || url.includes("/auth")) {
-      test.skip();
-      return;
-    }
+    await loginAndOpenCompose(page);
 
     // Wait for canvas to load
     await expect(
@@ -38,13 +42,7 @@ test.describe("Canvas Code Editor panel", () => {
   test("clicking Code button toggles the panel open and closed", async ({
     page,
   }) => {
-    await page.goto("/compose");
-
-    const url = page.url();
-    if (url.includes("/login") || url.includes("/auth")) {
-      test.skip();
-      return;
-    }
+    await loginAndOpenCompose(page);
 
     await expect(
       page.locator('[data-testid="canvas-compose-page"]'),
@@ -64,20 +62,14 @@ test.describe("Canvas Code Editor panel", () => {
   });
 
   test("switching between Chat and Code panels works", async ({ page }) => {
-    await page.goto("/compose");
-
-    const url = page.url();
-    if (url.includes("/login") || url.includes("/auth")) {
-      test.skip();
-      return;
-    }
+    await loginAndOpenCompose(page);
 
     await expect(
       page.locator('[data-testid="canvas-compose-page"]'),
     ).toBeVisible({ timeout: 10000 });
 
-    // Chat should be open by default
-    await expect(page.locator("text=Chat IA")).toBeVisible();
+    // Chat sidebar open by default (Plan / Build in header)
+    await expect(page.getByRole("button", { name: "Plan" })).toBeVisible();
 
     // Switch to Code
     await page.locator('[data-testid="navbar-tool-code"]').click();
@@ -85,12 +77,14 @@ test.describe("Canvas Code Editor panel", () => {
       { timeout: 5000 },
     );
 
-    // Chat should no longer be visible (only one panel at a time)
-    await expect(page.locator("text=Chat IA")).not.toBeVisible();
+    // Chat sidebar hidden while Code panel is active
+    await expect(page.getByRole("button", { name: "Plan" })).not.toBeVisible();
 
     // Switch back to Chat
     await page.locator('[data-testid="navbar-tool-chat"]').click();
-    await expect(page.locator("text=Chat IA")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Plan" })).toBeVisible({
+      timeout: 5000,
+    });
     await expect(page.locator('[data-testid="code-editor-panel"]')).toHaveCount(
       0,
     );
