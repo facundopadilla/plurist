@@ -8,27 +8,27 @@ async function loginAsEditor(page: import("@playwright/test").Page) {
   await expect(page).toHaveURL("/");
 }
 
-test.describe("Contenido — entrypoints y navegación", () => {
-  test("contenido page loads with the renamed UI", async ({ page }) => {
+test.describe("Content — entrypoints and navigation", () => {
+  test("content page loads with the expected UI", async ({ page }) => {
     await loginAsEditor(page);
-    await page.goto("/contenido");
+    await page.goto("/content");
 
     await expect(
-      page.getByRole("heading", { name: /^Contenido$/i }),
+      page.getByRole("heading", { name: /^Content$/i }),
     ).toBeVisible();
     await expect(
-      page.getByText(/Revisá, aprobá y publicá contenido por proyecto./i),
+      page.getByText(/Review and manage content by project\./i),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Nuevo contenido/i }),
+      page.getByRole("button", { name: /New content/i }),
     ).toBeVisible();
   });
 
-  test("nuevo contenido CTA opens the compose canvas", async ({ page }) => {
+  test("New content CTA opens the compose canvas", async ({ page }) => {
     await loginAsEditor(page);
-    await page.goto("/contenido");
+    await page.goto("/content");
 
-    await page.getByRole("button", { name: /Nuevo contenido/i }).click();
+    await page.getByRole("button", { name: /New content/i }).click();
 
     await expect(page).toHaveURL(/\/compose/);
     await expect(page.getByTestId("canvas-compose-page")).toBeVisible();
@@ -41,9 +41,9 @@ test.describe("Contenido — entrypoints y navegación", () => {
     await loginAsEditor(page);
     await page.goto("/posts");
 
-    await expect(page).toHaveURL("/contenido");
+    await expect(page).toHaveURL("/content");
     await expect(
-      page.getByRole("heading", { name: /^Contenido$/i }),
+      page.getByRole("heading", { name: /^Content$/i }),
     ).toBeVisible();
   });
 });

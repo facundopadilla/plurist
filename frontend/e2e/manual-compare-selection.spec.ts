@@ -16,26 +16,22 @@ async function getCsrf(page: import("@playwright/test").Page) {
 }
 
 test.describe("Manual compare selection (Task 12)", () => {
-  test("legacy /posts route redirects to /contenido", async ({ page }) => {
+  test("legacy /posts route redirects to /content", async ({ page }) => {
     await loginAsEditor(page);
     await page.goto("/posts");
-    await expect(page).toHaveURL("/contenido");
+    await expect(page).toHaveURL("/content");
     await page.screenshot({
       path: "../.sisyphus/evidence/task-12-posts-page.png",
     });
   });
 
-  test("contenido page exposes the new content entrypoint", async ({
-    page,
-  }) => {
+  test("content page exposes the new content entrypoint", async ({ page }) => {
     await loginAsEditor(page);
-    await page.goto("/contenido");
+    await page.goto("/content");
 
+    await expect(page.getByRole("heading", { name: /Content/i })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: /Contenido/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /Nuevo contenido/i }),
+      page.getByRole("button", { name: /New content/i }),
     ).toBeVisible();
 
     await page.screenshot({
