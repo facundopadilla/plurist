@@ -9,7 +9,9 @@ from mcp.server.fastmcp import FastMCP
 
 from apps.accounts.models import Workspace
 from apps.generation.models import CompareRun
-from apps.posts.models import DraftPost, DraftVariant
+from apps.generation.providers.registry import list_providers as list_generation_providers
+from apps.generation.tasks import run_compare_task
+from apps.posts.models import CarouselSlide, DraftPost, DraftVariant
 
 
 def _compare_run_to_dict(cr: CompareRun, include_variants: bool = False) -> dict[str, Any]:
@@ -109,8 +111,6 @@ async def _start_compare_tool(
         )
     )
 
-    from apps.generation.tasks import run_compare_task
-
     run_compare_task.delay(compare_run.id)
     return _compare_run_to_dict(compare_run)
 
@@ -125,8 +125,6 @@ async def _get_generation_status_tool(run_id: int) -> dict[str, Any]:
 
 
 def _select_variant_sync(compare_run: CompareRun, variant_id: int, slide_index: int) -> dict[str, Any]:
-    from apps.posts.models import CarouselSlide
-
     draft_post = DraftPost.objects.filter(
         workspace=compare_run.workspace,
         title=f"compare-run-{compare_run.pk}",
@@ -181,9 +179,7 @@ def register_generation_tools(mcp: FastMCP) -> None:
         Returns a list of provider identifiers that can be used with start_compare.
         Examples: 'openai', 'anthropic', 'ollama', etc.
         """
-        from apps.generation.providers.registry import list_providers as _list_providers
-
-        return await sync_to_async(_list_providers)()
+        return await sync_to_async(list_generation_providers)()
 
     @mcp.tool()
     async def start_compare(

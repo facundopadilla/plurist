@@ -8,6 +8,14 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
+from apps.mcp.prompts import register_prompts
+from apps.mcp.resources import register_resources
+from apps.mcp.tools.content import register_content_tools
+from apps.mcp.tools.design_bank import register_design_bank_tools
+from apps.mcp.tools.generation import register_generation_tools
+from apps.mcp.tools.projects import register_project_tools
+from apps.mcp.tools.skills import register_skills_tools
+
 
 def create_mcp_server() -> FastMCP:
     """Create and configure the Plurist MCP server.
@@ -34,12 +42,6 @@ def create_mcp_server() -> FastMCP:
 
 def _register_tools(mcp: FastMCP) -> None:
     """Register all MCP tools."""
-    from apps.mcp.tools.content import register_content_tools
-    from apps.mcp.tools.design_bank import register_design_bank_tools
-    from apps.mcp.tools.generation import register_generation_tools
-    from apps.mcp.tools.projects import register_project_tools
-    from apps.mcp.tools.skills import register_skills_tools
-
     @mcp.tool()
     def ping() -> str:
         """Health check — returns 'pong' if the server is running."""
@@ -54,13 +56,9 @@ def _register_tools(mcp: FastMCP) -> None:
 
 def _register_resources(mcp: FastMCP) -> None:
     """Register all MCP resources."""
-    from apps.mcp.resources import register_resources
-
     register_resources(mcp)
 
 
 def _register_prompts(mcp: FastMCP) -> None:
     """Register all MCP prompts."""
-    from apps.mcp.prompts import register_prompts
-
     register_prompts(mcp)

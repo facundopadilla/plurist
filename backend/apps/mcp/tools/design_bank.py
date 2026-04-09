@@ -5,6 +5,7 @@ from __future__ import annotations
 from asgiref.sync import sync_to_async
 from mcp.server.fastmcp import FastMCP
 
+from apps.accounts.models import Workspace
 from apps.design_bank.models import DesignBankSource
 
 
@@ -80,8 +81,6 @@ def register_design_bank_tools(mcp: FastMCP) -> None:
         Note: File uploads (images, PDFs) are not supported via MCP.
         Use the web UI for file-based assets.
         """
-        from apps.accounts.models import Workspace
-
         workspace = await sync_to_async(Workspace.objects.first)()
         if not workspace:
             return {"error": "Workspace not bootstrapped"}
