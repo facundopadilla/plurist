@@ -33,13 +33,17 @@ test.describe("App shell", () => {
     ).toBeVisible();
   });
 
-  test("unknown route shows 404 inside app shell", async ({ page }) => {
+  test("unknown route shows fullscreen 404 without app shell, then dashboard", async ({
+    page,
+  }) => {
     await loginAsOwner(page);
     await page.goto("/this-route-does-not-exist");
-    await expect(page.getByTestId("app-sidebar")).toBeVisible();
+    await expect(page.getByTestId("app-sidebar")).not.toBeVisible();
+    await expect(page.getByTestId("not-found-page")).toBeVisible();
     await expect(page.locator("h1")).toContainText("404");
     await page.screenshot({
       path: "../.sisyphus/evidence/task-3-404.png",
     });
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 12_000 });
   });
 });
