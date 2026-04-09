@@ -267,7 +267,7 @@ describe("ChatSidebar", () => {
   it("keeps technical element context out of the visible user message", async () => {
     const slideId = useCanvasStore
       .getState()
-      .addSlide(0, "<section><h2>Hola!</h2></section>", "openai", 1);
+      .addSlide(0, "<section><h2>Hello!</h2></section>", "openai", 1);
 
     useCanvasStore.getState().setElementReference({
       slideId,
@@ -276,8 +276,8 @@ describe("ChatSidebar", () => {
       cssPath: "section > h2",
       tag: "h2",
       label: "Heading",
-      contentPreview: "Hola!",
-      outerHtml: "<h2>Hola!</h2>",
+      contentPreview: "Hello!",
+      outerHtml: "<h2>Hello!</h2>",
     });
 
     renderWithQuery(<ChatSidebar />);
@@ -296,7 +296,7 @@ describe("ChatSidebar", () => {
     expect(textarea).not.toBeNull();
     expect(sendButton).not.toBeNull();
 
-    typeIn(textarea!, 'cambiale por "sarasa" de color celeste');
+    typeIn(textarea!, 'change it to "sarasa" in sky blue');
     sendButton?.click();
 
     await waitFor(() => {
@@ -304,9 +304,7 @@ describe("ChatSidebar", () => {
         .getState()
         .messages.find((message) => message.role === "user");
 
-      expect(userMessage?.content).toBe(
-        'cambiale por "sarasa" de color celeste',
-      );
+      expect(userMessage?.content).toBe('change it to "sarasa" in sky blue');
       expect(userMessage?.content).not.toContain("ELEMENT TO EDIT");
       expect(sendMessage).toHaveBeenCalledTimes(1);
     });
@@ -315,10 +313,10 @@ describe("ChatSidebar", () => {
   it("sends only the targeted slide html when editing a referenced element", async () => {
     const firstSlideId = useCanvasStore
       .getState()
-      .addSlide(0, "<section><h2>Hola!</h2></section>", "openai", 1);
+      .addSlide(0, "<section><h2>Hello!</h2></section>", "openai", 1);
     useCanvasStore
       .getState()
-      .addSlide(1, "<section><p>Otra slide</p></section>", "openai", 1);
+      .addSlide(1, "<section><p>Other slide</p></section>", "openai", 1);
     useCanvasStore.getState().setGlobalStyles("h2 { color: red; }");
 
     useCanvasStore.getState().setElementReference({
@@ -328,8 +326,8 @@ describe("ChatSidebar", () => {
       cssPath: "section > h2",
       tag: "h2",
       label: "Heading",
-      contentPreview: "Hola!",
-      outerHtml: "<h2>Hola!</h2>",
+      contentPreview: "Hello!",
+      outerHtml: "<h2>Hello!</h2>",
     });
 
     renderWithQuery(<ChatSidebar />);
@@ -344,16 +342,18 @@ describe("ChatSidebar", () => {
     expect(textarea).not.toBeNull();
     expect(sendButton).not.toBeNull();
 
-    typeIn(textarea!, "cambiale el color");
+    typeIn(textarea!, "change the color");
     sendButton?.click();
 
     await waitFor(() => {
       expect(sendMessage).toHaveBeenCalledTimes(1);
       const [params] = sendMessage.mock.calls[0] ?? [];
       expect(params.currentHtml).toContain("<!-- GLOBAL STYLES -->");
-      expect(params.currentHtml).toContain("<section><h2>Hola!</h2></section>");
+      expect(params.currentHtml).toContain(
+        "<section><h2>Hello!</h2></section>",
+      );
       expect(params.currentHtml).not.toContain(
-        "<section><p>Otra slide</p></section>",
+        "<section><p>Other slide</p></section>",
       );
       expect(params.mode).toBe("element-edit");
       expect(params.messages.at(-1)?.content).toContain("ELEMENT TO EDIT");
@@ -364,13 +364,13 @@ describe("ChatSidebar", () => {
   it("shows selected slide chips and sends only selected slides for general chat", async () => {
     const firstSlideId = useCanvasStore
       .getState()
-      .addSlide(0, "<section><h2>Uno</h2></section>", "openai", 1);
+      .addSlide(0, "<section><h2>One</h2></section>", "openai", 1);
     useCanvasStore
       .getState()
-      .addSlide(1, "<section><p>Dos</p></section>", "openai", 1);
+      .addSlide(1, "<section><p>Two</p></section>", "openai", 1);
     const thirdSlideId = useCanvasStore
       .getState()
-      .addSlide(2, "<section><p>Tres</p></section>", "openai", 1);
+      .addSlide(2, "<section><p>Three</p></section>", "openai", 1);
 
     useCanvasStore.getState().setSelectedSlideIds([firstSlideId, thirdSlideId]);
 
@@ -392,23 +392,23 @@ describe("ChatSidebar", () => {
     expect(textarea).not.toBeNull();
     expect(sendButton).not.toBeNull();
 
-    typeIn(textarea!, "trabajá estas slides");
+    typeIn(textarea!, "work on these slides");
     sendButton?.click();
 
     await waitFor(() => {
       expect(sendMessage).toHaveBeenCalledTimes(1);
       const [params] = sendMessage.mock.calls[0] ?? [];
       expect(params.mode).toBe("build");
-      expect(params.currentHtml).toContain("<section><h2>Uno</h2></section>");
-      expect(params.currentHtml).toContain("<section><p>Tres</p></section>");
-      expect(params.currentHtml).not.toContain("<section><p>Dos</p></section>");
+      expect(params.currentHtml).toContain("<section><h2>One</h2></section>");
+      expect(params.currentHtml).toContain("<section><p>Three</p></section>");
+      expect(params.currentHtml).not.toContain("<section><p>Two</p></section>");
     });
   });
 
   it("shows a safe fallback message when an element patch cannot be applied", async () => {
     const slideId = useCanvasStore
       .getState()
-      .addSlide(0, "<section><h2>Hola!</h2></section>", "openai", 1);
+      .addSlide(0, "<section><h2>Hello!</h2></section>", "openai", 1);
 
     useCanvasStore.getState().setElementReference({
       slideId,
@@ -417,13 +417,13 @@ describe("ChatSidebar", () => {
       cssPath: "section > h2",
       tag: "h2",
       label: "Heading",
-      contentPreview: "Hola!",
-      outerHtml: "<h2>Hola!</h2>",
+      contentPreview: "Hello!",
+      outerHtml: "<h2>Hello!</h2>",
     });
 
     onElementPatch.mockReturnValue({
       applied: false,
-      error: "No pude aplicar el cambio de forma segura.",
+      error: "Could not apply the change safely.",
     } as { applied: boolean; error?: string });
     sendMessage.mockImplementation(
       async (
@@ -437,7 +437,7 @@ describe("ChatSidebar", () => {
           onDone: () => void;
         },
       ) => {
-        callbacks.onElementPatch(0, "section > h2", "<h2>Nuevo</h2>");
+        callbacks.onElementPatch(0, "section > h2", "<h2>New</h2>");
         callbacks.onDone();
       },
     );
@@ -454,7 +454,7 @@ describe("ChatSidebar", () => {
     expect(textarea).not.toBeNull();
     expect(sendButton).not.toBeNull();
 
-    typeIn(textarea!, "cambiale el texto");
+    typeIn(textarea!, "change the text");
     sendButton?.click();
 
     await waitFor(() => {
@@ -462,7 +462,7 @@ describe("ChatSidebar", () => {
         .getState()
         .messages.find((message) => message.role === "assistant");
       expect(assistantMessage?.content).toBe(
-        "No pude aplicar el cambio de forma segura.",
+        "Could not apply the change safely.",
       );
     });
 
@@ -470,6 +470,6 @@ describe("ChatSidebar", () => {
       useCanvasStore
         .getState()
         .messages.find((message) => message.role === "assistant")?.content,
-    ).not.toContain("<h2>Nuevo</h2>");
+    ).not.toContain("<h2>New</h2>");
   });
 });
