@@ -11,6 +11,7 @@ import { ProjectsListPage } from "../features/projects/projects-list-page";
 import { ProjectDetailPage } from "../features/projects/project-detail-page";
 import { ReviewPage } from "../features/content/review-page";
 import { AIProvidersPage } from "../features/settings/ai-providers/ai-providers-page";
+import { NotFoundPage } from "./not-found-page";
 
 // Marketing landing (public, code-split)
 const LandingPage = lazy(() =>
@@ -29,15 +30,6 @@ const CanvasComposePage = lazy(() =>
 const CanvasComposeFallback = () => (
   <div className="flex h-screen w-screen items-center justify-center bg-[#09090b] text-zinc-50">
     <span className="text-sm text-zinc-500">Loading Canvas Studio...</span>
-  </div>
-);
-
-const NotFound = () => (
-  <div className="flex flex-col items-center justify-center h-full gap-4">
-    <h1 className="text-4xl font-bold">404 — Page Not Found</h1>
-    <p className="text-muted-foreground">
-      The page you&apos;re looking for doesn&apos;t exist.
-    </p>
   </div>
 );
 
@@ -149,16 +141,7 @@ export function AppRouter() {
             </RequireAuth>
           }
         />
-        <Route
-          path="*"
-          element={
-            <RequireAuth>
-              <AppShell>
-                <NotFound />
-              </AppShell>
-            </RequireAuth>
-          }
-        />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );
