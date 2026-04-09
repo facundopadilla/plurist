@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
 const backendUrl = process.env.BACKEND_URL ?? "http://backend:8000";
 
 test.describe("Auth invite login flow", () => {
@@ -9,7 +11,7 @@ test.describe("Auth invite login flow", () => {
     await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
-    await expect(page).toHaveURL("/");
+    await expectPostPasswordLoginUrl(page);
     await page.screenshot({
       path: "../.sisyphus/evidence/task-4-owner-editor-flow.png",
     });
@@ -20,7 +22,7 @@ test.describe("Auth invite login flow", () => {
     await page.getByTestId("login-email").fill("editor@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
-    await expect(page).toHaveURL("/");
+    await expectPostPasswordLoginUrl(page);
 
     const csrfResponse = await page.request.get(
       `${backendUrl}/api/v1/auth/csrf`,
@@ -85,8 +87,8 @@ test.describe("Auth invite login flow", () => {
       });
     });
 
-    await page.goto("/");
-    await expect(page).toHaveURL("/");
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL("/dashboard");
 
     await page.getByTestId("logout-button").click();
 
@@ -131,7 +133,7 @@ test.describe("Auth invite login flow", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/dashboard");
 
     await expect(page).toHaveURL("/login");
     await expect(page.getByTestId("login-form")).toBeVisible();

@@ -11,7 +11,9 @@
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:local": "BACKEND_URL=http://localhost:8000 BASE_URL=http://localhost:5173 playwright test --project=chromium"
   },
   "dependencies": {
     "@heroui/react": "^3.0.1",

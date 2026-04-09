@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
 async function getCsrf(page: import("@playwright/test").Page) {
   const csrfResponse = await page.request.get(`/api/v1/auth/csrf`);
   const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
@@ -15,10 +17,12 @@ test.describe("Design bank upload", () => {
     await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
-    await expect(page).toHaveURL("/");
+    await expectPostPasswordLoginUrl(page);
 
     await page.goto("/design-bank");
-    await expect(page.getByTestId("design-bank-upload-file")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Add resource/i }),
+    ).toBeVisible();
 
     await page.screenshot({
       path: "../.sisyphus/evidence/task-8-owner-upload-controls.png",
@@ -60,7 +64,7 @@ test.describe("Design bank upload", () => {
     await page.getByTestId("login-email").fill("publisher@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
-    await expect(page).toHaveURL("/");
+    await expectPostPasswordLoginUrl(page);
 
     await page.goto("/design-bank");
 

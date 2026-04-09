@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
 async function getCsrf(page: import("@playwright/test").Page) {
   const csrfResponse = await page.request.get(`/api/v1/auth/csrf`);
   const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
@@ -12,7 +14,7 @@ async function loginAs(page: import("@playwright/test").Page, email: string) {
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill("testpassword123");
   await page.getByTestId("login-submit").click();
-  await expect(page).toHaveURL("/");
+  await expectPostPasswordLoginUrl(page);
 }
 
 async function createBrandProfileVersion(
@@ -35,7 +37,7 @@ async function createBrandProfileVersion(
 }
 
 test.describe("Render preview", () => {
-  test("create a render job with a trusted template key and poll until resolved", async ({
+  test("server-side render jobs endpoint returns 410 (use canvas export)", async ({
     page,
   }) => {
     await loginAs(page, "editor@test.com");
@@ -58,59 +60,15 @@ test.describe("Render preview", () => {
       },
     );
 
-    expect(createJobResponse.status()).toBe(201);
-
-    const job = (await createJobResponse.json()) as {
-      id: number;
-      template_key: string;
-      status: string;
-    };
-    expect(job.template_key).toBe("social-post-standard");
-    expect(["pending", "processing", "completed"]).toContain(job.status);
-
-    // Poll until completed or failed (max 10 attempts, 1s apart)
-    let finalStatus = job.status;
-    let pollBody = job as Record<string, unknown>;
-
-    if (finalStatus !== "completed" && finalStatus !== "failed") {
-      for (let attempt = 0; attempt < 10; attempt++) {
-        await page.waitForTimeout(1000);
-
-        const pollResponse = await page.request.get(
-          `/api/v1/rendering/render-jobs/${job.id}`,
-          {
-            headers: {
-              "X-CSRF-Token": csrf,
-            },
-          },
-        );
-        expect(pollResponse.status()).toBe(200);
-
-        pollBody = (await pollResponse.json()) as Record<string, unknown>;
-        finalStatus = pollBody.status as string;
-
-        if (finalStatus === "completed" || finalStatus === "failed") {
-          break;
-        }
-      }
-    }
-
-    const evidenceText = [
-      `job_id=${job.id}`,
-      `template_key=${job.template_key}`,
-      `final_status=${finalStatus}`,
-      `brand_profile_version_id=${brandVersion.id}`,
-      `response=${JSON.stringify(pollBody)}`,
-    ].join("\n");
+    expect(createJobResponse.status()).toBe(410);
+    const goneBody = (await createJobResponse.json()) as { detail?: string };
+    expect(goneBody.detail ?? "").toMatch(/canvas export/i);
 
     await fs.writeFile(
-      "../.sisyphus/evidence/task-10-render-job-poll.txt",
-      evidenceText,
+      "../.sisyphus/evidence/task-10-render-job-gone.txt",
+      `status=${createJobResponse.status()}\nbody=${JSON.stringify(goneBody)}`,
       "utf-8",
     );
-
-    // Job should resolve to completed or pending (broker may be unavailable in test env)
-    expect(["pending", "completed", "failed"]).toContain(finalStatus);
   });
 
   test("create render job with invalid template key returns 400 or 422", async ({
@@ -140,9 +98,9 @@ test.describe("Render preview", () => {
       "utf-8",
     );
 
-    expect([400, 422]).toContain(response.status());
+    expect([400, 422, 410]).toContain(response.status());
 
-    const body = (await response.json()) as { detail: string };
-    expect(body.detail).toMatch(/template/i);
+    const body = (await response.json()) as { detail?: string };
+    expect(body.detail ?? "").toMatch(/template|canvas export/i);
   });
 });

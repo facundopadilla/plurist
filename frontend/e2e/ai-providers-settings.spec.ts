@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
 test.describe("AI Providers settings", () => {
   test("owner opens AI Providers from sidebar and sees the page", async ({
     page,
@@ -8,7 +10,7 @@ test.describe("AI Providers settings", () => {
     await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
-    await expect(page).toHaveURL("/");
+    await expectPostPasswordLoginUrl(page);
 
     await page.getByTestId("nav-ai-providers").click();
     await expect(page).toHaveURL("/settings/ai-providers");
@@ -25,7 +27,7 @@ test.describe("AI Providers settings", () => {
     await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
     await page.getByTestId("login-submit").click();
-    await expect(page).toHaveURL("/");
+    await expectPostPasswordLoginUrl(page);
 
     await page.goto("/settings/ai-providers");
     await expect(page).toHaveURL("/settings/ai-providers");

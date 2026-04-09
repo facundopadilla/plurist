@@ -1,15 +1,18 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
 async function login(page: import("@playwright/test").Page, email: string) {
   await page.goto("/login");
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill("testpassword123");
   await page.getByTestId("login-submit").click();
-  await expect(page).toHaveURL("/");
+  await expectPostPasswordLoginUrl(page);
 }
 
-test.describe("Immediate publish flow", () => {
+// Legacy submit/approve/publish HTTP API was removed from DraftPost — revisit when workflow E2E is redefined.
+test.describe.skip("Immediate publish flow", () => {
   test("full publish flow: create → submit → approve → publish", async ({
     page,
   }) => {

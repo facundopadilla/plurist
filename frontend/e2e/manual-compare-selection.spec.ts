@@ -1,12 +1,14 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
 async function loginAsEditor(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByTestId("login-email").fill("editor@test.com");
   await page.getByTestId("login-password").fill("testpassword123");
   await page.getByTestId("login-submit").click();
-  await expect(page).toHaveURL("/");
+  await expectPostPasswordLoginUrl(page);
 }
 
 async function getCsrf(page: import("@playwright/test").Page) {

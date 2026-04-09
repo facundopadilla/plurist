@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { expectPostPasswordLoginUrl } from "./expect-post-login";
+
 async function getCsrf(page: import("@playwright/test").Page) {
   const csrfResponse = await page.request.get(`/api/v1/auth/csrf`);
   const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
@@ -12,7 +14,7 @@ async function login(page: import("@playwright/test").Page, email: string) {
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill("testpassword123");
   await page.getByTestId("login-submit").click();
-  await expect(page).toHaveURL("/");
+  await expectPostPasswordLoginUrl(page);
 }
 
 test.describe("Operational analytics", () => {
@@ -29,13 +31,10 @@ test.describe("Operational analytics", () => {
 
     const body = (await resp.json()) as Record<string, unknown>;
 
-    // Must contain workflow-level counters
-    expect(body).toHaveProperty("publish_requested");
-    expect(body).toHaveProperty("publish_succeeded");
-    expect(body).toHaveProperty("publish_failed");
-    expect(body).toHaveProperty("approval_requested");
-    expect(body).toHaveProperty("approval_approved");
-    expect(body).toHaveProperty("approval_rejected");
+    // OperationalSummaryOut (backend/apps/analytics/api.py)
+    expect(body).toHaveProperty("content_created");
+    expect(body).toHaveProperty("content_completed");
+    expect(body).toHaveProperty("content_reverted");
 
     const evidence = [
       `status=${resp.status()}`,

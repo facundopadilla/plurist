@@ -9,6 +9,7 @@ async function globalSetup() {
     recursive: true,
   });
 
+  // Docker E2E: BACKEND_URL=http://backend:8000. Host machine: http://localhost:8000
   const backendUrl = process.env.BACKEND_URL ?? "http://backend:8000";
   const context = await request.newContext();
   const meResponse = await context.get(`${backendUrl}/api/v1/auth/csrf`);

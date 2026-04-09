@@ -7,7 +7,7 @@ test.describe("Google SSO linking", () => {
     await page.route("**/api/v1/auth/google/callback**", async (route) => {
       await route.fulfill({
         status: 302,
-        headers: { location: "/" },
+        headers: { location: "/dashboard" },
       });
     });
 
@@ -27,7 +27,7 @@ test.describe("Google SSO linking", () => {
     await page.goto(
       "/api/v1/auth/google/callback?code=fake-code&state=fake-state",
     );
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL("/dashboard");
     await expect(
       page.getByRole("heading", { name: "Dashboard" }),
     ).toBeVisible();
