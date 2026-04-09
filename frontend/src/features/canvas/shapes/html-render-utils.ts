@@ -68,7 +68,8 @@ export function renderHtmlIntoShadowHost(
 
   // Intentional: this is the canvas HTML renderer. The Shadow DOM provides style isolation.
   // Content is workspace-owned HTML (not raw user input) rendered in a sandboxed tldraw shape.
-  root.innerHTML = ` // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method -- renderer consumes sanitized workspace HTML
+  // nosemgrep: javascript.browser.security.insecure-document-method.insecure-document-method -- HTML from extractHtmlDocument/sanitizeNodeTree; not raw paste here
+  root.innerHTML = `
     ${globalStyleBlock}
     ${headMarkup}
     <style>
