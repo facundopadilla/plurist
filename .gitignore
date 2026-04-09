@@ -156,3 +156,6 @@ ops/static-analysis/reports/
 
 # Accidental root path from mis-resolved installs (e.g. husky internals); never version
 --version/
+
+# Local frontend audit notes (not product source)
+frontend/CHANGES_FRONTEND.md
