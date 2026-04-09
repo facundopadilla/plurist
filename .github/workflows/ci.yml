@@ -16,6 +16,42 @@ jobs:
       - name: Check license reviews
         run: ./scripts/check-license-reviews.sh
 
+  backend-audit:
+    name: Backend audit & architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Sync backend (dev)
+        working-directory: backend
+        run: uv sync --extra dev
+
+      - name: pip-audit (known CVEs in locked deps)
+        working-directory: backend
+        run: uv run pip-audit
+
+      - name: import-linter (architectural boundaries)
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: uv run lint-imports
+
+      - name: Django system check
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+          PYTHONPATH: .
+        run: uv run python manage.py check
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

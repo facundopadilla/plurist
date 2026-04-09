@@ -1,4 +1,4 @@
-.PHONY: up down lint test-backend test-frontend test-e2e seed-test-accounts
+.PHONY: up down lint audit-backend test-backend test-frontend test-e2e seed-test-accounts
 
 up:
 	docker compose up -d --build --wait
@@ -14,6 +14,12 @@ lint:
 	docker compose run --rm --build backend ruff check .
 	docker compose run --rm --build frontend pnpm exec tsc --noEmit
 	docker compose run --rm frontend pnpm run lint
+
+# Dependency CVE scan, import boundaries, Django system checks (no Docker; uses uv).
+audit-backend:
+	cd backend && uv run pip-audit
+	cd backend && PYTHONPATH=. uv run lint-imports
+	cd backend && DJANGO_SETTINGS_MODULE=config.settings.test PYTHONPATH=. uv run python manage.py check
 
 test-backend:
 	docker compose run --rm --build backend pytest

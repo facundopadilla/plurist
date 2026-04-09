@@ -25,8 +25,15 @@ Este repo ahora usa una estrategia en dos capas:
 - `ruff check backend --select F63,F7,F82,E9`
 - `bandit` sobre `backend/apps` y `backend/config`
 - `mypy` sobre providers de generación ya tipados y versionados con `django-stubs`
+- `import-linter` (contratos de imports entre apps; ver `backend/pyproject.toml` → `[tool.importlinter]`)
+- `python manage.py check` con `DJANGO_SETTINGS_MODULE=config.settings.test`
 - `eslint` completo del frontend
 - `tsc --noEmit` en frontend
+
+### Auditoría de dependencias (CVEs)
+
+- Local / CI: `make audit-backend` ejecuta `pip-audit`, `lint-imports` y `manage.py check` (sin Docker, vía `uv` en `backend/`).
+- El job **Backend audit & architecture** en GitHub Actions corre los mismos pasos en cada push/PR.
 
 ## Setup local
 

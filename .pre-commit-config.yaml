@@ -124,3 +124,17 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+      - id: backend-import-linter
+        name: import-linter (backend architecture)
+        entry: bash -c 'cd backend && PYTHONPATH=. uv run lint-imports'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: backend-django-check
+        name: Django system check (test settings)
+        entry: bash -c 'cd backend && DJANGO_SETTINGS_MODULE=config.settings.test PYTHONPATH=. uv run python manage.py check'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
