@@ -9,7 +9,7 @@ import {
   KeyRound,
   Search,
 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import {
   DropdownMenu,
@@ -377,66 +377,102 @@ function providerIcon(provider: string, size = 16) {
   }
 }
 
-function modelProviderIcon(model: string, activeProvider: string) {
-  if (activeProvider !== "openrouter") return null;
-  const org = model.split("/")[0]?.toLowerCase() ?? "";
-  if (org.includes("openai")) return providerIcon("openai");
-  if (org.includes("anthropic")) return providerIcon("anthropic");
-  if (org.includes("google")) return providerIcon("gemini");
-  if (org.includes("meta") || org.includes("llama"))
-    return (
+const OPENROUTER_ORG_ICON_RULES: ReadonlyArray<{
+  matches: (org: string) => boolean;
+  icon: () => ReactNode;
+}> = [
+  {
+    matches: (org) => org.includes("openai"),
+    icon: () => providerIcon("openai"),
+  },
+  {
+    matches: (org) => org.includes("anthropic"),
+    icon: () => providerIcon("anthropic"),
+  },
+  {
+    matches: (org) => org.includes("google"),
+    icon: () => providerIcon("gemini"),
+  },
+  {
+    matches: (org) => org.includes("meta") || org.includes("llama"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-blue-600/20 text-[10px] font-bold text-blue-300">
         M
       </span>
-    );
-  if (org.includes("mistral") || org.includes("mistralai"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("mistral") || org.includes("mistralai"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-amber-500/20 text-[10px] font-bold text-amber-400">
         Mi
       </span>
-    );
-  if (org.includes("deepseek"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("deepseek"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-cyan-500/20 text-[10px] font-bold text-cyan-400">
         DS
       </span>
-    );
-  if (org.includes("qwen"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("qwen"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-violet-500/20 text-[10px] font-bold text-violet-400">
         Q
       </span>
-    );
-  if (org.includes("cohere"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("cohere"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-rose-500/20 text-[10px] font-bold text-rose-400">
         C
       </span>
-    );
-  if (org.includes("perplexity"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("perplexity"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-teal-500/20 text-[10px] font-bold text-teal-400">
         P
       </span>
-    );
-  if (org.includes("x-ai") || org.includes("grok"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("x-ai") || org.includes("grok"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-zinc-300/20 text-[10px] font-bold text-zinc-300">
         X
       </span>
-    );
-  if (org.includes("microsoft"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("microsoft"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-sky-500/20 text-[10px] font-bold text-sky-400">
         MS
       </span>
-    );
-  if (org.includes("nvidia"))
-    return (
+    ),
+  },
+  {
+    matches: (org) => org.includes("nvidia"),
+    icon: () => (
       <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-green-500/20 text-[10px] font-bold text-green-400">
         NV
       </span>
-    );
+    ),
+  },
+];
+
+function modelProviderIcon(model: string, activeProvider: string) {
+  if (activeProvider !== "openrouter") return null;
+  const org = model.split("/")[0]?.toLowerCase() ?? "";
+  for (const rule of OPENROUTER_ORG_ICON_RULES) {
+    if (rule.matches(org)) return rule.icon();
+  }
   return (
     <span className="inline-flex h-4 w-4 items-center justify-center rounded-md bg-zinc-500/20 text-[10px] font-bold text-zinc-400">
       {org.charAt(0).toUpperCase()}
