@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { evidencePath } from "./evidence-path";
 import { expectPostPasswordLoginUrl } from "./expect-post-login";
 
 async function getCsrf(page: import("@playwright/test").Page) {
@@ -65,7 +66,7 @@ test.describe("Render preview", () => {
     expect(goneBody.detail ?? "").toMatch(/canvas export/i);
 
     await fs.writeFile(
-      "../.sisyphus/evidence/task-10-render-job-gone.txt",
+      evidencePath("task-10-render-job-gone.txt"),
       `status=${createJobResponse.status()}\nbody=${JSON.stringify(goneBody)}`,
       "utf-8",
     );
@@ -93,7 +94,7 @@ test.describe("Render preview", () => {
 
     const evidenceText = `status=${response.status()}\nbody=${await response.text()}`;
     await fs.writeFile(
-      "../.sisyphus/evidence/task-10-invalid-template-key.txt",
+      evidencePath("task-10-invalid-template-key.txt"),
       evidenceText,
       "utf-8",
     );

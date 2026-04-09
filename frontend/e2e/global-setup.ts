@@ -1,13 +1,11 @@
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
 
 import { request } from "@playwright/test";
 
+import { EVIDENCE_DIR } from "./evidence-path";
+
 async function globalSetup() {
-  // E2E specs write optional artifacts under repo-root .sisyphus/evidence (gitignored).
-  mkdirSync(join(__dirname, "..", "..", ".sisyphus", "evidence"), {
-    recursive: true,
-  });
+  mkdirSync(EVIDENCE_DIR, { recursive: true });
 
   // Docker E2E: BACKEND_URL=http://backend:8000. Host machine: http://localhost:8000
   const backendUrl = process.env.BACKEND_URL ?? "http://backend:8000";

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { evidencePath } from "./evidence-path";
 import { expectPostPasswordLoginUrl } from "./expect-post-login";
 
 async function getCsrf(page: import("@playwright/test").Page) {
@@ -48,7 +49,7 @@ test.describe("Brand profile curation", () => {
 
     const createText = `status=${createResponse.status()}\nbody=${await createResponse.text()}`;
     await fs.writeFile(
-      "../.sisyphus/evidence/task-9-create-version.txt",
+      evidencePath("task-9-create-version.txt"),
       createText,
       "utf-8",
     );
@@ -83,7 +84,7 @@ test.describe("Brand profile curation", () => {
 
     const listText = `status=${listResponse.status()}\nfound_id=${created.id}\nbody=${JSON.stringify(versions)}`;
     await fs.writeFile(
-      "../.sisyphus/evidence/task-9-version-list.txt",
+      evidencePath("task-9-version-list.txt"),
       listText,
       "utf-8",
     );
@@ -150,7 +151,7 @@ test.describe("Brand profile curation", () => {
       `v1_unchanged=${v1Check.profile_data.brand_name === "Version One Brand"}`,
     ].join("\n");
     await fs.writeFile(
-      "../.sisyphus/evidence/task-9-version-immutability.txt",
+      evidencePath("task-9-version-immutability.txt"),
       immutabilityText,
       "utf-8",
     );

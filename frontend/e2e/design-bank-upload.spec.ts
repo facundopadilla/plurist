@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { evidencePath } from "./evidence-path";
 import { expectPostPasswordLoginUrl } from "./expect-post-login";
 
 async function getCsrf(page: import("@playwright/test").Page) {
@@ -25,7 +26,7 @@ test.describe("Design bank upload", () => {
     ).toBeVisible();
 
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-8-owner-upload-controls.png",
+      path: evidencePath("task-8-owner-upload-controls.png"),
     });
 
     const csrf = await getCsrf(page);
@@ -43,7 +44,7 @@ test.describe("Design bank upload", () => {
 
     const text = `status=${response.status()}\nbody=${await response.text()}`;
     await fs.writeFile(
-      "../.sisyphus/evidence/task-8-owner-url-ingest.txt",
+      evidencePath("task-8-owner-url-ingest.txt"),
       text,
       "utf-8",
     );
@@ -69,7 +70,7 @@ test.describe("Design bank upload", () => {
     await page.goto("/design-bank");
 
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-8-publisher-no-upload.png",
+      path: evidencePath("task-8-publisher-no-upload.png"),
     });
 
     const uploadControl = page.getByTestId("design-bank-upload-file");
@@ -97,7 +98,7 @@ test.describe("Design bank upload", () => {
 
     const text = `status=${response.status()}\nbody=${await response.text()}`;
     await fs.writeFile(
-      "../.sisyphus/evidence/task-8-publisher-url-ingest-forbidden.txt",
+      evidencePath("task-8-publisher-url-ingest-forbidden.txt"),
       text,
       "utf-8",
     );

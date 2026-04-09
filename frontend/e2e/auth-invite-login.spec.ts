@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { evidencePath } from "./evidence-path";
 import { expectPostPasswordLoginUrl } from "./expect-post-login";
-
-const backendUrl = process.env.BACKEND_URL ?? "http://backend:8000";
 
 test.describe("Auth invite login flow", () => {
   test("owner boots workspace and invites an editor", async ({ page }) => {
@@ -13,7 +12,7 @@ test.describe("Auth invite login flow", () => {
     await page.getByTestId("login-submit").click();
     await expectPostPasswordLoginUrl(page);
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-4-owner-editor-flow.png",
+      path: evidencePath("task-4-owner-editor-flow.png"),
     });
   });
 
@@ -24,31 +23,24 @@ test.describe("Auth invite login flow", () => {
     await page.getByTestId("login-submit").click();
     await expectPostPasswordLoginUrl(page);
 
-    const csrfResponse = await page.request.get(
-      `${backendUrl}/api/v1/auth/csrf`,
-    );
+    // Same-origin API (Vite → backend) so session cookies apply; direct BACKEND_URL calls have no session → 401.
+    const csrfResponse = await page.request.get("/api/v1/auth/csrf");
     const csrfData = (await csrfResponse.json()) as { csrf_token?: string };
     const csrf = csrfData.csrf_token ?? "";
 
-    const response = await page.request.post(
-      `${backendUrl}/api/v1/auth/invites`,
-      {
-        data: {
-          email: "blocked@test.com",
-          role: "editor",
-        },
-        headers: {
-          "X-CSRF-Token": csrf,
-          Cookie: (await page.context().cookies(backendUrl))
-            .map((cookie) => `${cookie.name}=${cookie.value}`)
-            .join("; "),
-        },
+    const response = await page.request.post("/api/v1/auth/invites", {
+      data: {
+        email: "blocked@test.com",
+        role: "editor",
       },
-    );
+      headers: {
+        "X-CSRF-Token": csrf,
+      },
+    });
 
     const text = `status=${response.status()}\nbody=${await response.text()}`;
     await fs.writeFile(
-      "../.sisyphus/evidence/task-4-editor-invite-forbidden.txt",
+      evidencePath("task-4-editor-invite-forbidden.txt"),
       text,
       "utf-8",
     );

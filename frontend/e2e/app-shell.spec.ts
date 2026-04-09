@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { evidencePath } from "./evidence-path";
+
 async function loginAsOwner(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByTestId("login-email").fill("owner@test.com");
@@ -19,7 +21,7 @@ test.describe("App shell", () => {
     await expect(page.getByTestId("nav-ai-providers")).toBeVisible();
     await expect(page.getByTestId("logout-button")).toBeVisible();
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-3-app-shell.png",
+      path: evidencePath("task-3-app-shell.png"),
     });
   });
 
@@ -42,7 +44,7 @@ test.describe("App shell", () => {
     await expect(page.getByTestId("not-found-page")).toBeVisible();
     await expect(page.locator("h1")).toContainText("404");
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-3-404.png",
+      path: evidencePath("task-3-404.png"),
     });
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 12_000 });
   });

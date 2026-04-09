@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { evidencePath } from "./evidence-path";
 import { expectPostPasswordLoginUrl } from "./expect-post-login";
 
 async function getCsrf(page: import("@playwright/test").Page) {
@@ -42,7 +43,7 @@ test.describe("Operational analytics", () => {
       `body=${JSON.stringify(body)}`,
     ].join("\n");
     await fs.writeFile(
-      "../.sisyphus/evidence/task-18-analytics-summary.txt",
+      evidencePath("task-18-analytics-summary.txt"),
       evidence,
       "utf-8",
     );
@@ -68,7 +69,7 @@ test.describe("Operational analytics", () => {
 
     const keys = Object.keys(body).join(",");
     await fs.writeFile(
-      "../.sisyphus/evidence/task-18-analytics-no-engagement.txt",
+      evidencePath("task-18-analytics-no-engagement.txt"),
       `response_keys=${keys}`,
       "utf-8",
     );

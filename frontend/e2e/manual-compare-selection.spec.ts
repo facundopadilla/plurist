@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { promises as fs } from "node:fs";
 
+import { evidencePath } from "./evidence-path";
 import { expectPostPasswordLoginUrl } from "./expect-post-login";
 
 async function loginAsEditor(page: import("@playwright/test").Page) {
@@ -23,7 +24,7 @@ test.describe("Manual compare selection (Task 12)", () => {
     await page.goto("/posts");
     await expect(page).toHaveURL("/content");
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-12-posts-page.png",
+      path: evidencePath("task-12-posts-page.png"),
     });
   });
 
@@ -37,7 +38,7 @@ test.describe("Manual compare selection (Task 12)", () => {
     ).toBeVisible();
 
     await page.screenshot({
-      path: "../.sisyphus/evidence/task-12-submit-disabled.png",
+      path: evidencePath("task-12-submit-disabled.png"),
     });
   });
 
@@ -88,7 +89,7 @@ test.describe("Manual compare selection (Task 12)", () => {
 
     const evidence = `status=${createResponse.status()}\npost_id=${created.id}\npost_status=${created.status}`;
     await fs.writeFile(
-      "../.sisyphus/evidence/task-12-draft-post-api.txt",
+      evidencePath("task-12-draft-post-api.txt"),
       evidence,
       "utf-8",
     );
