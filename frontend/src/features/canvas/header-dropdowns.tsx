@@ -120,7 +120,7 @@ export function NetworkDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className={triggerClassName}>
-          <span>{selected ? selected.label : "Red social"}</span>
+          <span>{selected ? selected.label : "Social network"}</span>
           <ChevronDown size={12} className="text-zinc-500" />
         </button>
       </DropdownMenuTrigger>
@@ -236,7 +236,7 @@ export function ProviderDropdown() {
   let providerLabel = "Providers";
   if (selectedProviders.length > 0) {
     const providerUnit =
-      selectedProviders.length > 1 ? "proveedores" : "proveedor";
+      selectedProviders.length > 1 ? "providers" : "provider";
     providerLabel = `${selectedProviders.length} ${providerUnit}`;
   }
 
@@ -567,11 +567,11 @@ export function ModelDropdown({
     return models.filter((m) => m.toLowerCase().includes(query));
   }, [models, modelSearch]);
 
-  let displayLabel = "Configurar AI";
+  let displayLabel = "Configure AI";
   if (currentModel) {
     displayLabel = currentModel.split("/").pop() ?? currentModel;
   } else if (activeProvider) {
-    displayLabel = "Modelo";
+    displayLabel = "Model";
   }
 
   return (

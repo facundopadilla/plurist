@@ -374,16 +374,16 @@ describe("canvas-store", () => {
         .addSlide(0, "<p>Annotate</p>", "openai", 1);
       const annotationId = useCanvasStore
         .getState()
-        .addSlideAnnotation(slideId, "Vieja nota")!;
+        .addSlideAnnotation(slideId, "Old note")!;
 
       useCanvasStore
         .getState()
-        .updateSlideAnnotation(slideId, annotationId, "Nota nueva");
+        .updateSlideAnnotation(slideId, annotationId, "New note");
 
       expect(
         useCanvasStore.getState().slides.get(slideId)?.annotations,
       ).toEqual([
-        expect.objectContaining({ id: annotationId, text: "Nota nueva" }),
+        expect.objectContaining({ id: annotationId, text: "New note" }),
       ]);
     });
 
@@ -393,7 +393,7 @@ describe("canvas-store", () => {
         .addSlide(0, "<p>Annotate</p>", "openai", 1);
       const annotationId = useCanvasStore
         .getState()
-        .addSlideAnnotation(slideId, "Borrar")!;
+        .addSlideAnnotation(slideId, "Delete")!;
 
       useCanvasStore.getState().removeSlideAnnotation(slideId, annotationId);
 

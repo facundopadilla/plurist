@@ -296,7 +296,7 @@ describe("ChatSidebar", () => {
     expect(textarea).not.toBeNull();
     expect(sendButton).not.toBeNull();
 
-    typeIn(textarea!, 'change it to "sarasa" in sky blue');
+    typeIn(textarea!, 'change it to "replaced" in sky blue');
     sendButton?.click();
 
     await waitFor(() => {
@@ -304,7 +304,7 @@ describe("ChatSidebar", () => {
         .getState()
         .messages.find((message) => message.role === "user");
 
-      expect(userMessage?.content).toBe('change it to "sarasa" in sky blue');
+      expect(userMessage?.content).toBe('change it to "replaced" in sky blue');
       expect(userMessage?.content).not.toContain("ELEMENT TO EDIT");
       expect(sendMessage).toHaveBeenCalledTimes(1);
     });

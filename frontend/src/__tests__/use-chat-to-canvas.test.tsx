@@ -103,19 +103,19 @@ describe("useChatToCanvas", () => {
   it("reports a safe failure when the targeted selector cannot be patched", () => {
     const slideId = useCanvasStore
       .getState()
-      .addSlide(0, "<section><h2>Hola</h2></section>", "openai", 1);
+      .addSlide(0, "<section><h2>Hello</h2></section>", "openai", 1);
 
     const result = handlers?.onElementPatch(
       slideId,
       1,
       "section > p",
-      "<p>Nuevo</p>",
+      "<p>New</p>",
     );
 
     expect(result?.applied).toBe(false);
     expect(result?.error).toMatch(/Target element not found/);
     expect(
       useCanvasStore.getState().slides.get(slideId)?.variants[0]?.html,
-    ).toBe("<section><h2>Hola</h2></section>");
+    ).toBe("<section><h2>Hello</h2></section>");
   });
 });

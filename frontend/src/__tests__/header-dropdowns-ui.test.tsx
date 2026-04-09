@@ -154,7 +154,7 @@ describe("canvas header dropdowns", () => {
     const view = renderWithQuery(<ModelDropdown />);
 
     await waitFor(() => {
-      expect(view.container.textContent).toContain("Configurar AI");
+      expect(view.container.textContent).toContain("Configure AI");
     });
   });
 

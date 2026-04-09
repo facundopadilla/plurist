@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Redes Sociales page", () => {
-  test("shows redes-sociales page when navigating to /settings/redes-sociales", async ({
+test.describe("Social network settings (legacy /settings/redes-sociales route)", () => {
+  test("shows page when navigating to /settings/redes-sociales", async ({
     page,
   }) => {
     // Login as owner
@@ -11,7 +11,6 @@ test.describe("Redes Sociales page", () => {
     await page.getByTestId("login-submit").click();
     await expect(page).toHaveURL("/");
 
-    // Navigate to redes sociales
     await page.goto("/settings/redes-sociales");
     await expect(page).toHaveURL("/settings/redes-sociales");
 
@@ -21,7 +20,9 @@ test.describe("Redes Sociales page", () => {
     await expect(page.getByText("Instagram")).toBeVisible();
   });
 
-  test("nav Settings link goes to redes-sociales", async ({ page }) => {
+  test("nav Settings link goes to /settings/redes-sociales", async ({
+    page,
+  }) => {
     await page.goto("/login");
     await page.getByTestId("login-email").fill("owner@test.com");
     await page.getByTestId("login-password").fill("testpassword123");
@@ -42,7 +43,6 @@ test.describe("Redes Sociales page", () => {
 
     await page.goto("/settings/redes-sociales");
 
-    // Intercept the navigation to avoid actually hitting Twitter
     let redirected = false;
     page.on("request", (req) => {
       if (req.url().includes("/api/v1/integrations/oauth/x/start")) {
@@ -50,12 +50,9 @@ test.describe("Redes Sociales page", () => {
       }
     });
 
-    // Click connect for X — the button triggers window.location.href redirect
-    const connectButtons = page.getByRole("button", { name: "Conectar" });
-    // Find the one associated with X (second button)
+    const connectButtons = page.getByRole("button", { name: "Connect" });
     await connectButtons.nth(1).click();
 
-    // Give a moment for the navigation to start
     await page.waitForTimeout(300);
     expect(redirected).toBe(true);
   });
