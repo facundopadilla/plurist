@@ -1,18 +1,25 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
+import httpx
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from pydantic import Field
 
 from apps.accounts.auth import MEMBERSHIP_REQUIRED_DETAIL, get_membership, require_editor_capabilities
 from apps.accounts.session_auth import session_auth as django_auth
-from apps.posts.models import BrandProfileVersion, DraftVariant
+from apps.posts.models import BrandProfileVersion, CarouselSlide, DraftPost, DraftVariant
+from apps.projects.models import Project
+from apps.workspace.models import WorkspaceAISettings
 
 from .chat_api import router as chat_router
 from .models import CompareRun
 from .providers.registry import get_provider, list_providers
+from .tasks import run_compare_task
+
+logger = logging.getLogger(__name__)
 
 router = Router(tags=["generation"])
 router.add_router("/chat", chat_router)
@@ -105,8 +112,6 @@ def _compare_run_to_out(cr: CompareRun, include_variants: bool = False) -> dict[
         "variants": [],
     }
     if include_variants:
-        from apps.posts.models import DraftPost
-
         draft_post = DraftPost.objects.filter(
             workspace=cr.workspace,
             title=f"compare-run-{cr.pk}",
@@ -142,8 +147,6 @@ def start_compare(request, payload: CompareRunIn):
     project = None
     if payload.project_id is not None:
         try:
-            from apps.projects.models import Project
-
             project = Project.objects.get(
                 pk=payload.project_id,
                 workspace=membership.workspace,
@@ -165,8 +168,6 @@ def start_compare(request, payload: CompareRunIn):
         height=payload.height,
         created_by=request.user,
     )
-
-    from .tasks import run_compare_task
 
     run_compare_task.delay(compare_run.id)
 
@@ -207,8 +208,6 @@ def select_variant(request, compare_run_id: int, variant_id: int, payload: Selec
         )
     except CompareRun.DoesNotExist:
         raise HttpError(404, "Compare run not found")
-
-    from apps.posts.models import CarouselSlide, DraftPost
 
     draft_post = DraftPost.objects.filter(
         workspace=compare_run.workspace,
@@ -270,10 +269,6 @@ def get_ollama_models(request):
     Returns an empty list when Ollama is unreachable instead of raising so
     the frontend can degrade gracefully.
     """
-    import httpx
-
-    from apps.workspace.models import WorkspaceAISettings
-
     membership = get_membership(request)
     if not membership:
         raise HttpError(403, MEMBERSHIP_REQUIRED_DETAIL)
@@ -285,7 +280,7 @@ def get_ollama_models(request):
         if ws_settings and ws_settings.ollama_base_url:
             base_url = ws_settings.ollama_base_url.rstrip("/")
     except Exception:
-        pass
+        logger.debug("Could not resolve Ollama base URL from workspace settings", exc_info=True)
 
     try:
         response = httpx.get(f"{base_url}/api/tags", timeout=5)

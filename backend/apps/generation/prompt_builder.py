@@ -4,7 +4,15 @@ Build AI prompts that incorporate Design Bank assets for a given project.
 
 from __future__ import annotations
 
+import logging
 import re
+
+from apps.design_bank.design_system_service import build_compacted_project_context
+from apps.design_bank.models import DesignBankSource
+from apps.rendering.formats import get_format
+from apps.skills.models import ProjectSkill
+
+logger = logging.getLogger(__name__)
 
 
 def build_design_prompt(
@@ -65,8 +73,6 @@ def _build_html_prompt(
     - Carousel slide context (if total_slides > 1)
     - The current HTML code on the canvas (if any)
     """
-    from apps.rendering.formats import get_format
-
     dims = get_format(fmt)
     width = dims["width"]
     height = dims["height"]
@@ -273,8 +279,6 @@ def _gather_active_skills(project_id: int | None) -> str:
     if project_id is None:
         return ""
 
-    from apps.skills.models import ProjectSkill
-
     # Active skills assigned to the project where the global skill is also active
     skills = (
         ProjectSkill.objects.filter(project_id=project_id, is_active=True, skill__is_active=True)
@@ -305,7 +309,8 @@ def _append_brand_section(
     lines: list[str],
 ) -> None:
     if lines:
-        sections.append(f"{title}:\n" + "\n".join(lines))
+        body = "\n".join(lines)
+        sections.append(f"{title}:\n{body}")
 
 
 def _build_color_section(sources) -> list[str]:
@@ -351,9 +356,6 @@ def _gather_brand_assets(project_id: int | None) -> str:
         return ""
 
     try:
-        from apps.design_bank.design_system_service import build_compacted_project_context
-        from apps.design_bank.models import DesignBankSource
-
         compacted_context = build_compacted_project_context(project_id)
         if compacted_context.strip():
             return compacted_context
@@ -387,4 +389,5 @@ def _gather_brand_assets(project_id: int | None) -> str:
         return "\n\n".join(sections)
 
     except Exception:
+        logger.exception("Failed to gather brand assets for project %s", project_id)
         return ""

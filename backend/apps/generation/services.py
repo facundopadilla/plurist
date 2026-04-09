@@ -5,8 +5,10 @@ import concurrent.futures
 from apps.posts.models import DraftPost, DraftVariant
 
 from .models import CompareRun
+from .prompt_builder import build_design_prompt
 from .providers.base import GenerationResult
 from .providers.registry import get_provider
+from .sanitizer import sanitize_html
 
 
 def _estimate_slide_count(brief: str, default: int = 3, max_slides: int = 10) -> int:
@@ -17,8 +19,6 @@ def _estimate_slide_count(brief: str, default: int = 3, max_slides: int = 10) ->
 
 
 def _build_prompt(compare_run: CompareRun, slide_index: int = 0, total_slides: int = 1) -> str:
-    from .prompt_builder import build_design_prompt
-
     project_id = compare_run.project_id if compare_run.project_id else None
 
     if project_id:
@@ -78,9 +78,7 @@ def _run_single_provider(
         provider = get_provider(provider_key)
         result = provider.generate(prompt, context)
     except Exception as exc:
-        from .providers.base import GenerationResult as GR
-
-        result = GR(
+        result = GenerationResult(
             success=False,
             provider_name=provider_key,
             model_id="",
@@ -140,8 +138,6 @@ def _persist_generation_results(
         generated_html = ""
         generated_text = result.generated_text
         if is_html:
-            from .sanitizer import sanitize_html
-
             generated_html = sanitize_html(result.generated_text)
             generated_text = ""
 

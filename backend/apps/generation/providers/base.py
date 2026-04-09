@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import json
 import os
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Iterator
+
+import httpx
+
+from apps.workspace.crypto import AIKeyVault
+
+from .errors import ProviderError, classify_provider_error
 
 if TYPE_CHECKING:
     from apps.workspace.models import WorkspaceAISettings
@@ -39,8 +47,6 @@ def resolve_api_key(
     2. Environment variable *env_var*.
     """
     if workspace_settings is not None:
-        from apps.workspace.crypto import AIKeyVault
-
         enc = getattr(workspace_settings, enc_field, "")
         if enc:
             return AIKeyVault.decrypt(enc)
@@ -87,8 +93,6 @@ def make_error_result(
     model_id: str,
 ) -> GenerationResult:
     """Create a GenerationResult with structured error info from an exception."""
-    from .errors import classify_provider_error
-
     classified = classify_provider_error(exc, provider_name)
     return GenerationResult(
         success=False,
@@ -140,12 +144,10 @@ def make_mock_result(
 def iter_mock_stream(provider_name: str, prompt: str) -> Iterator[str]:
     words = f"[{provider_name}-mock] {prompt[:80]}".split()
     for word in words:
-        yield word + " "
+        yield f"{word} "
 
 
 def raise_provider_error(exc: Exception, provider_name: str) -> None:
-    from .errors import ProviderError, classify_provider_error
-
     classified = classify_provider_error(exc, provider_name)
     raise ProviderError(
         message=classified.message,
@@ -171,8 +173,6 @@ class BaseProvider(ABC):
         if result.success:
             yield result.generated_text
         else:
-            from .errors import ProviderError
-
             raise ProviderError(
                 message=result.error_message,
                 code=result.error_code,
@@ -249,10 +249,6 @@ def request_openai_compatible_result(
     context: dict[str, Any],
     timeout: int = 30,
 ) -> GenerationResult:
-    import time
-
-    import httpx
-
     t0 = time.monotonic()
     response = httpx.post(
         url,
@@ -284,10 +280,6 @@ def stream_openai_compatible_result(
     context: dict[str, Any],
     timeout: int = 60,
 ) -> Iterator[str]:
-    import json
-
-    import httpx
-
     try:
         with httpx.stream(
             "POST",

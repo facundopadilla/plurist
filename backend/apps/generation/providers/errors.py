@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
+import httpx
+
 logger = logging.getLogger(__name__)
 
 # ── Error codes (stable identifiers for the frontend) ────────────────
@@ -226,27 +228,14 @@ def classify_provider_error(exc: Exception, provider_name: str) -> ClassifiedErr
     Handles httpx.HTTPStatusError, httpx.TimeoutException,
     httpx.ConnectError, and generic exceptions.
     """
-    try:
-        import httpx
-    except ImportError:
-        # If httpx not importable somehow, return generic
-        return ClassifiedError(
-            code=UNKNOWN,
-            category=CATEGORY_NETWORK,
-            message="Generation failed",
-            hint=str(exc),
-            retryable=False,
-            provider=provider_name,
-        )
-
     # ── httpx.HTTPStatusError (4xx / 5xx from provider API) ──────
     if isinstance(exc, httpx.HTTPStatusError):
         status = exc.response.status_code
         body = ""
         try:
             body = exc.response.text
-        except Exception:
-            pass
+        except Exception as read_exc:
+            logger.debug("Could not read provider error response body: %s", read_exc)
 
         base = _STATUS_MAP.get(
             status,

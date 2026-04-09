@@ -32,10 +32,13 @@ def _build_fernet() -> Fernet:
 def _django_secret() -> str:
     try:
         from django.conf import settings
-
+        from django.core.exceptions import ImproperlyConfigured
+    except ImportError as exc:
+        raise RuntimeError("No encryption key available for AIKeyVault") from exc
+    try:
         return settings.SECRET_KEY
-    except Exception:
-        raise RuntimeError("No encryption key available for AIKeyVault")
+    except (ImproperlyConfigured, AttributeError) as exc:
+        raise RuntimeError("No encryption key available for AIKeyVault") from exc
 
 
 class AIKeyVault:

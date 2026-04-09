@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 import time
 from typing import TYPE_CHECKING, Any, Iterator
+
+import httpx
 
 from .base import (
     APIKeyProvider,
@@ -48,10 +51,6 @@ class AnthropicProvider(APIKeyProvider):
 
     def _live_stream(self, prompt: str, context: dict[str, Any]) -> Iterator[str]:  # pragma: no cover
         try:
-            import json
-
-            import httpx
-
             messages = context.get("messages")
             if not messages:
                 messages = [{"role": "user", "content": prompt}]
@@ -93,8 +92,6 @@ class AnthropicProvider(APIKeyProvider):
 
     def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:  # pragma: no cover
         try:
-            import httpx
-
             messages = context.get("messages")
             if not messages:
                 messages = [{"role": "user", "content": prompt}]

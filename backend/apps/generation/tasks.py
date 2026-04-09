@@ -3,6 +3,7 @@ from __future__ import annotations
 from celery import shared_task
 
 from .models import CompareRun
+from .services import run_compare
 
 
 @shared_task(bind=True, max_retries=0)
@@ -11,7 +12,6 @@ def run_compare_task(self, compare_run_id: int) -> None:
     compare_run = CompareRun.objects.select_related("workspace", "created_by", "project", "brand_profile_version").get(
         pk=compare_run_id
     )
-    from .services import run_compare
 
     try:
         run_compare(compare_run)

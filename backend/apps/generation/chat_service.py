@@ -16,8 +16,17 @@ HTML content is detected.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Any, Generator
+
+from apps.accounts.models import Workspace
+from apps.generation.prompt_builder import build_design_prompt
+from apps.generation.providers import registry as provider_registry
+from apps.generation.providers.errors import ProviderError, classify_provider_error
+from apps.workspace.models import WorkspaceAISettings
+
+logger = logging.getLogger(__name__)
 
 _SLIDE_START_RE = re.compile(r"<!--\s*SLIDE_START\s+(\d+)\s*-->", re.IGNORECASE)
 _SLIDE_END_RE = re.compile(r"<!--\s*SLIDE_END\s*-->", re.IGNORECASE)
@@ -37,14 +46,11 @@ def _max_slide_index_in_context(current_html: str) -> int:
 def _load_workspace_settings():
     workspace_settings = None
     try:
-        from apps.accounts.models import Workspace
-        from apps.workspace.models import WorkspaceAISettings
-
         workspace = Workspace.objects.first()
         if workspace is not None:
             workspace_settings = WorkspaceAISettings.objects.filter(workspace=workspace).first()
     except Exception:
-        pass
+        logger.warning("Could not load workspace AI settings for chat stream", exc_info=True)
     return workspace_settings
 
 
@@ -66,10 +72,8 @@ def _resolve_provider(
     workspace_settings,
     model_id: str | None,
 ):
-    from apps.generation.providers.registry import get_provider
-
     resolved_model_id = _resolve_stream_model_id(provider_key, model_id, workspace_settings)
-    return get_provider(provider_key, workspace_settings, model_id=resolved_model_id)
+    return provider_registry.get_provider(provider_key, workspace_settings, model_id=resolved_model_id)
 
 
 def _get_last_user_message(messages: list[dict[str, str]]) -> str:
@@ -80,8 +84,6 @@ def _get_last_user_message(messages: list[dict[str, str]]) -> str:
 
 
 def _build_stream_error_payload(exc: Exception, provider_key: str) -> dict[str, Any]:
-    from apps.generation.providers.errors import ProviderError, classify_provider_error
-
     if isinstance(exc, ProviderError):
         return {
             "message": str(exc),
@@ -152,8 +154,6 @@ def stream_chat(
     Yields:
         SSE-formatted strings.
     """
-    from apps.generation.prompt_builder import build_design_prompt
-
     workspace_settings = _load_workspace_settings()
 
     try:

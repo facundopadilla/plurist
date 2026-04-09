@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Any
 
+import httpx
+
 from .base import (
     APIKeyProvider,
     GenerationResult,
@@ -40,8 +42,6 @@ class GeminiProvider(APIKeyProvider):
 
     def _live_result(self, prompt: str, context: dict[str, Any]) -> GenerationResult:  # pragma: no cover
         try:
-            import httpx
-
             messages = context.get("messages")
             contents: list[dict[str, object]] = []
             system_instruction: dict[str, object] | None = None
