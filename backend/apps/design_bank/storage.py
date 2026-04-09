@@ -9,6 +9,7 @@ Uses boto3 under the hood. Credentials and endpoint are read from Django setting
   DESIGN_BANK_S3_REGION        (default: us-east-1)
 """
 
+import io
 import uuid
 from typing import IO
 
@@ -33,7 +34,7 @@ def _bucket() -> str:
 def generate_storage_key(original_filename: str) -> str:
     ext = ""
     if "." in original_filename:
-        ext = "." + original_filename.rsplit(".", 1)[-1].lower()
+        ext = f".{original_filename.rsplit('.', 1)[-1].lower()}"
     return f"design-bank/{uuid.uuid4().hex}{ext}"
 
 
@@ -56,8 +57,6 @@ def delete_file(storage_key: str) -> None:
 
 def download_file(storage_key: str) -> bytes:
     """Download an object from S3/MinIO and return raw bytes."""
-    import io
-
     client = _client()
     buf = io.BytesIO()
     client.download_fileobj(_bucket(), storage_key, buf)

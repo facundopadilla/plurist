@@ -1,14 +1,34 @@
+import io
+import logging
 from typing import Any
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponseRedirect
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
 from apps.accounts.auth import MEMBERSHIP_REQUIRED_DETAIL, get_membership, require_editor_capabilities
-from apps.accounts.models import RoleChoices
+from apps.accounts.models import RoleChoices, Workspace
 from apps.accounts.session_auth import session_auth as django_auth
+from apps.projects.models import Project
 
+from .constants import (
+    DEFAULT_CONTENT_TYPE_INLINE,
+    IMAGE_UPLOAD_EXTENSIONS,
+    INSUFFICIENT_PERMISSIONS,
+    MARKDOWN_UPLOAD_EXTENSIONS,
+    NO_FILE_STORED_FOR_SOURCE,
+    PRESIGNED_URL_TTL_SECONDS,
+    PROJECT_NOT_FOUND,
+    SOURCE_HAS_NO_STORED_FILE,
+    SOURCE_NOT_FOUND,
+    STORAGE_BUCKET_MISSING,
+    STORAGE_MINIO_UNAVAILABLE,
+    STORAGE_UPLOAD_FAILED_PREFIX,
+    TEXT_SNIPPET_MAX_CHARS,
+    UPLOAD_ERROR_MESSAGE_MAX_CHARS,
+    WORKSPACE_NOT_BOOTSTRAPPED,
+)
 from .design_system_service import (
     get_project_design_system_status,
     sync_project_design_system,
@@ -16,10 +36,9 @@ from .design_system_service import (
 from .models import DesignBankSource
 from .validators import validate_file_size, validate_url
 
+logger = logging.getLogger(__name__)
+
 router = Router(tags=["design_bank"])
-SOURCE_NOT_FOUND = "Source not found"
-IMAGE_UPLOAD_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"}
-MARKDOWN_UPLOAD_EXTENSIONS = {"md", "markdown"}
 
 
 class SourceOut(Schema):
@@ -96,12 +115,11 @@ class DesignSystemSyncOut(Schema):
     reference_brief_source_id: int
 
 
-def _workspace_from_request(_request):
-    from apps.accounts.models import Workspace
-
+def _workspace_from_request(_request: HttpRequest) -> Workspace:
+    """Return the singleton workspace or 400 if not bootstrapped."""
     workspace = Workspace.objects.first()
     if workspace is None:
-        raise HttpError(400, "Workspace not bootstrapped")
+        raise HttpError(400, WORKSPACE_NOT_BOOTSTRAPPED)
     return workspace
 
 
@@ -186,11 +204,12 @@ def ingest_url(request: HttpRequest, payload: UrlIngestIn):
     )
 
     try:
+        # Imported here so tests can monkeypatch apps.design_bank.tasks before delay().
         from .tasks import extract_from_url
 
         extract_from_url.delay(source.pk)
     except Exception:
-        pass
+        logger.exception("Failed to queue extract_from_url for source pk=%s", source.pk)
 
     return 201, _source_to_out(source)
 
@@ -300,56 +319,56 @@ def get_source_file(request: HttpRequest, source_id: int):
         raise HttpError(404, SOURCE_NOT_FOUND)
 
     if not source.storage_key:
-        raise HttpError(404, "No file stored for this source")
+        raise HttpError(404, NO_FILE_STORED_FOR_SOURCE)
 
-    from django.http import HttpResponseRedirect
-
+    # Imported here so tests can monkeypatch apps.design_bank.storage.
     from .storage import generate_presigned_url
 
-    url = generate_presigned_url(source.storage_key, expires_in=300)
+    url = generate_presigned_url(source.storage_key, expires_in=PRESIGNED_URL_TTL_SECONDS)
     return HttpResponseRedirect(url)
 
 
-def _get_project(workspace, project_id: int | None):
+def _get_project(workspace: Workspace, project_id: int | None):
     if project_id is None:
         return None
     try:
-        from apps.projects.models import Project
-
         return Project.objects.get(pk=project_id, workspace=workspace)
     except Project.DoesNotExist:
-        raise HttpError(404, "Project not found")
+        raise HttpError(404, PROJECT_NOT_FOUND)
 
 
 def _infer_upload_source_type(filename: str) -> str:
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    if ext == "pdf":
-        return DesignBankSource.SourceType.PDF
-    if ext in IMAGE_UPLOAD_EXTENSIONS:
-        return DesignBankSource.SourceType.IMAGE
-    if ext == "css":
-        return DesignBankSource.SourceType.CSS
-    if ext == "html":
-        return DesignBankSource.SourceType.HTML
-    if ext in MARKDOWN_UPLOAD_EXTENSIONS:
-        return DesignBankSource.SourceType.MARKDOWN
-    return DesignBankSource.SourceType.UPLOAD
+    match ext:
+        case "pdf":
+            return DesignBankSource.SourceType.PDF
+        case "css":
+            return DesignBankSource.SourceType.CSS
+        case "html":
+            return DesignBankSource.SourceType.HTML
+        case e if e in IMAGE_UPLOAD_EXTENSIONS:
+            return DesignBankSource.SourceType.IMAGE
+        case e if e in MARKDOWN_UPLOAD_EXTENSIONS:
+            return DesignBankSource.SourceType.MARKDOWN
+        case _:
+            return DesignBankSource.SourceType.UPLOAD
 
 
 def _raise_upload_storage_error(exc: Exception) -> None:
     exc_str = str(exc)
     exc_name = type(exc).__name__
     if "ConnectionError" in exc_name or "Max retries" in exc_str or "Connection refused" in exc_str:
-        raise HttpError(503, "Cannot connect to storage (MinIO unavailable)")
+        raise HttpError(503, STORAGE_MINIO_UNAVAILABLE)
     if "NoSuchBucket" in exc_str or "does not exist" in exc_str.lower():
-        raise HttpError(
-            503,
-            "Storage bucket does not exist — contact the administrator",
-        )
-    raise HttpError(500, f"Failed to upload file: {exc_str[:120]}")
+        raise HttpError(503, STORAGE_BUCKET_MISSING)
+    raise HttpError(
+        500,
+        f"{STORAGE_UPLOAD_FAILED_PREFIX} {exc_str[:UPLOAD_ERROR_MESSAGE_MAX_CHARS]}",
+    )
 
 
 def _upload_source_file(source: DesignBankSource, file: UploadedFile, filename: str) -> None:
+    # Imported here so tests can monkeypatch apps.design_bank.storage / tasks.
     from .storage import generate_storage_key, upload_file
     from .tasks import extract_from_file
 
@@ -479,9 +498,7 @@ def update_source_content(request: HttpRequest, source_id: int, payload: Content
         raise HttpError(404, SOURCE_NOT_FOUND)
 
     if not source.storage_key:
-        raise HttpError(400, "Source has no stored file")
-
-    import io
+        raise HttpError(400, SOURCE_HAS_NO_STORED_FILE)
 
     from .storage import upload_file
 
@@ -489,11 +506,11 @@ def update_source_content(request: HttpRequest, source_id: int, payload: Content
     upload_file(
         io.BytesIO(content_bytes),
         source.storage_key,
-        "text/html; charset=utf-8",
+        DEFAULT_CONTENT_TYPE_INLINE,
     )
     source.extracted_data = {
         **dict(source.extracted_data or {}),
-        "text_snippet": payload.content[:4096],
+        "text_snippet": payload.content[:TEXT_SNIPPET_MAX_CHARS],
     }
     source.save(update_fields=["extracted_data", "updated_at"])
     return _source_to_out(source)
@@ -512,7 +529,7 @@ def delete_source(request: HttpRequest, source_id: int):
 
     # Owner check for destructive delete
     if membership.role not in {RoleChoices.OWNER, RoleChoices.EDITOR}:
-        raise HttpError(403, "Insufficient permissions")
+        raise HttpError(403, INSUFFICIENT_PERMISSIONS)
 
     try:
         source = DesignBankSource.objects.get(pk=source_id, workspace=workspace)
@@ -524,8 +541,14 @@ def delete_source(request: HttpRequest, source_id: int):
             from .storage import delete_file
 
             delete_file(source.storage_key)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(
+                "Could not delete storage object %s for source %s: %s",
+                source.storage_key,
+                source.pk,
+                exc,
+                exc_info=True,
+            )
 
     source.delete()
     return 204, None

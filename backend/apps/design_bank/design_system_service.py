@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
-import os
+import logging
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from apps.design_bank.models import DesignBankSource
+from apps.design_bank.storage import download_file
+
+logger = logging.getLogger(__name__)
 
 DESIGN_SYSTEM_NAME = "Project Design System"
 REFERENCE_BRIEF_NAME = "Project Reference Brief"
@@ -363,11 +367,15 @@ def _extract_source_text(source: DesignBankSource) -> str:
 
     if source.storage_key and _storage_content_is_textual(source):
         try:
-            from apps.design_bank.storage import download_file
-
             data = download_file(source.storage_key)
             return data.decode("utf-8", errors="replace")[:12000]
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "Could not load textual storage for source %s: %s",
+                source.pk,
+                exc,
+                exc_info=True,
+            )
             return ""
 
     return ""
@@ -375,8 +383,8 @@ def _extract_source_text(source: DesignBankSource) -> str:
 
 def _storage_content_is_textual(source: DesignBankSource) -> bool:
     filename = source.original_filename or source.name or ""
-    _, ext = os.path.splitext(filename)
-    if ext.lower() in _TEXTUAL_EXTENSIONS:
+    suffix = Path(filename).suffix.lower()
+    if suffix in _TEXTUAL_EXTENSIONS:
         return True
     return source.source_type in {
         DesignBankSource.SourceType.HTML,
@@ -434,7 +442,8 @@ def _try_provider_synthesis(
         if result.generated_text.startswith("[") and "-mock]" in result.generated_text:
             return None
         return _extract_artifact_payload(result.generated_text)
-    except Exception:
+    except Exception as exc:
+        logger.warning("Provider synthesis failed: %s", exc, exc_info=True)
         return None
 
 

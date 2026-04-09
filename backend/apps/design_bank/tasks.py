@@ -2,11 +2,22 @@
 Celery tasks for asynchronous extraction of design bank sources.
 """
 
+import io
 import logging
+import mimetypes
 
 import requests
 from celery import shared_task
 
+from .constants import (
+    CELERY_RETRY_COUNTDOWN_SECONDS,
+    DESIGN_BANK_USER_AGENT,
+    DOWNLOAD_CHUNK_SIZE,
+    TEXT_SNIPPET_MAX_CHARS,
+)
+from .models import DesignBankSource
+from .scanners import get_scanner
+from .storage import download_file, generate_storage_key, upload_file
 from .validators import (
     DOWNLOAD_TIMEOUT,
     MAX_FILE_SIZE,
@@ -19,8 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 def _get_source(source_id: int):
-    from .models import DesignBankSource
-
     return DesignBankSource.objects.filter(pk=source_id).first()
 
 
@@ -47,8 +56,9 @@ def _extract_text_metadata(content: bytes, content_type: str, url: str = "") -> 
     }:
         # Store only a text snippet — never parse/execute
         try:
-            text = content[:4096].decode("utf-8", errors="replace")
-        except Exception:
+            text = content[:TEXT_SNIPPET_MAX_CHARS].decode("utf-8", errors="replace")
+        except Exception as exc:
+            logger.debug("Text snippet decode failed: %s", exc)
             text = ""
         result["text_snippet"] = text
         result["source_url"] = url
@@ -59,10 +69,6 @@ def _extract_text_metadata(content: bytes, content_type: str, url: str = "") -> 
 @shared_task(bind=True, max_retries=3)
 def extract_from_url(self, source_id: int):
     """Fetch a URL, apply SSRF checks, store to S3, extract metadata."""
-    from .models import DesignBankSource
-    from .scanners import get_scanner
-    from .storage import generate_storage_key, upload_file
-
     source = _get_source(source_id)
     if source is None:
         logger.warning("extract_from_url: source %s not found", source_id)
@@ -80,7 +86,7 @@ def extract_from_url(self, source_id: int):
             timeout=DOWNLOAD_TIMEOUT,
             stream=True,
             allow_redirects=False,
-            headers={"User-Agent": "Plurist-DesignBank/1.0"},
+            headers={"User-Agent": DESIGN_BANK_USER_AGENT},
         )
 
         # Manually follow redirects with SSRF validation at each hop
@@ -93,7 +99,7 @@ def extract_from_url(self, source_id: int):
                 timeout=DOWNLOAD_TIMEOUT,
                 stream=True,
                 allow_redirects=False,
-                headers={"User-Agent": "Plurist-DesignBank/1.0"},
+                headers={"User-Agent": DESIGN_BANK_USER_AGENT},
             )
             redirect_count += 1
 
@@ -108,7 +114,7 @@ def extract_from_url(self, source_id: int):
             raise ValueError(f"Content-Length {content_length} exceeds limit")
 
         data = b""
-        for chunk in response.iter_content(chunk_size=65536):
+        for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
             data += chunk
             if len(data) > MAX_FILE_SIZE:
                 raise ValueError("Downloaded content exceeds size limit")
@@ -120,8 +126,6 @@ def extract_from_url(self, source_id: int):
         scan_result = scanner.scan_bytes(data, filename=source.original_filename or "")
         if not scan_result.clean:
             raise ValueError(f"Scan failed: {scan_result.detail}")
-
-        import io
 
         storage_key = generate_storage_key(source.original_filename or "file")
         upload_file(io.BytesIO(data), storage_key, content_type)
@@ -139,18 +143,12 @@ def extract_from_url(self, source_id: int):
         source.status = DesignBankSource.Status.FAILED
         source.error_message = str(exc)
         source.save(update_fields=["status", "error_message", "updated_at"])
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=CELERY_RETRY_COUNTDOWN_SECONDS)
 
 
 @shared_task(bind=True, max_retries=3)
 def extract_from_file(self, source_id: int):
     """Read a file that's already been uploaded to storage, extract metadata."""
-    import mimetypes
-
-    from .models import DesignBankSource
-    from .scanners import get_scanner
-    from .storage import download_file
-
     source = _get_source(source_id)
     if source is None:
         logger.warning("extract_from_file: source %s not found", source_id)
@@ -182,4 +180,4 @@ def extract_from_file(self, source_id: int):
         source.status = DesignBankSource.Status.FAILED
         source.error_message = str(exc)
         source.save(update_fields=["status", "error_message", "updated_at"])
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=CELERY_RETRY_COUNTDOWN_SECONDS)
