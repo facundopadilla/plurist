@@ -12,24 +12,10 @@ import { ProjectDetailPage } from "../features/projects/project-detail-page";
 import { ReviewPage } from "../features/content/review-page";
 import { AIProvidersPage } from "../features/settings/ai-providers/ai-providers-page";
 
-// Landing — public, code-split
+// Marketing landing (public, code-split)
 const LandingPage = lazy(() =>
   import("../features/landing/landing-page").then((m) => ({
     default: m.LandingPage,
-  })),
-);
-
-// Landing2 — HeroUI, public, code-split
-const Landing2Page = lazy(() =>
-  import("../features/landing2/landing2-page").then((m) => ({
-    default: m.Landing2Page,
-  })),
-);
-
-// Landing3 — save.design aesthetic, shadcn + Tailwind only
-const Landing3Page = lazy(() =>
-  import("../features/landing3/landing3-page").then((m) => ({
-    default: m.Landing3Page,
   })),
 );
 
@@ -82,42 +68,12 @@ export function AppRouter() {
           element={
             <Suspense
               fallback={
-                <div className="flex h-screen w-screen items-center justify-center bg-background">
-                  <span className="text-muted-foreground text-sm">
-                    Loading...
-                  </span>
-                </div>
-              }
-            >
-              <LandingPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/landing2"
-          element={
-            <Suspense
-              fallback={
-                <div className="flex h-screen w-screen items-center justify-center">
-                  <span className="text-sm text-neutral-400">Loading...</span>
-                </div>
-              }
-            >
-              <Landing2Page />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/landing3"
-          element={
-            <Suspense
-              fallback={
                 <div className="flex h-screen w-screen items-center justify-center bg-[#09090b]">
                   <span className="text-sm text-zinc-500">Loading...</span>
                 </div>
               }
             >
-              <Landing3Page />
+              <LandingPage />
             </Suspense>
           }
         />

@@ -1,109 +1,121 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight } from "lucide-react";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { ease, fadeUp, staggerContainer } from "../lib/animations";
+  fadeUp,
+  scaleRotate,
+  stagger,
+  sectionSlideLeft,
+} from "../lib/animations";
 
-const FAQS = [
+const FAQ = [
   {
     q: "What is Plurist?",
-    a: "Plurist is a collaborative content design platform that combines a visual canvas, code editor, and AI assistant in one place. You can design websites, social posts, and slides — then publish directly to your social channels.",
+    a: "An open-source content creation platform. Write code or use AI to generate it, compose visually on a canvas, and export production-ready assets. Think Google Stitch — but open source, self-hostable, and model-agnostic.",
   },
   {
-    q: "Which AI models are supported?",
-    a: "We support OpenAI (GPT-4o), Anthropic (Claude), and Google Gemini. You can run the same prompt through all three simultaneously and compare outputs before choosing which variant to publish.",
+    q: "What AI models can I use?",
+    a: "Any model you want. Plurist supports OpenAI, Anthropic Claude, Google Gemini, and any provider via OpenRouter. You bring your own API keys — we never touch your data.",
   },
   {
-    q: "Can I use my own HTML and CSS?",
-    a: "Yes. Everything in Plurist is HTML and CSS under the hood. You can switch between the visual canvas and a full code editor at any point — both stay in sync in real-time.",
+    q: "How is this different from Stitch or Banani?",
+    a: "Plurist is fully open source (MIT license), self-hostable, and lets you use any AI model. You own your data, run it on your servers, and extend it with plugins. No vendor lock-in, no forced subscriptions.",
   },
   {
-    q: "How does team collaboration work?",
-    a: "Plurist has a built-in approval workflow: Creators design and generate content, Approvers review and approve it, Publishers schedule and deploy. All with a full audit trail and comment threads.",
+    q: "Can I self-host it?",
+    a: "Yes. Docker Compose is all you need — PostgreSQL, Redis, MinIO for storage. Everything runs on your infrastructure. A 4-core VPS with 8GB RAM handles it comfortably.",
   },
   {
-    q: "Which social platforms can I publish to?",
-    a: "Currently Instagram, LinkedIn, and X (Twitter). We're actively adding YouTube Shorts, TikTok, and Facebook. You can schedule posts, manage queues, and track performance from a unified dashboard.",
+    q: "What about social media publishing?",
+    a: "Publishing is being built as the first installable plugin via Plurist's MCP-based plugin system. It will support LinkedIn, X, and Instagram. Create content in Plurist, publish anywhere through plugins.",
   },
   {
-    q: "Is there a free plan?",
-    a: "Yes. The free plan includes 3 projects, access to 1 AI model, and up to 10 published posts per month. No credit card required to get started.",
-  },
-  {
-    q: "Can I import existing templates?",
-    a: "Absolutely. You can import any HTML/CSS template into Plurist and use it as a base for AI-generated variants. The asset library lets you organize templates, images, fonts, and brand colors across projects.",
+    q: "Is there a cloud version?",
+    a: "Coming soon. Managed hosting with included AI credits, team collaboration, and zero setup. Self-hosted remains free forever — the cloud version is for teams who prefer not to manage infrastructure.",
   },
 ];
 
 export function FaqSection() {
-  return (
-    <section
-      id="faq"
-      className="py-24 sm:py-32 bg-brutal-pastel-green border-b-2 border-black"
-    >
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex flex-col lg:flex-row gap-16 lg:gap-24">
-          {/* Left */}
-          <motion.div
-            className="lg:w-5/12 shrink-0"
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, ease }}
-          >
-            <p className="font-mono text-xs uppercase tracking-wider text-black font-bold mb-4">
-              FAQ
-            </p>
-            <h2 className="font-display font-extrabold text-[40px] sm:text-[56px] leading-[1] tracking-[-0.04em] text-black">
-              Questions, <span className="text-[#444]">answered.</span>
-            </h2>
-            <p className="mt-4 text-base text-[#333] leading-relaxed font-medium">
-              Still have questions? Reach out to us directly.
-            </p>
-            <a
-              href="mailto:hello@plurist.io"
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold text-black underline underline-offset-4 hover:text-[#444] transition-colors duration-150"
-            >
-              Contact us
-              <ArrowRight className="h-3.5 w-3.5" />
-            </a>
-          </motion.div>
+  const [open, setOpen] = useState<number | null>(null);
 
-          {/* Right — accordion */}
-          <motion.div
-            className="flex-1"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
+  return (
+    <section id="faq" className="relative scroll-mt-28 px-6 py-32">
+      <div className="absolute left-1/2 top-0 h-px w-2/3 max-w-xl -translate-x-1/2 bg-gradient-to-r from-transparent via-zinc-700/30 to-transparent" />
+
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-80px" }}
+        variants={sectionSlideLeft}
+        className="mx-auto max-w-2xl"
+      >
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-120px" }}
+          variants={stagger}
+          className="text-center"
+        >
+          <motion.span
+            variants={fadeUp}
+            className="font-mono text-[11px] uppercase tracking-[0.16em] text-zinc-200"
           >
-            <Accordion type="single" collapsible className="space-y-2">
-              {FAQS.map((faq, i) => (
-                <motion.div key={faq.q} variants={fadeUp} custom={i}>
-                  <AccordionItem
-                    value={`faq-${i}`}
-                    className="border-2 border-black rounded-lg bg-white data-[state=open]:bg-brutal-pastel-blue overflow-hidden transition-colors duration-200"
-                    style={{ boxShadow: "3px 3px 0 0 #000" }}
+            FAQ
+          </motion.span>
+          <motion.h2
+            variants={fadeUp}
+            className="mt-4 text-[clamp(1.8rem,4vw,3rem)] font-bold tracking-[-0.03em] text-zinc-50"
+          >
+            Questions & answers
+          </motion.h2>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={stagger}
+          className="mt-14 space-y-2"
+        >
+          {FAQ.map((item, i) => (
+            <motion.div
+              key={item.q}
+              variants={scaleRotate}
+              className="overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/20 backdrop-blur-sm transition-colors hover:border-zinc-700/50"
+            >
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                className="flex w-full items-center justify-between px-5 py-4 text-left"
+              >
+                <span className="text-[14px] font-medium text-zinc-200 pr-4">
+                  {item.q}
+                </span>
+                <ChevronRight
+                  size={14}
+                  className={`shrink-0 text-zinc-300 transition-transform duration-300 ${
+                    open === i ? "rotate-90" : ""
+                  }`}
+                />
+              </button>
+              <AnimatePresence initial={false}>
+                {open === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
                   >
-                    <AccordionTrigger className="text-sm font-bold text-left hover:no-underline py-4 px-5 text-black">
-                      {faq.q}
-                    </AccordionTrigger>
-                    <AccordionContent className="text-sm text-[#333] leading-relaxed pb-4 px-5 font-medium">
-                      {faq.a}
-                    </AccordionContent>
-                  </AccordionItem>
-                </motion.div>
-              ))}
-            </Accordion>
-          </motion.div>
-        </div>
-      </div>
+                    <div className="border-t border-zinc-800/40 px-5 py-4 text-[13px] leading-relaxed text-zinc-300">
+                      {item.a}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

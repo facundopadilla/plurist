@@ -71,7 +71,7 @@ export function Navbar() {
               : "border border-transparent bg-transparent",
           )}
         >
-          <a href="/landing3" className="flex items-center gap-2.5">
+          <a href="/" className="flex items-center gap-2.5">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-50 text-zinc-900">
               <Code2 size={13} strokeWidth={2.5} />
             </div>
