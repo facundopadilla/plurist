@@ -4,6 +4,12 @@ import hljs from "highlight.js";
 import "highlight.js/styles/github-dark-dimmed.min.css";
 import { X, Pencil, Save, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { patchSource, updateSourceContent, getSourceFileUrl } from "./api";
+import {
+  getHighlightLanguageForSourceType,
+  isCodeLikeSourceType,
+  isCodeSyntaxSourceType,
+  isImageSourceType,
+} from "./constants";
 import { SourceTypeIcon } from "./resource-ui";
 import type { DesignBankSource } from "./types";
 
@@ -97,14 +103,7 @@ export function SourceDetailModal({
       setEditMode(false);
 
       const srcType = source.source_type.toLowerCase();
-      const isCodeType = [
-        "html",
-        "design_system",
-        "css",
-        "js",
-        "javascript",
-        "markdown",
-      ].includes(srcType);
+      const isCodeType = isCodeLikeSourceType(srcType);
       if (isManagedArtifact(source)) {
         setCodeContent(readRecordString(rd, "content") ?? "");
       } else if (isCodeType && source.storage_key) {
@@ -134,14 +133,7 @@ export function SourceDetailModal({
       let resource_data: Record<string, unknown> | undefined;
       const managedArtifact = isManagedArtifact(source);
 
-      const isCodeType = [
-        "html",
-        "design_system",
-        "css",
-        "js",
-        "javascript",
-        "markdown",
-      ].includes(t);
+      const isCodeType = isCodeLikeSourceType(t);
 
       if (t === "color") {
         resource_data = { hex: editHex, role: editRole };
@@ -181,16 +173,8 @@ export function SourceDetailModal({
 
   const highlightedCode = useMemo(() => {
     if (!codeContent) return "";
-    const langMap: Record<string, string> = {
-      html: "xml",
-      design_system: "markdown",
-      css: "css",
-      js: "javascript",
-      javascript: "javascript",
-      markdown: "markdown",
-    };
     const srcType = source?.source_type.toLowerCase() ?? "";
-    const lang = langMap[srcType];
+    const lang = getHighlightLanguageForSourceType(srcType);
     if (!lang) return "";
     try {
       return hljs.highlight(codeContent, { language: lang }).value;
@@ -208,17 +192,8 @@ export function SourceDetailModal({
     source.original_filename ||
     source.url ||
     `Source #${source.id}`;
-  const isImage = [
-    "image",
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "svg",
-    "webp",
-    "logo",
-  ].includes(t);
-  const isCode = ["html", "css", "js", "javascript", "markdown"].includes(t);
+  const isImage = isImageSourceType(t);
+  const isCode = isCodeSyntaxSourceType(t);
   const managedArtifact = isManagedArtifact(source);
   const hasFile = Boolean(source.storage_key);
 

@@ -21,6 +21,12 @@ import {
 import { cn } from "../../lib/utils";
 import { useAuth } from "../auth/use-auth";
 import { fetchSources, getSourceFileUrl, deleteSource } from "./api";
+import {
+  CODE_FILTER_SOURCE_TYPE_SET,
+  DESIGN_BANK_GLOBAL_VIEW_KEY,
+  DESIGN_BANK_POLL_MS,
+  IMAGE_SOURCE_TYPE_SET,
+} from "./constants";
 import { SourceDetailModal } from "./source-detail-modal";
 import { AddResourceModal } from "./add-resource-modal";
 import { FolderCard } from "./folder-card";
@@ -67,38 +73,19 @@ const TYPE_FILTER_OPTIONS: { key: TypeFilter; label: string }[] = [
   { key: "code", label: "Code" },
 ];
 
-const IMAGE_TYPES = new Set([
-  "image",
-  "jpg",
-  "jpeg",
-  "png",
-  "gif",
-  "svg",
-  "webp",
-  "logo",
-]);
-const CODE_TYPES = new Set([
-  "html",
-  "css",
-  "js",
-  "javascript",
-  "markdown",
-  "design_system",
-]);
-
 function matchesTypeFilter(
   source: DesignBankSource,
   filter: TypeFilter,
 ): boolean {
   if (filter === "all") return true;
   const t = source.source_type.toLowerCase();
-  if (filter === "image") return IMAGE_TYPES.has(t);
+  if (filter === "image") return IMAGE_SOURCE_TYPE_SET.has(t);
   if (filter === "color") return t === "color";
   if (filter === "font") return t === "font";
   if (filter === "text") return t === "text";
   if (filter === "pdf") return t === "pdf";
   if (filter === "url") return t === "url";
-  if (filter === "code") return CODE_TYPES.has(t);
+  if (filter === "code") return CODE_FILTER_SOURCE_TYPE_SET.has(t);
   return true;
 }
 
@@ -137,7 +124,7 @@ function getDesignBankRefetchInterval(data: unknown): number | false {
   const hasTransient = data.some(
     (source) => source.status === "pending" || source.status === "processing",
   );
-  return hasTransient ? 3000 : false;
+  return hasTransient ? DESIGN_BANK_POLL_MS : false;
 }
 
 function getActiveFolderProject(
@@ -313,7 +300,7 @@ function SourceCard({
     `Source #${source.id}`;
   const t = source.source_type.toLowerCase();
   const rd = (source.resource_data ?? {}) as Record<string, string>;
-  const isImage = IMAGE_TYPES.has(t);
+  const isImage = IMAGE_SOURCE_TYPE_SET.has(t);
   const showThumbnail =
     isImage && source.status === "ready" && source.storage_key;
   let snippet = "";
@@ -625,7 +612,7 @@ export function DesignBankPage() {
   const activeFolder = searchParams.get("folder"); // null | "unassigned" | "<projectId>"
 
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
-    getStoredView("db-global-view", "folders"),
+    getStoredView(DESIGN_BANK_GLOBAL_VIEW_KEY, "folders"),
   );
   const [selectedSource, setSelectedSource] = useState<DesignBankSource | null>(
     null,
@@ -656,7 +643,7 @@ export function DesignBankPage() {
 
   function switchView(mode: ViewMode) {
     setViewMode(mode);
-    setStoredView("db-global-view", mode);
+    setStoredView(DESIGN_BANK_GLOBAL_VIEW_KEY, mode);
   }
 
   function enterFolder(folderId: string) {

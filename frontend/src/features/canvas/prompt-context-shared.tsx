@@ -29,6 +29,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { getSourceFileUrl } from "../design-bank/api";
+import { isImageSourceType } from "../design-bank/constants";
+
+export { isImageSourceType };
 import type { DesignBankSource } from "../design-bank/types";
 import type { Project } from "../projects/types";
 
@@ -94,12 +97,6 @@ export function summarizeSource(source: DesignBankSource) {
   ]
     .filter(Boolean)
     .join(" | ");
-}
-
-export function isImageSourceType(sourceType: string) {
-  return ["image", "jpg", "jpeg", "png", "gif", "svg", "webp", "logo"].includes(
-    sourceType.toLowerCase(),
-  );
 }
 
 export function createPromptContextAttachment(

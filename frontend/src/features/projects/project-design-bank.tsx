@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Upload,
@@ -35,29 +35,37 @@ import {
 } from "../design-bank/resource-ui";
 import { SourceDetailModal } from "../design-bank/source-detail-modal";
 import type { DesignBankSource } from "../design-bank/types";
+import {
+  DESIGN_BANK_POLL_MS,
+  DESIGN_BANK_PROJECT_VIEW_MODE_KEY,
+  isImageSourceType,
+} from "../design-bank/constants";
 
 type AddTab = "upload" | "url" | "color" | "font" | "text";
 type ViewMode = "grid" | "list";
 
+const STATUS_BADGES: Record<"ready" | "processing" | "failed", ReactElement> = {
+  ready: (
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <CheckCircle size={10} /> ready
+    </span>
+  ),
+  processing: (
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+      <Loader2 size={10} className="animate-spin" /> processing
+    </span>
+  ),
+  failed: (
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <XCircle size={10} /> failed
+    </span>
+  ),
+};
+
 function statusBadge(status: string) {
-  if (status === "ready")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-        <CheckCircle size={10} /> ready
-      </span>
-    );
-  if (status === "processing")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-        <Loader2 size={10} className="animate-spin" /> processing
-      </span>
-    );
-  if (status === "failed")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-        <XCircle size={10} /> failed
-      </span>
-    );
+  if (status === "ready" || status === "processing" || status === "failed") {
+    return STATUS_BADGES[status];
+  }
   return (
     <span className="inline-flex items-center gap-1 rounded-lg border border-zinc-800/70 bg-zinc-900/80 px-2 py-0.5 text-xs text-zinc-500">
       pending
@@ -117,16 +125,7 @@ function ResourceCard({
   const label =
     source.name || source.original_filename || source.url || `#${source.id}`;
   const t = source.source_type.toLowerCase();
-  const isImage = [
-    "image",
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "svg",
-    "webp",
-    "logo",
-  ].includes(t);
+  const isImage = isImageSourceType(t);
   const showThumbnail =
     isImage && source.status === "ready" && source.storage_key;
 
@@ -537,12 +536,22 @@ export function ProjectDesignBank({
   const canEdit = isOwner || isEditor;
   const queryClient = useQueryClient();
 
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    () => (localStorage.getItem("db-view-mode") as ViewMode) ?? "grid",
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const v = localStorage.getItem(DESIGN_BANK_PROJECT_VIEW_MODE_KEY);
+      if (v === "grid" || v === "list") return v;
+    } catch {
+      /* ignore */
+    }
+    return "grid";
+  });
 
   const setView = (mode: ViewMode) => {
-    localStorage.setItem("db-view-mode", mode);
+    try {
+      localStorage.setItem(DESIGN_BANK_PROJECT_VIEW_MODE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
     setViewMode(mode);
   };
 
@@ -564,7 +573,7 @@ export function ProjectDesignBank({
       const hasTransient = data.some(
         (s) => s.status === "pending" || s.status === "processing",
       );
-      return hasTransient ? 3000 : false;
+      return hasTransient ? DESIGN_BANK_POLL_MS : false;
     },
   });
 
